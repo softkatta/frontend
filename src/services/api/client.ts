@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
-import { getApiBaseUrl } from '@/config/env'
+import { getApiBaseUrl, getApiHostname } from '@/config/env'
 import { clearSecureAuth, getAccessToken, loadSecureAuth, saveSecureAuth } from '@/lib/secureStorage'
 
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 10000)
@@ -10,6 +10,7 @@ type AuthAwareRequestConfig = InternalAxiosRequestConfig & {
 }
 
 let authLogoutHandler: (() => void) | null = null
+let csrfCookiePromise: Promise<void> | null = null
 
 export function registerAuthLogoutHandler(handler: () => void): void {
   authLogoutHandler = handler
@@ -22,10 +23,34 @@ function isPublicAuthRequest(config?: AuthAwareRequestConfig): boolean {
   return url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh')
 }
 
+async function ensureCsrfCookie(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  if (!csrfCookiePromise) {
+    const csrfCookieUrl = getApiHostname()
+      ? `${getApiHostname().replace(/\/$/, '')}/sanctum/csrf-cookie`
+      : '/sanctum/csrf-cookie'
+
+    csrfCookiePromise = axios.get(csrfCookieUrl, {
+      withCredentials: true,
+    }).then(() => undefined).catch((error) => {
+      csrfCookiePromise = null
+      throw error
+    })
+  }
+
+  await csrfCookiePromise
+}
+
 function createApiClient(): AxiosInstance {
   const client = axios.create({
     baseURL: getApiBaseUrl(),
     timeout: REQUEST_TIMEOUT_MS,
+    withCredentials: true,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
@@ -34,6 +59,10 @@ function createApiClient(): AxiosInstance {
 
   client.interceptors.request.use(async (config) => {
     const authConfig = config as AuthAwareRequestConfig
+
+    if (isPublicAuthRequest(authConfig) && config.method === 'post') {
+      await ensureCsrfCookie()
+    }
 
     if (config.data instanceof FormData) {
       if (config.headers) {
