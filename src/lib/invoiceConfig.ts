@@ -1,4 +1,4 @@
-/** Company details shown on invoice preview & PDF — keep in sync with backend/config/invoice.php */
+/** Company details shown on invoice preview/print — keep in sync with backend/config/invoice.php */
 export const INVOICE_COMPANY = {
   name: '',
   tagline: '',

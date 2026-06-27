@@ -3,6 +3,34 @@ import { getApiBaseUrl, getApiHostname } from '@/config/env'
 import { clearSecureAuth, getAccessToken, loadSecureAuth, saveSecureAuth } from '@/lib/secureStorage'
 
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 10000)
+const ADMIN_WORKSPACE_STORAGE_KEY = 'softkatta.admin.workspace'
+
+export type AdminWorkspaceMode = 'live' | 'demo'
+
+export function getAdminWorkspaceMode(): AdminWorkspaceMode {
+  if (typeof window === 'undefined') {
+    return 'live'
+  }
+
+  const raw = String(window.localStorage.getItem(ADMIN_WORKSPACE_STORAGE_KEY) ?? '').trim().toLowerCase()
+  if (raw === 'demo') {
+    return raw
+  }
+
+  if (raw === 'all') {
+    window.localStorage.setItem(ADMIN_WORKSPACE_STORAGE_KEY, 'live')
+  }
+
+  return 'live'
+}
+
+export function setAdminWorkspaceMode(mode: AdminWorkspaceMode): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(ADMIN_WORKSPACE_STORAGE_KEY, mode)
+}
 
 type AuthAwareRequestConfig = InternalAxiosRequestConfig & {
   skipAuth?: boolean
@@ -60,9 +88,23 @@ function createApiClient(): AxiosInstance {
 
   client.interceptors.request.use(async (config) => {
     const authConfig = config as AuthAwareRequestConfig
+    const requestUrl = String(config.url ?? '')
 
     if (isPublicAuthRequest(authConfig) && config.method === 'post') {
       await ensureCsrfCookie()
+    }
+
+    if (requestUrl.startsWith('/admin/') || requestUrl.includes('/admin/')) {
+      const workspace = getAdminWorkspaceMode()
+
+      if (config.params instanceof URLSearchParams) {
+        config.params.set('workspace', workspace)
+      } else {
+        config.params = {
+          ...(config.params as Record<string, unknown> | undefined),
+          workspace,
+        }
+      }
     }
 
     if (config.data instanceof FormData) {

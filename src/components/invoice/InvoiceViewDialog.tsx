@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Printer, X } from 'lucide-react'
+import { Printer, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { InvoiceDocument } from '@/components/invoice/InvoiceDocument'
-import { downloadBlob, getApiErrorMessage } from '@/lib/apiHelpers'
+import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { mapInvoiceDetail } from '@/lib/apiMappers'
 import { toast } from '@/components/ui/toaster'
 import type { InvoiceDetail } from '@/types'
@@ -18,7 +18,6 @@ type InvoiceViewDialogProps = {
   onOpenChange: (open: boolean) => void
   invoiceId: string | null
   fetchInvoice: (id: string) => Promise<unknown>
-  downloadInvoice: (id: string) => Promise<Blob>
 }
 
 export function InvoiceViewDialog({
@@ -26,11 +25,9 @@ export function InvoiceViewDialog({
   onOpenChange,
   invoiceId,
   fetchInvoice,
-  downloadInvoice,
 }: InvoiceViewDialogProps) {
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null)
   const [loading, setLoading] = useState(false)
-  const [downloading, setDownloading] = useState(false)
 
   const load = useCallback(async (id: string) => {
     setLoading(true)
@@ -50,20 +47,6 @@ export function InvoiceViewDialog({
     if (!open) setInvoice(null)
   }, [open, invoiceId, load])
 
-  const handleDownload = async () => {
-    if (!invoiceId || !invoice) return
-    setDownloading(true)
-    try {
-      const blob = await downloadInvoice(invoiceId)
-      downloadBlob(blob, `${invoice.invoice_number}.pdf`)
-      toast({ title: 'Download started', variant: 'success' })
-    } catch (err) {
-      toast({ title: 'Download failed', description: getApiErrorMessage(err), variant: 'destructive' })
-    } finally {
-      setDownloading(false)
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[95vh] max-w-[960px] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none print:max-h-none print:max-w-none">
@@ -81,10 +64,6 @@ export function InvoiceViewDialog({
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="h-9 rounded-lg" onClick={() => window.print()} disabled={!invoice}>
                 <Printer className="mr-1.5 h-4 w-4" /> Print
-              </Button>
-              <Button size="sm" className="h-9 rounded-lg" onClick={() => void handleDownload()} disabled={!invoice || downloading}>
-                <Download className="mr-1.5 h-4 w-4" />
-                {downloading ? 'Downloading…' : 'PDF'}
               </Button>
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => onOpenChange(false)}>
                 <X className="h-4 w-4" />

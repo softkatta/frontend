@@ -22,6 +22,7 @@ import {
 import { adminApi } from '@/services/api'
 import { asRecord, asString, unwrapList } from '@/lib/apiHelpers'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
+import { slugify } from '@/lib/slug'
 import type { Product } from '@/types'
 
 export type ProductFormValues = {
@@ -92,6 +93,7 @@ export function ProductFormDialog({
   onSubmit,
 }: ProductFormDialogProps) {
   const [form, setForm] = useState<ProductFormValues>(EMPTY_FORM)
+  const [autoSlug, setAutoSlug] = useState(true)
   const [categories, setCategories] = useState<CategoryOption[]>([])
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const isEdit = Boolean(initial?.id)
@@ -110,6 +112,7 @@ export function ProductFormDialog({
   useEffect(() => {
     if (!open) {
       setForm(EMPTY_FORM)
+      setAutoSlug(true)
       return
     }
     if (initial) {
@@ -127,10 +130,22 @@ export function ProductFormDialog({
         is_active: initial.is_active !== false,
         has_free_trial: Boolean(raw.has_free_trial ?? true),
       })
+      setAutoSlug(false)
     } else {
       setForm(EMPTY_FORM)
+      setAutoSlug(true)
     }
   }, [open, initial, productRaw])
+
+  const updateForm = (patch: Partial<ProductFormValues>) => {
+    setForm((prev) => {
+      const next = { ...prev, ...patch }
+      if (autoSlug && patch.name !== undefined) {
+        next.slug = slugify(patch.name)
+      }
+      return next
+    })
+  }
 
   const handleScreenshotUpload = async (file: File | null) => {
     if (!file) return
@@ -174,7 +189,7 @@ export function ProductFormDialog({
             <Input
               id="p-name"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => updateForm({ name: e.target.value })}
               placeholder="KattaERP"
               required
               className="bg-[var(--input-background)]"
@@ -186,7 +201,10 @@ export function ProductFormDialog({
             <Input
               id="p-slug"
               value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              onChange={(e) => {
+                setAutoSlug(false)
+                updateForm({ slug: e.target.value })
+              }}
               placeholder="kattaerp"
               className="bg-[var(--input-background)]"
             />

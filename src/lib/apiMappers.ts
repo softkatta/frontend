@@ -196,6 +196,25 @@ export function mapAdminCustomer(raw: unknown) {
   }
 }
 
+export function mapAdminTenant(raw: unknown) {
+  const item = asRecord(raw)
+  const owner = asRecord(item.owner)
+  const frontendDomain = asString(item.frontend_domain || item.domain)
+
+  return {
+    id: asString(item.id),
+    name: asString(item.name),
+    slug: asString(item.slug),
+    backend_domain: asString(item.backend_domain),
+    frontend_domain: frontendDomain,
+    domain: frontendDomain,
+    status: asString(item.status, 'active'),
+    owner_name: asString(owner.name),
+    owner_email: asString(owner.email),
+    created_at: asString(item.created_at),
+  }
+}
+
 export function mapAdminCategory(raw: unknown) {
   const item = asRecord(raw)
   return {

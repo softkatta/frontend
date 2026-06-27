@@ -83,7 +83,7 @@ export const adminApi = {
     list: () => api.get<unknown[]>('/admin/invoices'),
     get: (id: string | number) => api.get<unknown>(`/admin/invoices/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/invoices/${id}`, payload),
-    download: (id: string | number) => api.get<Blob>(`/admin/invoices/${id}/download`, { responseType: 'blob' }),
+    printSource: (id: string | number) => api.get<Blob>(`/admin/invoices/${id}/download`, { responseType: 'blob' }),
     delete: (id: string | number) => api.delete<null>(`/admin/invoices/${id}`),
   },
 

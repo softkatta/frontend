@@ -31,10 +31,10 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false)
   const [summaryLines, setSummaryLines] = useState<SummaryLine[]>([])
   const [summaryLoading, setSummaryLoading] = useState(true)
-  const { gstRate } = useSiteBranding()
+  const { gstRate, gstEnabled } = useSiteBranding()
   const completingPurchase = useRef(false)
   const subtotal = summaryLines.reduce((sum, line) => sum + line.price, 0)
-  const gst = calculateGstAmount(subtotal, gstRate)
+  const gst = gstEnabled ? calculateGstAmount(subtotal, gstRate) : 0
   const total = subtotal + gst
 
   useEffect(() => {
@@ -261,7 +261,9 @@ export default function CheckoutPage() {
                 )}
                 <div className="border-t border-[var(--border)] pt-3 space-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">GST ({formatGstLabel(gstRate)})</span><span>{formatCurrency(gst)}</span></div>
+                  {gstEnabled && (
+                    <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">GST ({formatGstLabel(gstRate)})</span><span>{formatCurrency(gst)}</span></div>
+                  )}
                   <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span>{formatCurrency(total)}</span></div>
                 </div>
               </div>

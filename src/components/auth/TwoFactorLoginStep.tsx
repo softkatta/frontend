@@ -38,6 +38,7 @@ export function TwoFactorLoginStep({
   const available: TwoFactorMethodName[] = methods.length > 0 ? methods : ['authenticator']
   const [activeMethod, setActiveMethod] = useState<TwoFactorMethodName>(available[0])
   const [emailSent, setEmailSent] = useState(false)
+  const [emailCooldown, setEmailCooldown] = useState(0)
   const [recoveryMode, setRecoveryMode] = useState(false)
   const [recoveryCode, setRecoveryCode] = useState('')
 
@@ -47,15 +48,35 @@ export function TwoFactorLoginStep({
     }
   }, [activeMethod, available])
 
+  useEffect(() => {
+    if (emailCooldown <= 0) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setEmailCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [emailCooldown])
+
   const sendEmailCode = async () => {
     try {
       await authApi.sendLoginEmailOtp({ challenge_token: challengeToken })
       setEmailSent(true)
+      setEmailCooldown(60)
       toast({ title: 'Verification code sent to your email', variant: 'success' })
     } catch (error) {
       toast({ title: 'Could not send code', description: getApiErrorMessage(error), variant: 'destructive' })
     }
   }
+
+  const cooldownLabel =
+    emailCooldown > 0
+      ? `Resend in ${String(Math.floor(emailCooldown / 60)).padStart(2, '0')}:${String(emailCooldown % 60).padStart(2, '0')}`
+      : emailSent
+        ? 'Resend Code'
+        : 'Send Code'
 
   return (
     <div className="space-y-4">
@@ -132,8 +153,15 @@ export function TwoFactorLoginStep({
               : 'Enter the 6-digit code from your authenticator app.'}
           </p>
           {activeMethod === 'email' ? (
-            <Button type="button" variant="outline" size="sm" className="rounded-xl" onClick={() => void sendEmailCode()} disabled={submitting}>
-              {emailSent ? 'Resend Code' : 'Send Code'}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => void sendEmailCode()}
+              disabled={submitting || emailCooldown > 0}
+            >
+              {cooldownLabel}
             </Button>
           ) : null}
           <div className="space-y-2">

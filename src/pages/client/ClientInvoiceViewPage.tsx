@@ -12,7 +12,6 @@ export default function ClientInvoiceViewPage() {
       backTo="/dashboard/invoices"
       backLabel="Back to invoices"
       fetchInvoice={(invoiceId) => clientApi.invoices.get(invoiceId)}
-      downloadInvoice={(invoiceId) => clientApi.invoices.download(invoiceId)}
     />
   )
 }

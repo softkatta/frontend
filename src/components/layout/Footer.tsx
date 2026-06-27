@@ -31,6 +31,8 @@ export function Footer() {
     companyPhone,
     companyWebsite,
     supportEmail,
+    gstNumber,
+    gstEnabled,
   } = useSiteBranding()
 
   const email = supportEmail.trim()
@@ -90,6 +92,12 @@ export function Footer() {
                   {address}
                 </p>
               )}
+              {gstEnabled && (
+                <p className="flex items-center gap-2.5">
+                  <span className="h-4 w-4 shrink-0 text-center text-[10px] font-bold leading-4 text-[var(--brand-teal)]">GST</span>
+                  GSTIN: {gstNumber}
+                </p>
+              )}
             </div>
             {website && (
               <div className="flex gap-2">
@@ -134,8 +142,12 @@ export function Footer() {
             <span>Shop Act</span>
             <span className="opacity-40">·</span>
             <span>Udyam MSME</span>
-            <span className="opacity-40">·</span>
-            <span>GST Registered</span>
+            {gstEnabled && (
+              <>
+                <span className="opacity-40">·</span>
+                <span>GST Registered</span>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { motion } from 'framer-motion'
 import {
   Shield, Lock, AlertTriangle, Mail, KeyRound, ArrowRight,
-  BarChart3, Users, Settings, Sparkles,
+  BarChart3, Users, Settings, Sparkles, Eye, EyeOff,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/common/BrandLogo'
 import { Input } from '@/components/ui/input'
@@ -56,6 +56,7 @@ export default function AdminLoginPage() {
   const [challengeMethods, setChallengeMethods] = useState<TwoFactorMethodName[]>(['authenticator'])
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [passkeyOnly, setPasskeyOnly] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const identifyAccount = async (email: string) => {
     if (!email.includes('@')) {
@@ -323,14 +324,22 @@ export default function AdminLoginPage() {
                     <KeyRound className="portal-auth__input-icon h-4 w-4" />
                     <Input
                       id="admin-password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       autoComplete="current-password"
                       placeholder="••••••••"
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="portal-auth__input h-12 rounded-xl pl-10"
+                      className="portal-auth__input h-12 rounded-xl pl-10 pr-10"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-foreground"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
                 ) : (

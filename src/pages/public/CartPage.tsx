@@ -11,9 +11,9 @@ import { resolveMediaUrl } from '@/lib/mediaUrl'
 export default function CartPage() {
   const { items, subtotal, removeFromCart } = useCart()
   const { isAuthenticated, hasRole } = useAuth()
-  const { gstRate } = useSiteBranding()
+  const { gstRate, gstEnabled } = useSiteBranding()
   const navigate = useNavigate()
-  const gst = calculateGstAmount(subtotal, gstRate)
+  const gst = gstEnabled ? calculateGstAmount(subtotal, gstRate) : 0
 
   if (!isAuthenticated || !hasRole('client')) {
     return <Navigate to={`/login?redirect=${encodeURIComponent('/cart')}`} replace />
@@ -81,10 +81,12 @@ export default function CartPage() {
                   <span className="text-muted-foreground">Subtotal ({items.length} items)</span>
                   <span className="font-semibold">{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">GST ({formatGstLabel(gstRate)})</span>
-                  <span className="font-semibold">{formatCurrency(gst)}</span>
-                </div>
+                {gstEnabled && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">GST ({formatGstLabel(gstRate)})</span>
+                    <span className="font-semibold">{formatCurrency(gst)}</span>
+                  </div>
+                )}
               </div>
               <div className="flex justify-between font-display font-bold text-lg pt-4 border-t border-[var(--border)] mb-6">
                 <span>Total</span>

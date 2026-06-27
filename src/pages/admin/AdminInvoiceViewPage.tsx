@@ -12,7 +12,6 @@ export default function AdminInvoiceViewPage() {
       backTo="/admin/invoices"
       backLabel="Back to invoices"
       fetchInvoice={(invoiceId) => adminApi.invoices.get(invoiceId)}
-      downloadInvoice={(invoiceId) => adminApi.invoices.download(invoiceId)}
       onMarkPaid={async () => { await adminApi.invoices.update(id, { status: 'paid' }) }}
     />
   )

@@ -54,6 +54,8 @@ export type PlatformSecurityPolicy = {
   enforce_2fa_clients: boolean
   allow_users_disable_2fa: boolean
   login_2fa_priority: string[]
+  demo_account_email?: string
+  demo_account_2fa_enabled?: boolean
 }
 
 export type TrustedDevice = {
@@ -126,8 +128,22 @@ function isTwoFactorChallenge(data: LoginResponse): data is {
 export { isTwoFactorChallenge }
 
 export const authApi = {
-  register: (payload: RegisterData) =>
-    api.post<AuthSession>('/auth/register', payload, { skipAuth: true }),
+  register: (payload: RegisterData) => {
+    const normalizedPhone = (payload.phone ?? '').replace(/\D/g, '').slice(0, 10)
+    const formData = new FormData()
+    formData.append('email', payload.email)
+    formData.append('password', payload.password)
+    formData.append('first_name', payload.first_name)
+    formData.append('last_name', payload.last_name)
+    formData.append('company', payload.company ?? '')
+    formData.append('phone', normalizedPhone)
+
+    if (payload.avatar) {
+      formData.append('avatar', payload.avatar)
+    }
+
+    return api.post<AuthSession>('/auth/register', formData, { skipAuth: true })
+  },
 
   login: async (payload: LoginCredentials): Promise<LoginResponse> => {
     const data = await api.post<AuthSession & {

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Download, Printer } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { InvoiceDocument } from '@/components/invoice/InvoiceDocument'
 import { PortalPage } from '@/components/common/PortalPage'
-import { downloadBlob, getApiErrorMessage } from '@/lib/apiHelpers'
+import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { mapInvoiceDetail } from '@/lib/apiMappers'
 import { getInvoiceDueMeta } from '@/lib/invoiceDue'
 import { toast } from '@/components/ui/toaster'
@@ -16,7 +16,6 @@ type InvoiceViewShellProps = {
   backTo: string
   backLabel?: string
   fetchInvoice: (id: string) => Promise<unknown>
-  downloadInvoice: (id: string) => Promise<Blob>
   onMarkPaid?: () => Promise<void>
 }
 
@@ -25,12 +24,10 @@ export function InvoiceViewShell({
   backTo,
   backLabel = 'Back to invoices',
   fetchInvoice,
-  downloadInvoice,
   onMarkPaid,
 }: InvoiceViewShellProps) {
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [downloading, setDownloading] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
 
   const load = useCallback(async () => {
@@ -47,20 +44,6 @@ export function InvoiceViewShell({
   }, [fetchInvoice, invoiceId])
 
   useEffect(() => { void load() }, [load])
-
-  const handleDownload = async () => {
-    if (!invoice) return
-    setDownloading(true)
-    try {
-      const blob = await downloadInvoice(invoiceId)
-      downloadBlob(blob, `${invoice.invoice_number}.pdf`)
-      toast({ title: 'Download started', variant: 'success' })
-    } catch (err) {
-      toast({ title: 'Download failed', description: getApiErrorMessage(err), variant: 'destructive' })
-    } finally {
-      setDownloading(false)
-    }
-  }
 
   const handleMarkPaid = async () => {
     if (!onMarkPaid) return
@@ -102,10 +85,6 @@ export function InvoiceViewShell({
           )}
           <Button variant="outline" size="sm" className="h-9 rounded-lg" onClick={() => window.print()} disabled={!invoice}>
             <Printer className="mr-1.5 h-4 w-4" /> Print
-          </Button>
-          <Button size="sm" className="h-9 rounded-lg" onClick={() => void handleDownload()} disabled={!invoice || downloading}>
-            <Download className="mr-1.5 h-4 w-4" />
-            {downloading ? 'Downloading…' : 'Download PDF'}
           </Button>
         </div>
       </div>

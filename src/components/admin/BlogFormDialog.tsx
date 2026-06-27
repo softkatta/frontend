@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { slugify } from '@/lib/slug'
 import type { BlogPost } from '@/types'
 
 export type BlogFormValues = {
@@ -39,10 +40,6 @@ type BlogFormDialogProps = {
   initial?: BlogPost & { is_published?: boolean } | null
   saving?: boolean
   onSubmit: (values: BlogFormValues) => void | Promise<void>
-}
-
-function slugify(text: string) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
 export function BlogFormDialog({ open, onOpenChange, initial, saving, onSubmit }: BlogFormDialogProps) {

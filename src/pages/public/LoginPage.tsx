@@ -2,7 +2,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   LogIn, Lock, Mail, KeyRound, ArrowRight, Sparkles, AlertTriangle,
-  Receipt, Zap, Headphones,
+  Receipt, Zap, Headphones, Eye, EyeOff,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/common/BrandLogo'
 import { Input } from '@/components/ui/input'
@@ -53,6 +53,7 @@ export default function LoginPage() {
   const [challengeMethods, setChallengeMethods] = useState<TwoFactorMethodName[]>(['authenticator'])
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [passkeyOnly, setPasskeyOnly] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const identifyAccount = async (email: string) => {
     if (!email.includes('@')) {
@@ -196,7 +197,7 @@ export default function LoginPage() {
               Sign in to <span className="portal-auth__gradient-text">Buy & Subscribe</span>
             </h2>
             <p className="text-blue-100/75 text-base leading-relaxed mb-8 max-w-md">
-              Access your dashboard, manage subscriptions, download GST invoices, and complete checkout securely.
+              Access your dashboard, manage subscriptions, print GST invoices, and complete checkout securely.
             </p>
             <ul className="space-y-3.5">
               {CLIENT_PERKS.map(({ icon: Icon, label }, i) => (
@@ -277,14 +278,22 @@ export default function LoginPage() {
                     <KeyRound className="portal-auth__input-icon h-4 w-4" />
                     <Input
                       id="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       autoComplete="current-password"
                       placeholder="••••••••"
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="portal-auth__input h-12 rounded-xl pl-10"
+                      className="portal-auth__input h-12 rounded-xl pl-10 pr-10"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-foreground"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
                 ) : (

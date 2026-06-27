@@ -84,18 +84,11 @@ const INVOICE_KEYS: SettingField[] = [
 ]
 
 const SECURITY_KEYS: SettingField[] = [
-  { key: 'allow_email_otp', label: 'Allow Email OTP', group: 'security', type: 'boolean' },
-  { key: 'allow_authenticator', label: 'Allow Authenticator App', group: 'security', type: 'boolean' },
-  { key: 'allow_passkeys', label: 'Allow Passkeys / WebAuthn', group: 'security', type: 'boolean' },
-  { key: 'enforce_2fa_all', label: 'Force 2FA For All Users', group: 'security', type: 'boolean' },
-  { key: 'enforce_2fa_admins', label: 'Force 2FA For Admins', group: 'security', type: 'boolean' },
-  { key: 'enforce_2fa_clients', label: 'Force 2FA For Clients', group: 'security', type: 'boolean' },
-  { key: 'allow_users_disable_2fa', label: 'Allow Users To Disable 2FA', group: 'security', type: 'boolean' },
-  { key: 'enforce_2fa_roles', label: 'Force 2FA For Roles', group: 'security' },
-  { key: 'login_2fa_priority', label: 'Login 2FA Priority', group: 'security' },
   { key: 'session_timeout_minutes', label: 'Session Timeout (minutes)', group: 'security' },
   { key: 'ip_whitelisting', label: 'IP Whitelisting', group: 'security', type: 'boolean' },
   { key: 'ip_whitelist', label: 'Allowed IPs', group: 'security', type: 'textarea' },
+  { key: 'demo_account_email', label: 'Demo Account Email', group: 'security' },
+  { key: 'demo_account_2fa_enabled', label: 'Require 2FA for Demo Account', group: 'security', type: 'boolean' },
 ]
 
 function settingsScopeForGroup(group: SettingField['group']): SiteConfigScope {
@@ -619,51 +612,34 @@ export default function SettingsPage() {
                   <Link to="/admin/security">Open Security</Link>
                 </Button>
               </div>
-              <Separator />
-              <p className="text-sm font-semibold text-foreground">Login verification methods</p>
-              {SECURITY_KEYS.filter((k) => k.type === 'boolean' && k.key.startsWith('allow_')).map((k) => (
-                <div key={k.key} className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{k.label}</p>
-                  </div>
-                  <Switch checked={getValue(k.key, 'true') === 'true'} onCheckedChange={(v) => setValue(k.key, String(v))} />
-                </div>
-              ))}
-              <Separator />
-              <p className="text-sm font-semibold text-foreground">Two-factor enforcement</p>
-              {SECURITY_KEYS.filter((k) => k.type === 'boolean' && k.key.startsWith('enforce_')).map((k) => (
-                <div key={k.key} className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{k.label}</p>
-                  </div>
-                  <Switch checked={getValue(k.key) === 'true'} onCheckedChange={(v) => setValue(k.key, String(v))} />
-                </div>
-              ))}
-              <div className="space-y-2">
-                <Label>Force 2FA For Specific Roles</Label>
-                <Input
-                  value={getValue('enforce_2fa_roles')}
-                  onChange={(e) => setValue('enforce_2fa_roles', e.target.value)}
-                  placeholder="client, admin, staff"
-                  className="h-10 rounded-xl bg-[var(--input-background)]"
-                />
-                <p className="text-xs text-[var(--muted-foreground)]">Comma-separated role names. Leave empty to use admin/client toggles only.</p>
-              </div>
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4 space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Allow Users To Disable 2FA</p>
-                  <p className="text-xs text-[var(--muted-foreground)]">When off, users cannot remove enabled verification methods.</p>
+                  <p className="text-sm font-medium text-foreground">Demo account policy</p>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    Configure which account is treated as demo and whether login 2FA should be enforced for it.
+                  </p>
                 </div>
-                <Switch checked={getValue('allow_users_disable_2fa', 'true') === 'true'} onCheckedChange={(v) => setValue('allow_users_disable_2fa', String(v))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Login 2FA Priority</Label>
-                <Input
-                  value={getValue('login_2fa_priority', 'passkey,authenticator,email')}
-                  onChange={(e) => setValue('login_2fa_priority', e.target.value)}
-                  className="h-10 rounded-xl bg-[var(--input-background)]"
-                />
-                <p className="text-xs text-[var(--muted-foreground)]">Order when multiple methods are enabled, e.g. passkey,authenticator,email</p>
+                <div className="space-y-2">
+                  <Label>Demo Account Email</Label>
+                  <Input
+                    type="email"
+                    value={getValue('demo_account_email')}
+                    onChange={(e) => setValue('demo_account_email', e.target.value)}
+                    placeholder="demo@yourcompany.com"
+                    className="h-10 rounded-xl bg-[var(--input-background)]"
+                  />
+                  <p className="text-xs text-[var(--muted-foreground)]">This account will be treated as demo-only.</p>
+                </div>
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Require 2FA for Demo Account</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">Turn on/off login 2FA challenge only for the configured demo account.</p>
+                  </div>
+                  <Switch
+                    checked={getValue('demo_account_2fa_enabled') === 'true'}
+                    onCheckedChange={(v) => setValue('demo_account_2fa_enabled', String(v))}
+                  />
+                </div>
               </div>
               <Separator />
               <div className="space-y-2">

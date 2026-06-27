@@ -86,6 +86,7 @@ export const router = createBrowserRouter([
               { path: 'products', lazy: lazyPage(() => import('@/pages/admin/ProductsManagement')) },
               { path: 'categories', lazy: lazyPage(() => import('@/pages/admin/CategoriesManagement')) },
               { path: 'plans', lazy: lazyPage(() => import('@/pages/admin/PlansManagement')) },
+              { path: 'tenants', lazy: lazyPage(() => import('@/pages/admin/TenantsManagement')) },
               { path: 'customers', lazy: lazyPage(() => import('@/pages/admin/CustomersPage')) },
               { path: 'subscriptions', lazy: lazyPage(() => import('@/pages/admin/SubscriptionsManagement')) },
               { path: 'invoices', lazy: lazyPage(() => import('@/pages/admin/InvoicesManagement')) },

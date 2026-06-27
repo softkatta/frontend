@@ -10,6 +10,7 @@ export interface User {
   company?: string
   phone?: string
   is_active: boolean
+  is_demo_account?: boolean
   two_factor_enabled?: boolean
   login_alerts_enabled?: boolean
   created_at: string
@@ -35,6 +36,7 @@ export interface RegisterData {
   last_name: string
   company?: string
   phone?: string
+  avatar?: File
 }
 
 export interface Product {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Eye, Package, CreditCard, RefreshCw, AlertTriangle, Bell, TrendingUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Eye, Package, CreditCard, RefreshCw, AlertTriangle, Bell, TrendingUp } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { PageHeader } from '@/components/common/PageHeader'
 import { StatCard } from '@/components/common/StatCard'
@@ -14,7 +15,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { actionBtn } from '@/lib/tableActions'
 import { clientApi } from '@/services/api'
-import { asRecord, asString, downloadBlob, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { asBool, asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapInvoice, mapNotification } from '@/lib/apiMappers'
 import { toast } from '@/components/ui/toaster'
 import { SecuritySetupWizard } from '@/components/auth/SecuritySetupWizard'
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([])
   const [recentNotifications, setRecentNotifications] = useState<Notification[]>([])
+  const [purchasedProducts, setPurchasedProducts] = useState<Array<{ id: string; name: string; slug: string; is_active: boolean }>>([])
   const [stats, setStats] = useState({ products: 0, subscriptions: 0, renewals: 0, expiring: 0, spend: 0 })
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null)
 
@@ -41,10 +43,23 @@ export default function DashboardPage() {
     try {
       const data = asRecord(await clientApi.dashboard())
       const subs = unwrapList(data.active_subscriptions)
+      const products = unwrapList(data.purchased_products)
+        .map((raw) => {
+          const item = asRecord(raw)
+          return {
+            id: asString(item.id),
+            name: asString(item.name, 'Product'),
+            slug: asString(item.slug),
+            is_active: asBool(item.is_active),
+          }
+        })
+        .filter((p) => p.id !== '' && p.slug !== '')
+
       const invoices = unwrapList(data.recent_invoices).map(mapInvoice)
       setRecentInvoices(invoices)
+      setPurchasedProducts(products)
       setStats({
-        products: subs.length,
+        products: products.length,
         subscriptions: subs.filter((s) => asString(asRecord(s).status) === 'active' || asString(asRecord(s).status) === 'expiring_soon').length,
         renewals: subs.filter((s) => asString(asRecord(s).status) === 'pending').length,
         expiring: subs.filter((s) => asString(asRecord(s).status) === 'expiring_soon').length,
@@ -61,15 +76,6 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => { void load() }, [load])
-
-  const handleDownload = async (invoice: Invoice) => {
-    try {
-      const blob = await clientApi.invoices.download(invoice.id)
-      downloadBlob(blob, `${invoice.invoice_number}.pdf`)
-    } catch (error) {
-      toast({ title: 'Download failed', description: getApiErrorMessage(error), variant: 'destructive' })
-    }
-  }
 
   if (loading) {
     return (
@@ -140,6 +146,29 @@ export default function DashboardPage() {
         </ChartCard>
       </div>
 
+      <ChartCard title="My Purchased Products" description="Only products you have already bought">
+        {purchasedProducts.length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">You have not purchased any products yet.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {purchasedProducts.map((product) => (
+              <Link
+                key={product.id}
+                to={`/products/${product.slug}`}
+                className="rounded-xl border border-[var(--border)] bg-[var(--input)] px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-[var(--brand-teal)]/40 hover:bg-[var(--card)]"
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span className="truncate">{product.name}</span>
+                  <Badge variant={product.is_active ? 'success' : 'secondary'}>
+                    {product.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </ChartCard>
+
       <ChartCard title="Recent Invoices">
         <DataTable
           embedded
@@ -153,7 +182,6 @@ export default function DashboardPage() {
             { key: 'actions', header: 'Actions', className: 'w-[100px] text-right', render: (i) => (
               <TableActions actions={[
                 actionBtn('View invoice', Eye, () => setDetailInvoice(i)),
-                actionBtn('Download', Download, () => void handleDownload(i)),
               ]} />
             ) },
           ]}

@@ -154,15 +154,19 @@ export const verify2faLogin = createAsyncThunk(
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async ({ data }: { data: RegisterData; redirectTo?: string }) => {
-    const session = await authApi.register(data)
-    const accessToken = session.access_token
-    const refreshToken = session.refresh_token
-    await saveSecureAuth({ user: session.user, accessToken, refreshToken })
-    return {
-      user: normalizeUser(session.user),
-      accessToken,
-      refreshToken,
+  async ({ data }: { data: RegisterData; redirectTo?: string }, { rejectWithValue }) => {
+    try {
+      const session = await authApi.register(data)
+      const accessToken = session.access_token
+      const refreshToken = session.refresh_token
+      await saveSecureAuth({ user: session.user, accessToken, refreshToken })
+      return {
+        user: normalizeUser(session.user),
+        accessToken,
+        refreshToken,
+      }
+    } catch (error) {
+      return rejectWithValue(getApiErrorMessage(error, 'Registration failed.'))
     }
   },
 )

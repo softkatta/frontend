@@ -17,6 +17,8 @@ export const siteContentApi = {
       favicon: string | null
       favicon_url: string | null
       support_email: string
+      gst_number?: string
+      gst_enabled?: boolean
       gst_rate?: number
       default_currency?: string
     }>('/site/branding', { skipAuth: true }),

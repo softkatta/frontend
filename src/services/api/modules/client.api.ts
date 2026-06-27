@@ -42,7 +42,7 @@ export const clientApi = {
   invoices: {
     list: () => api.get<Invoice[]>('/client/invoices'),
     get: (id: string | number) => api.get<Invoice>(`/client/invoices/${id}`),
-    download: (id: string | number) => api.get<Blob>(`/client/invoices/${id}/download`, { responseType: 'blob' }),
+    printSource: (id: string | number) => api.get<Blob>(`/client/invoices/${id}/download`, { responseType: 'blob' }),
   },
 
   notifications: {

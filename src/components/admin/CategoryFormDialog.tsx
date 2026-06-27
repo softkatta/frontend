@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { slugify } from '@/lib/slug'
 
 export type CategoryFormValues = {
   name: string
@@ -46,15 +47,28 @@ export function CategoryFormDialog({
   onSubmit,
 }: CategoryFormDialogProps) {
   const [form, setForm] = useState<CategoryFormValues>(EMPTY)
+  const [autoSlug, setAutoSlug] = useState(true)
   const isEdit = Boolean(initial?.name)
 
   useEffect(() => {
     if (!open) {
       setForm(EMPTY)
+      setAutoSlug(true)
       return
     }
     setForm(initial ?? EMPTY)
+    setAutoSlug(!Boolean(initial?.slug))
   }, [open, initial])
+
+  const update = (patch: Partial<CategoryFormValues>) => {
+    setForm((prev) => {
+      const next = { ...prev, ...patch }
+      if (autoSlug && patch.name !== undefined) {
+        next.slug = slugify(patch.name)
+      }
+      return next
+    })
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,7 +90,7 @@ export function CategoryFormDialog({
             <Input
               id="cat-name"
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => update({ name: e.target.value })}
               placeholder="Business Software"
               required
               className="bg-[var(--input-background)]"
@@ -87,7 +101,10 @@ export function CategoryFormDialog({
             <Input
               id="cat-slug"
               value={form.slug}
-              onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+              onChange={(e) => {
+                setAutoSlug(false)
+                update({ slug: e.target.value })
+              }}
               placeholder="business-software"
               className="bg-[var(--input-background)]"
             />

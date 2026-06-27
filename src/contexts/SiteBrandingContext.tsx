@@ -20,6 +20,8 @@ export type SiteBranding = {
   companyPhone: string
   companyWebsite: string
   supportEmail: string
+  gstNumber: string
+  gstEnabled: boolean
   logoUrl: string
   faviconUrl: string
   gstRate: number
@@ -34,6 +36,8 @@ const defaultBranding: SiteBranding = {
   companyPhone: '',
   companyWebsite: '',
   supportEmail: '',
+  gstNumber: '',
+  gstEnabled: false,
   logoUrl: BRAND_LOGO_SRC,
   faviconUrl: '',
   gstRate: DEFAULT_GST_RATE,
@@ -77,6 +81,8 @@ async function fetchBranding(): Promise<Omit<SiteBranding, 'loading' | 'refresh'
     companyPhone: data.company_phone || '',
     companyWebsite: data.company_website || '',
     supportEmail: data.support_email || '',
+    gstNumber: (data.gst_number || '').trim(),
+    gstEnabled: Boolean((data.gst_number || '').trim()) && Boolean(data.gst_enabled ?? true),
     logoUrl,
     faviconUrl,
     gstRate: normalizeGstRate(data.gst_rate),
@@ -91,6 +97,8 @@ export function SiteBrandingProvider({ children }: { children: ReactNode }) {
     companyPhone: '',
     companyWebsite: '',
     supportEmail: '',
+    gstNumber: '',
+    gstEnabled: false,
     logoUrl: BRAND_LOGO_SRC,
     faviconUrl: '',
     gstRate: DEFAULT_GST_RATE,

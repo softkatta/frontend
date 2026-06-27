@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { UserPlus, CheckCircle, Shield } from 'lucide-react'
+import { UserPlus, CheckCircle, Shield, Eye, EyeOff } from 'lucide-react'
 import { BrandLogo } from '@/components/common/BrandLogo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { registerUser } from '@/store/slices/authSlice'
 import { toast } from '@/components/ui/toaster'
 import { useState } from 'react'
+import { getApiErrorMessage } from '@/lib/apiHelpers'
 
 const PERKS = ['Required before purchase', 'Instant shop access', 'Manage subscriptions']
 
@@ -18,14 +19,19 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', password: '', company: '', phone: '',
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const result = await register(form, redirect)
+    const result = await register({ ...form, avatar: avatarFile ?? undefined }, redirect)
     if (registerUser.fulfilled.match(result)) {
       toast({ title: 'Account created!', description: 'You can now buy products from the shop.', variant: 'success' })
     } else {
-      toast({ title: 'Registration failed', description: 'Please try again.', variant: 'destructive' })
+      const message = typeof result.payload === 'string'
+        ? result.payload
+        : getApiErrorMessage(result.error, 'Please check your details and try again.')
+      toast({ title: 'Registration failed', description: message, variant: 'destructive' })
     }
   }
 
@@ -69,6 +75,18 @@ export default function RegisterPage() {
               <p className="text-sm text-muted-foreground mt-2">Free to register · Required for cart & checkout</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="avatar">Profile Photo</Label>
+                <Input
+                  id="avatar"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  required
+                  onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+                  className="h-11 rounded-xl"
+                />
+                <p className="text-xs text-muted-foreground">JPG, PNG, WEBP up to 2MB.</p>
+              </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name</Label>
@@ -85,7 +103,26 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required minLength={8} placeholder="Min. 8 characters" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="h-11 rounded-xl" />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    placeholder="Min. 8 characters"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="h-11 rounded-xl pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-foreground"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -94,7 +131,17 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="+91 98765 43210" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-11 rounded-xl" />
+                  <Input
+                    id="phone"
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    placeholder="9876543210"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    className="h-11 rounded-xl"
+                  />
+                  <p className="text-xs text-muted-foreground">Enter 10-digit mobile number.</p>
                 </div>
               </div>
               <button type="submit" disabled={isLoading} className="glow-btn w-full py-3.5 rounded-full text-sm font-semibold disabled:opacity-50 mt-2">

@@ -27,7 +27,7 @@ function InfoBlock({ label, children }: { label: string; children: ReactNode }) 
   )
 }
 
-function InvoiceHeader({ company, gstNumber }: { company: InvoiceCompanyProfile; gstNumber: string }) {
+function InvoiceHeader({ company, gstNumber }: { company: InvoiceCompanyProfile; gstNumber?: string }) {
   const website = company.website.replace(/^https?:\/\//, '')
 
   return (
@@ -88,9 +88,11 @@ function InvoiceHeader({ company, gstNumber }: { company: InvoiceCompanyProfile;
                 {company.phone} · {company.email}
               </p>
               <p className="text-[11px] text-white/70">{website}</p>
-              <p className="mt-1.5 text-[11px] font-semibold text-white/90">
-                GSTIN: {gstNumber}
-              </p>
+              {gstNumber && (
+                <p className="mt-1.5 text-[11px] font-semibold text-white/90">
+                  GSTIN: {gstNumber}
+                </p>
+              )}
             </div>
           </div>
 
@@ -159,7 +161,7 @@ export function InvoiceDocument({ invoice, className }: InvoiceDocumentProps) {
   const dueMeta = getInvoiceDueMeta(invoice)
   const money = (amount: number) => formatCurrency(amount, invoice.currency)
   const statusLabel = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)
-  const gstNumber = invoice.gst.gst_number ?? company.gstNumber
+  const gstNumber = (invoice.gst.gst_number ?? company.gstNumber ?? '').trim() || undefined
 
   return (
     <article

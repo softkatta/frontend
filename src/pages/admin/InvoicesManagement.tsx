@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Eye, Trash2 } from 'lucide-react'
+import { Eye, Trash2 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { downloadBlob, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapAdminInvoice } from '@/lib/apiMappers'
 import { toast } from '@/components/ui/toaster'
 import { useListData } from '@/hooks/useListData'
@@ -25,16 +25,6 @@ export default function InvoicesManagement() {
   const { items, loading, error, reload } = useListData(fetcher, mapper)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null)
   const [deleting, setDeleting] = useState(false)
-
-  const handleDownload = async (invoice: InvoiceRow) => {
-    try {
-      const blob = await adminApi.invoices.download(invoice.id)
-      downloadBlob(blob, `${invoice.invoice_number}.pdf`)
-      toast({ title: 'Download started', variant: 'success' })
-    } catch (err) {
-      toast({ title: 'Download failed', description: getApiErrorMessage(err), variant: 'destructive' })
-    }
-  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -85,7 +75,6 @@ export default function InvoicesManagement() {
             { key: 'actions', header: 'Actions', className: 'w-[120px] text-right', render: (i) => (
               <TableActions actions={[
                 actionBtn('View invoice', Eye, () => navigate(`/admin/invoices/${i.id}`)),
-                actionBtn('Download PDF', Download, () => void handleDownload(i)),
                 { ...actionBtn('Delete invoice', Trash2, () => setDeleteTarget(i)), variant: 'destructive' },
               ]} />
             ) },
