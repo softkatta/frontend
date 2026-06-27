@@ -1,0 +1,1 @@
+function e(e){return e.has_free_trial===!0}function t(e){return`${e.trial_days>0?e.trial_days:14}-day free trial`}function n(e){return`/register?redirect=${encodeURIComponent(`/products/${e}?trial=1`)}`}export{t as n,n as r,e as t};
