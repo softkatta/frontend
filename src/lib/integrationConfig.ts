@@ -27,7 +27,7 @@ export const INTEGRATION_FIELDS: Record<string, IntegrationField[]> = {
         { value: 'none', label: 'None' },
       ],
     },
-    { key: 'from_address', label: 'From Email', placeholder: 'noreply@softkatta.com' },
+    { key: 'from_address', label: 'From Email', placeholder: 'noreply@softkatta.in' },
     { key: 'from_name', label: 'From Name', placeholder: 'SoftKatta' },
   ],
   whatsapp: [
