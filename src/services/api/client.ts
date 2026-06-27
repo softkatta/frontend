@@ -49,6 +49,7 @@ function createApiClient(): AxiosInstance {
     baseURL: getApiBaseUrl(),
     timeout: REQUEST_TIMEOUT_MS,
     withCredentials: true,
+    withXSRFToken: true,
     xsrfCookieName: 'XSRF-TOKEN',
     xsrfHeaderName: 'X-XSRF-TOKEN',
     headers: {
