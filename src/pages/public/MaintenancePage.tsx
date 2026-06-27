@@ -3,6 +3,7 @@ import { Rocket } from 'lucide-react'
 import { SparkleBackground } from '@/components/common/SparkleBackground'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 import type { MaintenancePageContent } from '@/types/maintenance'
 
 type MaintenancePageProps = {
@@ -35,7 +36,7 @@ export function MaintenancePage({ content }: MaintenancePageProps) {
       {showImage && (
         <div
           className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${content.imageUrl})` }}
+          style={{ backgroundImage: `url(${resolveMediaUrl(content.imageUrl)})` }}
           aria-hidden
         />
       )}

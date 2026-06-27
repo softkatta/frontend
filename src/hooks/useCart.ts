@@ -7,6 +7,7 @@ import { productsApi } from '@/services/api'
 import { mapApiProduct } from '@/lib/apiMappers'
 import { resolvePlan } from '@/lib/purchasePlan'
 import { getProductScreenshot } from '@/lib/productAssets'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 import { toast } from '@/components/ui/toaster'
 
 async function resolveProduct(slug: string) {
@@ -65,7 +66,7 @@ export function useCart() {
         category: product.category,
         price: plan.price,
         billing: plan.billing,
-        screenshot: product.images[0] ?? getProductScreenshot(slug),
+        screenshot: product.images[0] ? resolveMediaUrl(product.images[0]) : getProductScreenshot(slug),
       }
       dispatch(addItem(payload))
 

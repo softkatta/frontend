@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils'
 import { useCart } from '@/hooks/useCart'
 import { getProductScreenshot } from '@/lib/productAssets'
 import { productTrialLabel, productTrialRegisterUrl } from '@/lib/productTrial'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 
 interface ShopProductCardProps {
   id: string
@@ -45,7 +46,7 @@ export function ShopProductCard({
   const yearlySave = priceMonthly > 0 && priceYearly > 0
     ? Math.round((1 - priceYearly / (priceMonthly * 12)) * 100)
     : 0
-  const screenshot = imageUrl || getProductScreenshot(slug)
+  const screenshot = imageUrl ? resolveMediaUrl(imageUrl) : getProductScreenshot(slug)
 
   return (
     <article

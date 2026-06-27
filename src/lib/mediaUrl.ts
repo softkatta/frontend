@@ -1,8 +1,28 @@
+import { getApiHostname } from '@/config/env'
+
 /** Resolve image URLs from API (storage paths, relative, or absolute). */
 export function resolveMediaUrl(url?: string | null): string {
   if (!url) return ''
 
   const trimmed = url.trim()
+
+  const apiHost = getApiHostname().replace(/\/$/, '')
+
+  if (apiHost) {
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed
+    }
+
+    if (trimmed.startsWith('/storage/')) {
+      return `${apiHost}${trimmed}`
+    }
+
+    if (trimmed.startsWith('/')) {
+      return `${apiHost}${trimmed}`
+    }
+
+    return `${apiHost}/storage/${trimmed.replace(/^\/+/, '')}`
+  }
 
   // Prefer same-origin /storage/... so Vite proxy (dev) and app origin (prod) serve files
   const storageIdx = trimmed.indexOf('/storage/')

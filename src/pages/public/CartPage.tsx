@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { calculateGstAmount, formatGstLabel } from '@/lib/gst'
 import { formatCurrency } from '@/lib/utils'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart } = useCart()
@@ -42,7 +43,7 @@ export default function CartPage() {
               {items.map((item) => (
                 <div key={item.planId} className="premium-card p-4 sm:p-5 flex gap-4">
                   <div className="shop-cart-thumb shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--muted)]">
-                    <img src={item.screenshot} alt={item.name} className="w-full h-full object-cover aspect-[16/10]" />
+                    <img src={resolveMediaUrl(item.screenshot)} alt={item.name} className="w-full h-full object-cover aspect-[16/10]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">

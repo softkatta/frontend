@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { getProductScreenshot } from '@/lib/productAssets'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 import { clientApi } from '@/services/api'
 import { asRecord, unwrapList } from '@/lib/apiHelpers'
 import { mapApiProduct } from '@/lib/apiMappers'
@@ -40,7 +41,7 @@ export default function ClientProductsPage() {
             <PortalPanel key={product.id} className="p-6 transition-colors hover:border-[var(--brand-teal)]/30">
               <div className="flex gap-4">
                 <img
-                  src={product.images[0] ?? getProductScreenshot(product.slug)}
+                  src={product.images[0] ? resolveMediaUrl(product.images[0]) : getProductScreenshot(product.slug)}
                   alt={product.name}
                   className="h-16 w-24 shrink-0 rounded-lg border border-[var(--border)] object-cover bg-[var(--input)]"
                 />
