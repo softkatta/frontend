@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve existing files and directories as-is.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Let SPA routes like /admin, /dashboard, and nested paths resolve to index.html.
+    RewriteRule ^ index.html [L]
+</IfModule>
