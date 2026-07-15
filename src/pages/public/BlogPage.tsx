@@ -51,6 +51,9 @@ export default function BlogPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post, i) => (
+              (() => {
+                const imageSrc = resolveMediaUrl(post.image)
+                return (
               <motion.article
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -59,8 +62,8 @@ export default function BlogPage() {
                 className="premium-card group flex flex-col overflow-hidden"
               >
                 <div className="h-40 bg-brand-gradient/10 relative overflow-hidden">
-                  {post.image ? (
-                    <img src={resolveMediaUrl(post.image)} alt="" className="h-full w-full object-cover" />
+                  {imageSrc ? (
+                    <img src={imageSrc} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(41,98,255,0.2),transparent_55%)]" />
                   )}
@@ -87,6 +90,8 @@ export default function BlogPage() {
                   </Link>
                 </div>
               </motion.article>
+                )
+              })()
             ))}
           </div>
         )}

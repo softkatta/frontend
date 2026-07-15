@@ -1,0 +1,348 @@
+import { useCallback, useState } from 'react'
+import {
+  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History,
+} from 'lucide-react'
+import { PortalPageShell } from '@/components/common/PortalPageShell'
+import { DataTable } from '@/components/common/DataTable'
+import { TableActions } from '@/components/common/TableActions'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { adminApi } from '@/services/api'
+import { actionBtn } from '@/lib/tableActions'
+import { formatDate } from '@/lib/utils'
+import { unwrapList, getApiErrorMessage, asRecord, asString, asNumber } from '@/lib/apiHelpers'
+import { mapAdminLicense } from '@/lib/apiMappers'
+import { toast } from '@/components/ui/toaster'
+import { useListData } from '@/hooks/useListData'
+
+const statusVariant = {
+  active: 'success',
+  suspended: 'warning',
+  expired: 'destructive',
+  revoked: 'secondary',
+} as const
+
+type LicenseRow = ReturnType<typeof mapAdminLicense>
+type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout'
+
+type LogRow = {
+  id: string
+  endpoint: string
+  domain: string
+  success: boolean
+  error_code: string
+  status_code: number
+  created_at: string
+}
+
+type HistoryRow = {
+  id: string
+  event: string
+  created_at: string
+}
+
+export default function LicensesManagement() {
+  const fetcher = useCallback(() => adminApi.licenses.list(), [])
+  const mapper = useCallback((raw: unknown) => unwrapList(raw).map(mapAdminLicense), [])
+  const { items, loading, error, reload } = useListData(fetcher, mapper)
+
+  const [detail, setDetail] = useState<LicenseRow | null>(null)
+  const [actionTarget, setActionTarget] = useState<{ row: LicenseRow; action: Action } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [activity, setActivity] = useState<LogRow[] | null>(null)
+  const [history, setHistory] = useState<HistoryRow[] | null>(null)
+
+  const openDetail = async (row: LicenseRow) => {
+    try {
+      const response = await adminApi.licenses.get(row.id)
+      setDetail(mapAdminLicense(asRecord(response).data ?? response))
+    } catch {
+      setDetail(row)
+    }
+  }
+
+  const handleAction = async () => {
+    if (!actionTarget) return
+    const { row, action } = actionTarget
+    setBusy(true)
+    try {
+      if (action === 'suspend') await adminApi.licenses.suspend(row.id)
+      else if (action === 'activate') await adminApi.licenses.activate(row.id)
+      else if (action === 'revoke') await adminApi.licenses.revoke(row.id)
+      else if (action === 'delete') await adminApi.licenses.delete(row.id)
+      else if (action === 'reset_domains') await adminApi.licenses.resetDomains(row.id)
+      else if (action === 'force_logout') await adminApi.licenses.forceLogout(row.id)
+
+      const messages: Record<Action, string> = {
+        suspend: 'License suspended.',
+        activate: 'License activated.',
+        revoke: 'License revoked.',
+        delete: 'License deleted.',
+        reset_domains: 'Domain binding reset.',
+        force_logout: 'Product force logout issued.',
+      }
+      toast({ title: messages[action], variant: 'success' })
+      setActionTarget(null)
+      if (action === 'delete') setDetail(null)
+      await reload()
+      if (action !== 'delete' && detail?.id === row.id) {
+        await openDetail(row)
+      }
+    } catch (err) {
+      toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const loadActivity = async (row: LicenseRow) => {
+    try {
+      const response = await adminApi.licenses.activity(row.id)
+      setActivity(unwrapList(response).map((item) => {
+        const log = asRecord(item)
+        return {
+          id: asString(log.id),
+          endpoint: asString(log.endpoint),
+          domain: asString(log.domain, '—'),
+          success: Boolean(log.success),
+          error_code: asString(log.error_code, '—'),
+          status_code: asNumber(log.status_code),
+          created_at: asString(log.created_at),
+        }
+      }))
+    } catch (err) {
+      toast({ title: 'Failed to load API activity', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const loadHistory = async (row: LicenseRow) => {
+    try {
+      const response = await adminApi.licenses.history(row.id)
+      setHistory(unwrapList(response).map((item) => {
+        const event = asRecord(item)
+        return {
+          id: asString(event.id),
+          event: asString(event.event),
+          created_at: asString(event.created_at),
+        }
+      }))
+    } catch (err) {
+      toast({ title: 'Failed to load license history', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const confirmMessages: Record<Action, { title: string; description: string }> = {
+    suspend: {
+      title: 'Suspend License',
+      description: 'The product using this license will stop working until re-activated.',
+    },
+    activate: {
+      title: 'Activate License',
+      description: 'This will re-enable the license and allow the product to function.',
+    },
+    revoke: {
+      title: 'Revoke License',
+      description: 'This permanently revokes the license. The product will lose access immediately.',
+    },
+    delete: {
+      title: 'Delete License',
+      description: 'This will permanently delete the license record. This cannot be undone.',
+    },
+    reset_domains: {
+      title: 'Reset Domain Binding',
+      description: 'All registered domains will be cleared. Customer must register domains again.',
+    },
+    force_logout: {
+      title: 'Force Logout Product',
+      description: 'Installed products will be forced to re-validate this license on next request.',
+    },
+  }
+
+  const columns = [
+    {
+      key: 'license_key',
+      header: 'License Key',
+      render: (row: LicenseRow) => (
+        <span className="font-mono text-xs text-[var(--brand-blue)]">{row.license_key}</span>
+      ),
+    },
+    { key: 'customer_name', header: 'Customer', render: (row: LicenseRow) => (
+      <div>
+        <div className="font-medium">{row.customer_name}</div>
+        <div className="text-xs text-[var(--muted-foreground)]">{row.customer_email}</div>
+      </div>
+    ) },
+    { key: 'product_name', header: 'Product' },
+    {
+      key: 'allowed_domains',
+      header: 'Domains',
+      render: (row: LicenseRow) =>
+        row.allowed_domains.length > 0
+          ? row.allowed_domains.join(', ')
+          : <span className="text-xs text-[var(--muted-foreground)]">Not registered</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row: LicenseRow) => (
+        <Badge variant={statusVariant[row.status as keyof typeof statusVariant] ?? 'secondary'}>
+          {row.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'expires_at',
+      header: 'Expires',
+      render: (row: LicenseRow) =>
+        row.expires_at ? formatDate(row.expires_at) : <span className="text-[var(--muted-foreground)] text-xs">Lifetime</span>,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      className: 'w-[180px] text-right',
+      render: (row: LicenseRow) => (
+        <TableActions
+          actions={[
+            actionBtn('View', Eye, () => openDetail(row)),
+            row.status !== 'active'
+              ? actionBtn('Activate', ShieldCheck, () => setActionTarget({ row, action: 'activate' }))
+              : actionBtn('Suspend', ShieldOff, () => setActionTarget({ row, action: 'suspend' })),
+            actionBtn('Reset Domains', RotateCcw, () => setActionTarget({ row, action: 'reset_domains' })),
+            actionBtn('Force Logout', LogOut, () => setActionTarget({ row, action: 'force_logout' })),
+            { ...actionBtn('Revoke', XCircle, () => setActionTarget({ row, action: 'revoke' })), variant: 'destructive' },
+            { ...actionBtn('Delete', Trash2, () => setActionTarget({ row, action: 'delete' })), variant: 'destructive' },
+          ]}
+        />
+      ),
+    },
+  ]
+
+  return (
+    <PortalPageShell
+      eyebrow="Licenses"
+      heroTitle="License Keys"
+      heroDescription="Search and control every customer license, domain binding, and product session."
+      title="License Keys"
+      description="Search by license key, domain, or customer. Suspend, reset domains, or force logout."
+      loading={loading}
+      error={error}
+    >
+      <DataTable
+        embedded
+        columns={columns}
+        data={items}
+        pageSize={10}
+        searchKeys={['license_key', 'product_name', 'customer_name', 'customer_email', 'status', 'domains_text']}
+        searchPlaceholder="Search by license key, domain, or customer..."
+        emptyTitle="No license keys found"
+        emptyDescription="License records will appear here after purchases are processed."
+      />
+
+      <DetailDialog
+        open={!!detail}
+        onOpenChange={(open) => !open && setDetail(null)}
+        title="License Details"
+        description="Full license, customer, domain, and product integration details."
+      >
+        {detail && (
+          <>
+            <DetailRow label="License Key" value={<span className="font-mono text-xs break-all text-[var(--brand-blue)] select-all">{detail.license_key}</span>} />
+            <DetailRow label="Status" value={<Badge variant={statusVariant[detail.status as keyof typeof statusVariant] ?? 'secondary'}>{detail.status}</Badge>} />
+            <DetailRow label="Customer" value={detail.customer_name} />
+            <DetailRow label="Customer Email" value={detail.customer_email} />
+            <DetailRow label="Product" value={detail.product_name} />
+            <DetailRow label="Plan" value={detail.plan_name} />
+            <DetailRow label="API URL" value={<span className="font-mono text-xs break-all select-all">{detail.api_url || '—'}</span>} />
+            <DetailRow label="API Key" value={<span className="font-mono text-xs break-all select-all">{detail.api_key || '—'}</span>} />
+            <DetailRow label="Product Slug" value={<span className="font-mono text-xs select-all">{detail.product_slug || '—'}</span>} />
+            <DetailRow label="Product Version" value={<span className="font-mono text-xs select-all">{detail.product_version || '—'}</span>} />
+            <DetailRow label="Max Domains" value={String(detail.max_domains ?? 1)} />
+            <DetailRow label="Max Devices" value={String(detail.max_devices)} />
+            <DetailRow label="Activation Count" value={String(detail.activation_count)} />
+            <DetailRow
+              label="Registered Domains"
+              value={
+                detail.allowed_domains.length > 0
+                  ? detail.allowed_domains.join(', ')
+                  : <span className="text-[var(--muted-foreground)] text-xs">No domain registered</span>
+              }
+            />
+            <DetailRow label="Activated At" value={detail.activated_at ? formatDate(detail.activated_at) : '—'} />
+            <DetailRow label="Expires At" value={detail.expires_at ? formatDate(detail.expires_at) : 'Lifetime'} />
+            <DetailRow label="Last Verified" value={detail.last_verified_at ? formatDate(detail.last_verified_at) : '—'} />
+            {detail.revoke_reason && <DetailRow label="Revoke Reason" value={detail.revoke_reason} />}
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => loadActivity(detail)}>
+                <Activity className="mr-1 h-4 w-4" /> API Activity
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => loadHistory(detail)}>
+                <History className="mr-1 h-4 w-4" /> License History
+              </Button>
+              {detail.status === 'active' ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'suspend' })}>
+                  <ShieldOff className="mr-1 h-4 w-4" /> Suspend
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'activate' })}>
+                  <ShieldCheck className="mr-1 h-4 w-4" /> Activate
+                </Button>
+              )}
+              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_domains' })}>
+                <RotateCcw className="mr-1 h-4 w-4" /> Reset Domains
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'force_logout' })}>
+                <LogOut className="mr-1 h-4 w-4" /> Force Logout
+              </Button>
+            </div>
+          </>
+        )}
+      </DetailDialog>
+
+      <DetailDialog open={activity !== null} onOpenChange={(open) => !open && setActivity(null)} title="API Activity">
+        {(activity ?? []).length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">No API activity yet.</p>
+        ) : (
+          activity?.map((row) => (
+            <DetailRow
+              key={row.id}
+              label={row.endpoint}
+              value={(
+                <span className="text-xs">
+                  {row.domain} · {row.success ? 'OK' : row.error_code} · {row.status_code}
+                  {row.created_at ? ` · ${formatDate(row.created_at)}` : ''}
+                </span>
+              )}
+            />
+          ))
+        )}
+      </DetailDialog>
+
+      <DetailDialog open={history !== null} onOpenChange={(open) => !open && setHistory(null)} title="License History">
+        {(history ?? []).length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">No history yet.</p>
+        ) : (
+          history?.map((row) => (
+            <DetailRow
+              key={row.id}
+              label={row.event.replaceAll('_', ' ')}
+              value={row.created_at ? formatDate(row.created_at) : '—'}
+            />
+          ))
+        )}
+      </DetailDialog>
+
+      <ConfirmDialog
+        open={!!actionTarget}
+        onOpenChange={(open) => !open && setActionTarget(null)}
+        onConfirm={handleAction}
+        loading={busy}
+        title={actionTarget ? confirmMessages[actionTarget.action].title : ''}
+        description={actionTarget ? confirmMessages[actionTarget.action].description : ''}
+        confirmLabel={actionTarget?.action === 'delete' || actionTarget?.action === 'revoke' ? 'Confirm' : 'Proceed'}
+      />
+    </PortalPageShell>
+  )
+}

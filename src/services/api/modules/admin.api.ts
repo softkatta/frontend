@@ -159,4 +159,42 @@ export const adminApi = {
     sendTestEmail: (id: string | number, payload: { to?: string; credentials?: Record<string, string> }) =>
       api.post<null>(`/admin/integrations/${id}/test-email`, payload),
   },
+
+    licenses: {
+    list: (params?: { search?: string; status?: string; product_id?: number }) =>
+      api.get<unknown>('/admin/licenses', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}`),
+    create: (payload: { subscription_id: number; allowed_domains?: string[]; max_devices?: number }) =>
+      api.post<unknown>('/admin/licenses', payload),
+    update: (id: string | number, payload: { allowed_domains?: string[]; max_devices?: number; expires_at?: string }) =>
+      api.put<unknown>(`/admin/licenses/${id}`, payload),
+    suspend: (id: string | number) => api.post<null>(`/admin/licenses/${id}/suspend`),
+    revoke: (id: string | number, reason?: string) =>
+      api.post<null>(`/admin/licenses/${id}/revoke`, { reason }),
+    activate: (id: string | number) => api.post<null>(`/admin/licenses/${id}/activate`),
+    resetDomains: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/reset-domains`),
+    forceLogout: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/force-logout`),
+    activity: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/activity`),
+    history: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/history`),
+    delete: (id: string | number) => api.delete<null>(`/admin/licenses/${id}`),
+  },
+
+  productIntegrations: {
+    list: (params?: { search?: string; status?: string }) =>
+      api.get<unknown>('/admin/product-integrations', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/product-integrations/${id}`),
+    create: (payload: { product_id: string | number; name?: string; slug?: string; version?: string; api_base_url?: string }) =>
+      api.post<unknown>('/admin/product-integrations', payload),
+    update: (id: string | number, payload: Record<string, unknown>) =>
+      api.put<unknown>(`/admin/product-integrations/${id}`, payload),
+    regenerateKeys: (id: string | number) => api.post<unknown>(`/admin/product-integrations/${id}/regenerate-keys`),
+    guide: (id: string | number) => api.get<unknown>(`/admin/product-integrations/${id}/guide`),
+    apiLogs: (params?: { search?: string; failed_only?: boolean }) =>
+      api.get<unknown>('/admin/product-integrations/api-logs', { params }),
+    domainResetRequests: (params?: { status?: string }) =>
+      api.get<unknown>('/admin/product-integrations/domain-reset-requests', { params }),
+    reviewDomainReset: (id: string | number, payload: { status: 'approved' | 'rejected' }) =>
+      api.post<unknown>(`/admin/product-integrations/domain-reset-requests/${id}/review`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/product-integrations/${id}`),
+  },
 }

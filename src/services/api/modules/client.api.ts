@@ -59,6 +59,21 @@ export const clientApi = {
       api.post<unknown>(`/client/support/${id}/replies`, payload),
   },
 
+  licenses: {
+    list: () => api.get<unknown>('/client/licenses'),
+    get: (id: string | number) => api.get<unknown>(`/client/licenses/${id}`),
+    registerDomain: (id: string | number, payload: { domain: string }) =>
+      api.post<unknown>(`/client/licenses/${id}/domains`, payload),
+    removeDomain: (id: string | number, payload: { domain: string }) =>
+      api.delete<unknown>(`/client/licenses/${id}/domains`, { data: payload }),
+    requestDomainReset: (id: string | number, payload?: { reason?: string }) =>
+      api.post<unknown>(`/client/licenses/${id}/domain-reset-request`, payload ?? {}),
+    activateProduct: (id: string | number) => api.post<unknown>(`/client/licenses/${id}/activate-product`),
+    deactivateProduct: (id: string | number) => api.post<unknown>(`/client/licenses/${id}/deactivate-product`),
+    activity: (id: string | number) => api.get<unknown>(`/client/licenses/${id}/activity`),
+    history: (id: string | number) => api.get<unknown>(`/client/licenses/${id}/history`),
+  },
+
   profile: {
     get: () => api.get<unknown>('/client/profile'),
     update: (payload: ProfileUpdatePayload) => api.put<unknown>('/client/profile', payload),

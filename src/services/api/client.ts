@@ -141,17 +141,14 @@ function createApiClient(): AxiosInstance {
           ? String(errors.code)
           : ''
         if (code === 'TWO_FACTOR_SETUP_REQUIRED') {
-          if (
-            window.location.pathname.startsWith('/admin')
-            && !window.location.pathname.startsWith('/admin/security')
-          ) {
+          const path = window.location.pathname
+
+          if (path.startsWith('/admin') && !path.startsWith('/admin/security')) {
             window.location.href = '/admin/security'
             return Promise.reject(error)
           }
-          if (
-            window.location.pathname.startsWith('/dashboard')
-            && !window.location.pathname.startsWith('/dashboard/security')
-          ) {
+
+          if (!path.startsWith('/dashboard/security')) {
             window.location.href = '/dashboard/security'
             return Promise.reject(error)
           }

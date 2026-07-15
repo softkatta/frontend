@@ -22,7 +22,7 @@ export function TableActions({ actions, className }: TableActionsProps) {
 
   return (
     <div
-      className={cn('flex items-center justify-end gap-0.5', className)}
+      className={cn('flex items-center justify-end gap-1.5', className)}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
       role="group"

@@ -463,3 +463,36 @@ export function mapApiProduct(raw: unknown): Product {
 export function getPlanIdForProduct(raw: unknown, billing: 'monthly' | 'yearly'): string {
   return getDefaultPlan(raw, billing)?.id ?? ''
 }
+
+export function mapAdminLicense(raw: unknown) {
+  const item = asRecord(raw)
+  const product = asRecord(item.product)
+  const user = asRecord(item.user)
+  const subscription = asRecord(item.subscription)
+  const plan = asRecord(subscription.plan)
+  const installationEnv = asRecord(item.installation_env)
+  return {
+    id: asString(item.id),
+    license_key: asString(item.license_key),
+    status: asString(item.status, 'active'),
+    product_name: asString(product.name, 'Product'),
+    product_slug: asString(installationEnv.SOFTKATTA_PRODUCT_SLUG || product.installer_slug || product.slug),
+    product_version: asString(installationEnv.SOFTKATTA_PRODUCT_VERSION || product.current_version, '1.0.0'),
+    api_url: asString(installationEnv.SOFTKATTA_API_URL),
+    api_key: asString(installationEnv.SOFTKATTA_API_KEY),
+    product_id: asString(item.product_id),
+    customer_name: asString(user.name ?? user.email, 'Customer'),
+    customer_email: asString(user.email),
+    plan_name: asString(plan.name ?? plan.billing_cycle, 'Plan'),
+    allowed_domains: Array.isArray(item.allowed_domains) ? (item.allowed_domains as string[]) : [],
+    domains_text: Array.isArray(item.allowed_domains) ? (item.allowed_domains as string[]).join(', ') : '',
+    max_devices: asNumber(item.max_devices, 1),
+    max_domains: asNumber(item.max_domains, 1),
+    activation_count: asNumber(item.activation_count),
+    activated_at: asString(item.activated_at),
+    expires_at: asString(item.expires_at),
+    last_verified_at: asString(item.last_verified_at),
+    revoke_reason: asString(item.revoke_reason),
+    subscription_id: asString(item.subscription_id),
+  }
+}

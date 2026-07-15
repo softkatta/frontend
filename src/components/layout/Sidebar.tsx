@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, Settings, ShieldCheck, UserRound,
   Users, ShoppingCart, BarChart3, BookOpen, Menu, X, ImagePlus,
   Layers, FolderTree, Wallet,
-  Building2,
+  Building2, KeyRound, Plug,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -32,6 +32,7 @@ const clientNav: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/dashboard/products', label: 'Products', icon: Package },
   { to: '/dashboard/subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { to: '/dashboard/licenses', label: 'Licenses', icon: KeyRound },
   { to: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { to: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { to: '/dashboard/support', label: 'Support', icon: LifeBuoy },
@@ -45,6 +46,8 @@ const adminNav: NavItem[] = [
   { to: '/admin/tenants', label: 'Tenants', icon: Building2 },
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { to: '/admin/licenses', label: 'License Keys', icon: KeyRound },
+  { to: '/admin/product-integrations', label: 'Product Integrations', icon: Plug },
   { to: '/admin/invoices', label: 'Invoices', icon: FileText },
   { to: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { to: '/admin/payments', label: 'Payments', icon: Wallet },

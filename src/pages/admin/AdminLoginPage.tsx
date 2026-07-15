@@ -8,6 +8,7 @@ import { BrandLogo } from '@/components/common/BrandLogo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useMaintenanceMode } from '@/hooks/useMaintenanceMode'
+import { setAdminWorkspaceMode } from '@/services/api/client'
 import type { TwoFactorMethodName } from '@/services/api/modules/auth.api'
 
 type TwoFactorChallengePayload = {
@@ -72,7 +73,11 @@ export default function AdminLoginPage() {
     }
   }
 
-  const finishAdminLogin = () => {
+  const finishAdminLogin = (user?: { is_demo_account?: boolean }) => {
+    // Set workspace to 'demo' if this is a demo account
+    if (user?.is_demo_account) {
+      setAdminWorkspaceMode('demo')
+    }
     toast({ title: 'Welcome back!', variant: 'success' })
     navigate(redirect ?? '/admin', { replace: true })
   }
@@ -94,7 +99,7 @@ export default function AdminLoginPage() {
             toast({ title: 'Access denied', description: message, variant: 'destructive' })
             return
           }
-          finishAdminLogin()
+          finishAdminLogin(result.payload.user)
           return
         }
         if (verifyPasskeyPrimaryLogin.rejected.match(result)) {
@@ -118,7 +123,7 @@ export default function AdminLoginPage() {
           toast({ title: 'Access denied', description: message, variant: 'destructive' })
           return
         }
-        finishAdminLogin()
+        finishAdminLogin(result.payload.user)
         return
       }
 
@@ -159,7 +164,7 @@ export default function AdminLoginPage() {
           toast({ title: 'Access denied', description: message, variant: 'destructive' })
           return
         }
-        finishAdminLogin()
+        finishAdminLogin(result.payload.user)
         return
       }
       if (verify2faLogin.rejected.match(result)) {
@@ -188,7 +193,7 @@ export default function AdminLoginPage() {
           toast({ title: 'Access denied', description: message, variant: 'destructive' })
           return
         }
-        finishAdminLogin()
+        finishAdminLogin(result.payload.user)
       } else if (verifyPasskeyLogin.rejected.match(result)) {
         const message = typeof result.payload === 'string'
           ? result.payload

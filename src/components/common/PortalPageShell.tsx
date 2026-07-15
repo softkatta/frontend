@@ -60,7 +60,7 @@ export function PortalPageShell({
       </PageHeader>
 
       {layout === 'sections' ? body : (
-        <PortalPanel>
+        <PortalPanel className="portal-page-shell__panel">
           <div className="portal-page-shell__body">{body}</div>
         </PortalPanel>
       )}

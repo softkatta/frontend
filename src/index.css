@@ -301,6 +301,10 @@
   min-height: 12rem;
 }
 
+.portal-page-shell__panel {
+  margin-top: 0.5rem;
+}
+
 .portal-page-shell__error {
   margin: 1.5rem;
   border-radius: 0.85rem;
