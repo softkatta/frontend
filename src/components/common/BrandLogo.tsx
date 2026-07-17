@@ -14,34 +14,51 @@ const sizes: Record<BrandLogoSize, { img: string; text: string; gap: string }> =
 interface BrandLogoProps {
   size?: BrandLogoSize
   showText?: boolean
+  /** Use short brand name and truncate on narrow viewports (navbar). */
+  compactOnNarrow?: boolean
   className?: string
   linkToHome?: boolean
 }
 
-export function BrandLogo({ size = 'md', showText = true, className, linkToHome = true }: BrandLogoProps) {
-  const { logoUrl, companyName } = useSiteBranding()
+export function BrandLogo({
+  size = 'md',
+  showText = true,
+  compactOnNarrow = false,
+  className,
+  linkToHome = true,
+}: BrandLogoProps) {
+  const { logoUrl, companyName, brandShortName } = useSiteBranding()
   const s = sizes[size]
+  const fullName = companyName || BRAND_NAME
+  const displayName = compactOnNarrow ? (brandShortName || fullName) : fullName
 
   const content = (
     <>
       <img
         src={logoUrl || BRAND_LOGO_SRC}
-        alt={`${companyName || BRAND_NAME} logo`}
+        alt={`${fullName} logo`}
         className={cn('brand-logo__img object-contain shrink-0', s.img)}
       />
       {showText && (
-        <span className={cn('font-display font-bold tracking-tight leading-none text-brand-gradient', s.text)}>
-          {companyName || BRAND_NAME}
+        <span
+          className={cn(
+            'font-display font-bold tracking-tight leading-none text-brand-gradient',
+            s.text,
+            compactOnNarrow && 'max-w-[7.5rem] truncate sm:max-w-[9.5rem] lg:max-w-none lg:whitespace-normal',
+          )}
+        >
+          <span className={cn(compactOnNarrow && 'lg:hidden')}>{displayName}</span>
+          {compactOnNarrow && <span className="hidden lg:inline">{fullName}</span>}
         </span>
       )}
     </>
   )
 
-  const classes = cn('brand-logo inline-flex items-center', s.gap, className)
+  const classes = cn('brand-logo inline-flex min-w-0 items-center', s.gap, className)
 
   if (linkToHome) {
     return (
-      <Link to="/" className={cn(classes, 'nav-pill-logo shrink-0')}>
+      <Link to="/" className={cn(classes, 'nav-pill-logo min-w-0 shrink')}>
         {content}
       </Link>
     )

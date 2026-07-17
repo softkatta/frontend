@@ -56,20 +56,20 @@ export function Navbar() {
   }, [mobileOpen])
 
   return (
-    <header className={cn('sticky top-0 z-50 glass-nav transition-all duration-300', scrolled ? 'py-2' : 'py-4')}>
-      <div className="container mx-auto px-2.5 sm:px-6">
+    <header className={cn('sticky top-0 z-50 min-w-0 max-w-full overflow-x-clip glass-nav transition-all duration-300', scrolled ? 'py-2' : 'py-4')}>
+      <div className="container mx-auto min-w-0 px-2.5 sm:px-6">
         <div
           className={cn(
-            'nav-pill-light nav-bar-split relative flex h-14 items-center justify-between px-3 sm:px-5',
+            'nav-pill-light nav-bar-split relative flex h-14 min-w-0 items-center justify-between gap-2 overflow-hidden px-3 sm:px-5',
             scrolled && 'nav-pill-scrolled',
           )}
         >
           <div className="nav-pill-border-glow" aria-hidden />
           <div className="nav-pill-shine absolute top-0 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" aria-hidden />
 
-          <BrandLogo size="md" />
+          <BrandLogo size="md" compactOnNarrow />
 
-          <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 lg:flex">
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
@@ -82,7 +82,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex min-w-0 shrink items-center gap-1 sm:gap-1.5">
             <ThemeToggle />
 
             {isClient && (
@@ -98,7 +98,7 @@ export function Navbar() {
                 <Link to="/dashboard/subscriptions" className="nav-link hidden xl:inline-flex text-sm gap-1">
                   <CreditCard className="h-3.5 w-3.5" /> Subscriptions
                 </Link>
-                <Link to="/dashboard" className="nav-link hidden sm:inline-flex text-sm gap-1">
+                <Link to="/dashboard" className="nav-link hidden lg:inline-flex text-sm gap-1">
                   <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
                 </Link>
                 <button type="button" onClick={logout} className="nav-icon-btn hidden sm:inline-flex" aria-label="Logout">
@@ -109,7 +109,7 @@ export function Navbar() {
 
             {isEmployee && (
               <>
-                <Link to="/employee" className="nav-link hidden sm:inline-flex text-sm gap-1">
+                <Link to="/employee" className="nav-link hidden lg:inline-flex text-sm gap-1">
                   <LayoutDashboard className="h-3.5 w-3.5" /> Employee portal
                 </Link>
                 <button type="button" onClick={logout} className="nav-icon-btn hidden sm:inline-flex" aria-label="Logout">
@@ -121,13 +121,13 @@ export function Navbar() {
             {!isAuthenticated && (
               <>
                 <Link to="/login" className="nav-link hidden sm:inline-flex text-sm">Login</Link>
-                <Link to="/employee" className="nav-link hidden md:inline-flex text-sm">Employee</Link>
-                <Link to="/register" className="nav-pill-cta hidden sm:inline-flex">Get Started</Link>
+                <Link to="/employee" className="nav-link hidden lg:inline-flex text-sm">Employee</Link>
+                <Link to="/register" className="nav-pill-cta hidden md:inline-flex">Get Started</Link>
               </>
             )}
 
             {isAuthenticated && hasRole('admin') && (
-              <Link to="/admin" className="nav-pill-cta hidden sm:inline-flex text-xs">Admin</Link>
+              <Link to="/admin" className="nav-pill-cta hidden md:inline-flex text-xs">Admin</Link>
             )}
 
             <button

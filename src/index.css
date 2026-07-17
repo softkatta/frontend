@@ -576,10 +576,13 @@ html:not(.dark) .public-site .section-label { color: #2563eb; }
 }
 
 .typewriter-text {
-  display: inline-block;
+  display: inline;
+  max-width: 100%;
   min-width: 0;
   font-size: inherit;
   line-height: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* â”€â”€ Glass & cards â”€â”€ */
@@ -828,7 +831,8 @@ html:not(.dark) .public-site .hero-cta-ghost {
 /* â”€â”€ Hero cyber â”€â”€ */
 .hero-cyber {
   position: relative;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   color: var(--text-hero);
   background:
     radial-gradient(100% 55% at 50% 100%, rgba(20, 184, 166, 0.14), transparent 58%),
@@ -7312,6 +7316,8 @@ canvas {
   max-width: 100%;
 }
 
+.public-site,
+.public-site > header,
 .public-site main,
 .dashboard-shell main,
 .admin-page-container,

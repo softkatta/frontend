@@ -29,12 +29,12 @@ export function PublicLayout() {
   }, [])
 
   return (
-    <div className="public-site min-h-screen bg-premium-gradient page-mesh flex flex-col">
+    <div className="public-site flex min-h-screen min-w-0 max-w-full flex-col overflow-x-clip bg-premium-gradient page-mesh">
       <PublicRouteSeo />
       <SmoothScroll />
       <AnnouncementBar offers={offers} />
       <Navbar />
-      <main className="flex-1">
+      <main className="min-w-0 max-w-full flex-1">
         <Outlet />
       </main>
       <Footer />
