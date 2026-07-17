@@ -521,7 +521,7 @@ export function DashboardHeader({ collapsed, onMenuToggle, variant = 'client' }:
           <>
             <AdminQuickSearchTrigger
               onClick={() => setQuickSearchOpen(true)}
-              className="hidden md:flex flex-1 max-w-md"
+              className="hidden md:flex w-full max-w-md shrink"
             />
             <Button
               variant="ghost"
@@ -533,11 +533,9 @@ export function DashboardHeader({ collapsed, onMenuToggle, variant = 'client' }:
               <Search className="h-5 w-5" />
             </Button>
           </>
-        ) : (
-          <div className="flex-1" />
-        )}
+        ) : null}
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
           {variant === 'admin' ? (
             <>
               <span className={cn('admin-topbar__workspace hidden sm:inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-wide', workspaceBadgeClass)}>
