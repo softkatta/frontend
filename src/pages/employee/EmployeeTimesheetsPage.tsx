@@ -201,7 +201,7 @@ export default function EmployeeTimesheetsPage() {
         )}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
           <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">Entries</p>
           <p className="mt-1 font-display text-2xl font-bold">{rows.length}</p>
@@ -307,7 +307,7 @@ export default function EmployeeTimesheetsPage() {
             <DialogTitle className="font-display">{editing ? 'Edit timesheet' : 'Log hours'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="ts-date">Work date *</Label>
                 <Input

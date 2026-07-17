@@ -27,7 +27,7 @@ export function EmployeeLayout({ children }: { children?: ReactNode }) {
       <DashboardHeader variant="employee" collapsed={collapsed} onMenuToggle={() => setMobileOpen(true)} />
       <main
         className={cn(
-          'min-h-screen pt-[calc(4rem+2rem)] px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10 transition-all duration-300',
+          'min-h-screen min-w-0 overflow-x-clip px-3 pb-6 pt-[calc(4rem+1.25rem)] transition-all duration-300 sm:px-6 sm:pb-8 sm:pt-[calc(4rem+2rem)] lg:px-8 lg:pb-10',
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64',
         )}
       >

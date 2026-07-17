@@ -20,6 +20,7 @@ import { contactApi } from '@/services/api'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { toast } from '@/components/ui/toaster'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
+import { SocialMediaLinks } from '@/components/common/SocialMediaLinks'
 import {
   mailtoHref,
   mapsDirectionsUrl,
@@ -39,7 +40,22 @@ export default function ContactPage() {
     companyAddress,
     companyPhone,
     supportEmail,
+    socialFacebook,
+    socialInstagram,
+    socialLinkedin,
+    socialTwitter,
+    socialYoutube,
+    socialWhatsapp,
   } = useSiteBranding()
+
+  const socialLinks = {
+    facebook: socialFacebook,
+    instagram: socialInstagram,
+    linkedin: socialLinkedin,
+    twitter: socialTwitter,
+    youtube: socialYoutube,
+    whatsapp: socialWhatsapp,
+  }
 
   const channels = useMemo(() => {
     const email = supportEmail.trim()
@@ -257,6 +273,13 @@ export default function ContactPage() {
                     </div>
                   ))}
                 </div>
+
+                <SocialMediaLinks
+                  links={socialLinks}
+                  className="pt-1"
+                  buttonClassName="border-[var(--border)] bg-[var(--input)] text-foreground hover:border-[var(--brand-teal)]/40 hover:text-[var(--brand-teal)] hover:bg-[var(--brand-teal)]/10"
+                  title="Social"
+                />
 
                 <div className="contact-page__actions">
                   {whatsappLink && (

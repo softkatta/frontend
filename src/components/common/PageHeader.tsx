@@ -23,7 +23,11 @@ export function PageHeader({ title, description, children, className, badge }: P
         <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {description && <p className="text-[var(--muted-foreground)] mt-1.5 text-sm leading-relaxed max-w-2xl">{description}</p>}
       </div>
-      {children && <div className="page-header-actions flex flex-wrap items-center gap-2 shrink-0">{children}</div>}
+      {children && (
+        <div className="page-header-actions flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+          {children}
+        </div>
+      )}
     </motion.div>
   )
 }

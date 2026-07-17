@@ -14,7 +14,7 @@ const widths = {
 }
 
 export function PortalPage({ children, className, size = 'default' }: PortalPageProps) {
-  return <div className={cn('mx-auto space-y-6 pt-1 sm:pt-2', widths[size], className)}>{children}</div>
+  return <div className={cn('mx-auto min-w-0 space-y-4 pt-1 sm:space-y-6 sm:pt-2', widths[size], className)}>{children}</div>
 }
 
 export function PortalPanel({ children, className }: { children: ReactNode; className?: string }) {
@@ -34,16 +34,16 @@ interface PortalWelcomeProps {
 
 export function PortalWelcome({ eyebrow, title, description, aside }: PortalWelcomeProps) {
   return (
-    <div className="dashboard-welcome rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8 shadow-sm">
+    <div className="dashboard-welcome rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-teal)]">{eyebrow}</p>
           <h1 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
           {description && (
             <p className="mt-2 max-w-xl text-sm text-[var(--muted-foreground)] leading-relaxed">{description}</p>
           )}
         </div>
-        {aside}
+        {aside ? <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">{aside}</div> : null}
       </div>
     </div>
   )

@@ -56,6 +56,8 @@ interface DataTableProps<T> {
   filterValues?: Record<string, string>
   onFilterChange?: (key: string, value: string) => void
   onClearFilters?: () => void
+  /** Render rows as labelled cards below the md breakpoint. */
+  mobileCards?: boolean
 }
 
 export function DataTable<T extends { id: string }>({
@@ -77,6 +79,7 @@ export function DataTable<T extends { id: string }>({
   filterValues: controlledFilterValues,
   onFilterChange: controlledOnFilterChange,
   onClearFilters: controlledOnClearFilters,
+  mobileCards = true,
 }: DataTableProps<T>) {
   const { pathname } = useLocation()
   const isAdmin = pathname.startsWith('/admin')
@@ -196,37 +199,79 @@ export function DataTable<T extends { id: string }>({
           <EmptyState title={emptyTitle} description={emptyDescriptionResolved} embedded={embedded} />
         </div>
       ) : (
-        <Table className={embedded ? 'portal-data-table' : undefined}>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-[var(--border)]">
-              {columns.map((col) => (
-                <TableHead key={col.key} className={col.className}>
-                  {col.header}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayData.map((item) => (
-              <TableRow
-                key={item.id}
-                className={cn(
-                  'border-[var(--border)]',
-                  onRowClick ? 'cursor-pointer' : undefined,
-                )}
-                onClick={() => onRowClick?.(item)}
-              >
-                {columns.map((col) => (
-                  <TableCell key={col.key} className={col.className}>
-                    {col.render
-                      ? col.render(item)
-                      : String((item as Record<string, unknown>)[col.key] ?? '')}
-                  </TableCell>
+        <>
+          <div className={mobileCards ? 'hidden md:block' : undefined}>
+            <Table className={embedded ? 'portal-data-table' : undefined}>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-[var(--border)]">
+                  {columns.map((col) => (
+                    <TableHead key={col.key} className={col.className}>
+                      {col.header}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {displayData.map((item) => (
+                  <TableRow
+                    key={item.id}
+                    className={cn(
+                      'border-[var(--border)]',
+                      onRowClick ? 'cursor-pointer' : undefined,
+                    )}
+                    onClick={() => onRowClick?.(item)}
+                  >
+                    {columns.map((col) => (
+                      <TableCell key={col.key} className={col.className}>
+                        {col.render
+                          ? col.render(item)
+                          : String((item as Record<string, unknown>)[col.key] ?? '')}
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              </TableBody>
+            </Table>
+          </div>
+
+          {mobileCards ? (
+            <div className="grid gap-3 p-3 md:hidden">
+              {displayData.map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    'min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm',
+                    onRowClick && 'cursor-pointer transition-colors hover:bg-[var(--input)]/40',
+                  )}
+                  onClick={() => onRowClick?.(item)}
+                  onKeyDown={(event) => {
+                    if (onRowClick && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault()
+                      onRowClick(item)
+                    }
+                  }}
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                >
+                  <dl className="divide-y divide-[var(--border)]">
+                    {columns.map((col) => (
+                      <div key={col.key} className="grid min-w-0 grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] gap-3 py-2 first:pt-0 last:pb-0">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                          {col.header}
+                        </dt>
+                        <dd className="min-w-0 break-words text-right text-sm text-[var(--card-foreground)] [&>*]:ml-auto">
+                          {col.render
+                            ? col.render(item)
+                            : String((item as Record<string, unknown>)[col.key] ?? '')}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </>
       )}
 
       {hasPagination && paginationTotal > 0 && (
@@ -244,11 +289,11 @@ export function DataTable<T extends { id: string }>({
   )
 
   if (embedded) {
-    return <div className="portal-data-table-wrap overflow-hidden">{table}</div>
+    return <div className="portal-data-table-wrap overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-[inherit]">{table}</div>
   }
 
   return (
-    <Card className={cn('overflow-hidden', isAdmin && 'admin-data-table')}>
+    <Card className={cn('overflow-x-auto overflow-y-hidden overscroll-x-contain', isAdmin && 'admin-data-table')}>
       {table}
     </Card>
   )

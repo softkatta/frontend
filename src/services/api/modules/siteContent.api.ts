@@ -24,6 +24,12 @@ export const siteContentApi = {
       gst_enabled?: boolean
       gst_rate?: number
       default_currency?: string
+      social_facebook?: string
+      social_instagram?: string
+      social_linkedin?: string
+      social_twitter?: string
+      social_youtube?: string
+      social_whatsapp?: string
     }>('/site/branding', { skipAuth: true }),
   maintenance: () =>
     api.get<{

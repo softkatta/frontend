@@ -60,8 +60,8 @@ function InvoiceHeader({ company, gstNumber }: { company: InvoiceCompanyProfile;
           />
         </svg>
 
-        <div className="relative z-10 flex items-center justify-between gap-6 px-8 pb-16 pt-7 sm:px-10 sm:pb-[4.5rem] sm:pt-8">
-          <div className="flex min-w-0 items-center gap-4">
+        <div className="relative z-10 flex flex-col items-start justify-between gap-4 px-4 pb-16 pt-6 min-[480px]:flex-row min-[480px]:items-center sm:px-10 sm:pb-[4.5rem] sm:pt-8">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             {company.logoUrl ? (
               <img
                 src={resolveMediaUrl(company.logoUrl)}
@@ -96,7 +96,7 @@ function InvoiceHeader({ company, gstNumber }: { company: InvoiceCompanyProfile;
             </div>
           </div>
 
-          <h1 className="shrink-0 text-right font-display text-[2.5rem] font-black uppercase leading-none tracking-tight text-white drop-shadow-sm sm:text-6xl">
+          <h1 className="shrink-0 self-end text-right font-display text-3xl font-black uppercase leading-none tracking-tight text-white drop-shadow-sm min-[480px]:self-auto sm:text-6xl">
             Invoice
           </h1>
         </div>
@@ -109,7 +109,7 @@ function InvoiceSignature({ company }: { company: InvoiceCompanyProfile }) {
   if (!company.signatory && !company.signatureUrl) return null
 
   return (
-    <div className="flex justify-end px-8 pb-6 sm:px-10">
+    <div className="flex justify-end px-4 pb-6 sm:px-10">
       <div className="text-right">
         {company.signatureUrl && (
           <img
@@ -173,7 +173,7 @@ export function InvoiceDocument({ invoice, className }: InvoiceDocumentProps) {
     >
       <InvoiceHeader company={company} gstNumber={gstNumber} />
 
-      <div className="relative z-10 grid gap-8 px-8 pb-8 pt-6 sm:grid-cols-2 sm:px-10 sm:pt-8">
+      <div className="relative z-10 grid gap-8 px-4 pb-8 pt-6 sm:grid-cols-2 sm:px-10 sm:pt-8">
         <InfoBlock label="Invoice To">
           <p className="text-base font-bold text-[var(--brand-blue)]">{invoice.billing.name}</p>
           {invoice.billing.company && (
@@ -242,9 +242,9 @@ export function InvoiceDocument({ invoice, className }: InvoiceDocumentProps) {
         </InfoBlock>
       </div>
 
-      <div className="px-8 sm:px-10">
-        <div className="overflow-hidden rounded-xl">
-          <table className="w-full text-sm">
+      <div className="px-4 sm:px-10">
+        <div className="overflow-x-auto overscroll-x-contain rounded-xl">
+          <table className="w-full min-w-[620px] text-sm">
             <thead>
               <tr
                 className="text-left text-[11px] font-bold uppercase tracking-wider text-white"
@@ -287,7 +287,7 @@ export function InvoiceDocument({ invoice, className }: InvoiceDocumentProps) {
         </div>
       </div>
 
-      <div className="flex justify-end px-8 py-8 sm:px-10">
+      <div className="flex justify-end px-4 py-8 sm:px-10">
         <div className="w-full max-w-xs space-y-2 text-sm">
           <div className="flex justify-between border-b border-[var(--border)] pb-2 text-[var(--muted-foreground)]">
             <span className="font-bold uppercase tracking-wide text-[var(--brand-navy)]">Sub-Total</span>
@@ -339,7 +339,7 @@ export function InvoiceDocument({ invoice, className }: InvoiceDocumentProps) {
         </div>
       </div>
 
-      <div className="space-y-6 px-8 pb-4 sm:px-10">
+      <div className="space-y-6 px-4 pb-4 sm:px-10">
         {dueMeta.hasDue && (
           <PaymentQr
             payload={invoice.paymentQrPayload}

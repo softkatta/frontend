@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
-import { Mail, Phone, MapPin, ArrowUpRight, Globe, Send } from 'lucide-react'
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  Globe,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+} from 'lucide-react'
 import { BrandLogo } from '@/components/common/BrandLogo'
+import { SocialMediaLinks } from '@/components/common/SocialMediaLinks'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { mailtoHref, phoneTelHref, websiteHref } from '@/lib/companyContact'
 
@@ -32,127 +41,138 @@ export function Footer() {
   const {
     companyName,
     companyTagline,
+    companyDescription,
     companyAddress,
     companyPhone,
     companyWebsite,
     supportEmail,
     gstNumber,
     gstEnabled,
+    socialFacebook,
+    socialInstagram,
+    socialLinkedin,
+    socialTwitter,
+    socialYoutube,
+    socialWhatsapp,
   } = useSiteBranding()
 
   const email = supportEmail.trim()
   const phone = companyPhone.trim()
   const address = companyAddress.trim()
   const website = websiteHref(companyWebsite)
+  const socialLinks = {
+    facebook: socialFacebook,
+    instagram: socialInstagram,
+    linkedin: socialLinkedin,
+    twitter: socialTwitter,
+    youtube: socialYoutube,
+    whatsapp: socialWhatsapp,
+  }
 
   return (
     <footer className="site-footer-shell relative mt-auto overflow-hidden">
       <div className="site-footer-topline" aria-hidden />
-      <div className="site-footer-mesh absolute inset-0 opacity-50 pointer-events-none" aria-hidden />
+      <div className="site-footer-mesh pointer-events-none absolute inset-0" aria-hidden />
+      <div className="site-footer-orb site-footer-orb--one" aria-hidden />
+      <div className="site-footer-orb site-footer-orb--two" aria-hidden />
 
-      <div className="site-footer-cta relative border-b border-[var(--footer-border)]">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <p className="font-display text-xl sm:text-2xl font-bold text-[var(--footer-heading)]">
-              Ready to grow with {companyName}?
-            </p>
-            <p className="text-sm mt-1 opacity-75">
-              {companyTagline || 'GST invoices · Instant setup · Secure cloud'}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link to="/register" className="glow-btn inline-flex items-center gap-2 px-6 py-2.5 text-sm rounded-full">
-              Get Started <Send className="h-4 w-4" />
-            </Link>
-            <Link to="/contact" className="hero-cta-ghost inline-flex items-center gap-2 px-6 py-2.5 text-sm rounded-full">
-              Contact Sales
-            </Link>
-          </div>
-        </div>
-      </div>
+      <div className="site-footer-content container relative z-10 mx-auto px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-5">
+            <div className="site-footer-brand-card">
+              <BrandLogo size="lg" className="mb-5" />
+              <p className="max-w-md text-sm leading-7 text-slate-300">
+                {companyDescription || companyTagline || 'Cloud business software for Indian SMEs — built for growth, trusted across India.'}
+              </p>
 
-      <div className="site-footer-content container mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 relative">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-          <div className="lg:col-span-2">
-            <BrandLogo size="lg" className="mb-5" />
-            <p className="text-sm leading-relaxed max-w-sm mb-6 opacity-80">
-              {companyTagline || 'Cloud business software for Indian SMEs — built for growth, trusted across India.'}
-            </p>
-            <div className="space-y-3 text-sm opacity-85 mb-6">
-              {email && (
-                <a href={mailtoHref(email)} className="flex items-center gap-2.5 hover:text-[var(--brand-teal)] transition-colors">
-                  <Mail className="h-4 w-4 text-[var(--brand-teal)] shrink-0" />
-                  {email}
-                </a>
-              )}
-              {phone && (
-                <a href={phoneTelHref(phone)} className="flex items-center gap-2.5 hover:text-[var(--brand-teal)] transition-colors">
-                  <Phone className="h-4 w-4 text-[var(--brand-teal)] shrink-0" />
-                  {phone}
-                </a>
-              )}
-              {address && (
-                <p className="flex items-center gap-2.5">
-                  <MapPin className="h-4 w-4 text-[var(--brand-teal)] shrink-0" />
-                  {address}
-                </p>
-              )}
-              {gstEnabled && (
-                <p className="flex items-center gap-2.5">
-                  <span className="h-4 w-4 shrink-0 text-center text-[10px] font-bold leading-4 text-[var(--brand-teal)]">GST</span>
-                  GSTIN: {gstNumber}
-                </p>
-              )}
-            </div>
-            {website && (
-              <div className="flex gap-2">
+              <div className="mt-6 grid gap-2.5">
+                {email && (
+                  <a href={mailtoHref(email)} className="site-footer-contact">
+                    <span className="site-footer-contact__icon"><Mail className="h-4 w-4" /></span>
+                    <span className="min-w-0 truncate">{email}</span>
+                    <ArrowUpRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
+                  </a>
+                )}
+                {phone && (
+                  <a href={phoneTelHref(phone)} className="site-footer-contact">
+                    <span className="site-footer-contact__icon"><Phone className="h-4 w-4" /></span>
+                    <span>{phone}</span>
+                    <ArrowUpRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
+                  </a>
+                )}
+                {address && (
+                  <div className="site-footer-contact items-start">
+                    <span className="site-footer-contact__icon"><MapPin className="h-4 w-4" /></span>
+                    <span className="min-w-0 leading-relaxed">{address}</span>
+                  </div>
+                )}
+              </div>
+
+              {website && (
                 <a
                   href={website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Website"
-                  className="site-footer-social"
+                  className="site-footer-website"
                 >
                   <Globe className="h-4 w-4" />
+                  Visit website
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </a>
+              )}
+
+              <SocialMediaLinks
+                links={socialLinks}
+                className="mt-5"
+                buttonClassName="site-footer-social"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:col-span-7 lg:pt-4">
+            {Object.entries(footerLinks).map(([title, links]) => (
+              <div key={title}>
+                <h4 className="site-footer-col-heading mb-5 text-xs uppercase tracking-[0.18em]">{title}</h4>
+                <ul className="space-y-1.5">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <Link to={link.to} className="site-footer-link">
+                        <span>{link.label}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="site-footer-bottom">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="site-footer-trust">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Secure platform
+            </span>
+            <span className="site-footer-trust">
+              <BadgeCheck className="h-3.5 w-3.5" />
+              Udyam MSME
+            </span>
+            {gstEnabled && (
+              <span className="site-footer-trust">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                GST Registered
+              </span>
             )}
           </div>
 
-          {Object.entries(footerLinks).map(([title, links]) => (
-            <div key={title}>
-              <h4 className="site-footer-col-heading text-sm uppercase tracking-wider mb-5">{title}</h4>
-              <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      to={link.to}
-                      className="group flex items-center gap-1 text-sm opacity-75 hover:opacity-100 hover:text-[var(--brand-teal)] transition-all"
-                    >
-                      {link.label}
-                      <ArrowUpRight className="h-3 w-3 opacity-0 -translate-y-0.5 group-hover:opacity-100 transition-all" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          <div className="flex flex-col gap-2 text-xs text-slate-400 sm:items-end">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to="/privacy" className="hover:text-white">Privacy</Link>
+              <Link to="/terms" className="hover:text-white">Terms</Link>
+              {gstEnabled && gstNumber ? <span>GSTIN: {gstNumber}</span> : null}
             </div>
-          ))}
-        </div>
-
-        <div className="accent-line my-10 opacity-40" />
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm opacity-70">
-          <p>&copy; {new Date().getFullYear()} {companyName}</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs uppercase tracking-widest">
-            <span>Shop Act</span>
-            <span className="opacity-40">·</span>
-            <span>Udyam MSME</span>
-            {gstEnabled && (
-              <>
-                <span className="opacity-40">·</span>
-                <span>GST Registered</span>
-              </>
-            )}
+            <p>&copy; {new Date().getFullYear()} {companyName}. All rights reserved.</p>
           </div>
         </div>
       </div>

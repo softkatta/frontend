@@ -339,7 +339,7 @@ export default function PerformanceReviewsManagement() {
                 className="h-11 rounded-xl"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Period start</Label>
                 <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} className="h-11 rounded-xl" />
@@ -349,7 +349,7 @@ export default function PerformanceReviewsManagement() {
                 <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} className="h-11 rounded-xl" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Reviewer</Label>
                 <Input value={form.reviewer_name} onChange={(e) => setForm({ ...form, reviewer_name: e.target.value })} className="h-11 rounded-xl" />
@@ -359,7 +359,7 @@ export default function PerformanceReviewsManagement() {
                 <Input type="number" min={1} max={5} value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} className="h-11 rounded-xl" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Overall rating</Label>
                 <select value={form.overall_rating} onChange={(e) => setForm({ ...form, overall_rating: e.target.value })} className="flex h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 text-sm">

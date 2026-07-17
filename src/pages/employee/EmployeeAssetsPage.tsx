@@ -104,7 +104,7 @@ export default function EmployeeAssetsPage() {
                       {row.status}
                     </Badge>
                   </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  <dl className="mt-3 grid grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-2 text-sm">
                     <div>
                       <dt className="text-xs text-[var(--muted-foreground)]">Category</dt>
                       <dd className="capitalize">{row.category.replace(/_/g, ' ')}</dd>

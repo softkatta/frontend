@@ -359,7 +359,7 @@ export default function TrainingManagement() {
                 className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Category</Label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="flex h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 text-sm">
@@ -373,7 +373,7 @@ export default function TrainingManagement() {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Provider</Label>
                 <Input value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })} className="h-11 rounded-xl" />
@@ -383,7 +383,7 @@ export default function TrainingManagement() {
                 <Input type="number" min={0} value={form.duration_hours} onChange={(e) => setForm({ ...form, duration_hours: e.target.value })} className="h-11 rounded-xl" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Starts at</Label>
                 <Input type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="h-11 rounded-xl" />
@@ -393,7 +393,7 @@ export default function TrainingManagement() {
                 <Input type="datetime-local" value={form.due_at} onChange={(e) => setForm({ ...form, due_at: e.target.value })} className="h-11 rounded-xl" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="flex h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 text-sm">

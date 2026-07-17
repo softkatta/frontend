@@ -43,8 +43,8 @@ export default function CartPage() {
               {items.map((item) => {
                 const thumbSrc = mediaSrc(item.screenshot)
                 return (
-                <div key={item.planId} className="premium-card p-4 sm:p-5 flex gap-4">
-                  <div className="shop-cart-thumb shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--muted)]">
+                <div key={item.planId} className="premium-card flex flex-col gap-4 p-4 sm:flex-row sm:p-5">
+                  <div className="shop-cart-thumb w-full shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--muted)] sm:w-32">
                     {thumbSrc ? (
                       <img src={thumbSrc} alt={item.name} className="w-full h-full object-cover aspect-[16/10]" />
                     ) : (
@@ -52,10 +52,10 @@ export default function CartPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <div className="min-w-0">
                         <p className="text-[10px] uppercase tracking-wider text-[var(--brand-blue)] font-semibold">{item.category}</p>
-                        <h3 className="font-display font-bold text-lg">{item.name}</h3>
+                        <h3 className="break-words font-display text-lg font-bold">{item.name}</h3>
                         <p className="text-xs text-muted-foreground capitalize">
                           {item.planName ? `${item.planName} · ` : ''}{item.billing} billing
                         </p>
@@ -81,7 +81,7 @@ export default function CartPage() {
               })}
             </div>
 
-            <div className="premium-card p-6 h-fit sticky top-24 shadow-glow-md">
+            <div className="premium-card h-fit p-5 shadow-glow-md sm:p-6 lg:sticky lg:top-24">
               <h3 className="font-display font-bold text-lg mb-4">Order Summary</h3>
               <div className="space-y-2 text-sm mb-4">
                 <div className="flex justify-between">

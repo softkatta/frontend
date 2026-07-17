@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Menu, X, ShoppingCart, LayoutDashboard, CreditCard, LogOut } from 'lucide-react'
 import { BrandLogo } from '@/components/common/BrandLogo'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -22,6 +22,7 @@ const navLinks = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const location = useLocation()
   const { isAuthenticated, hasRole, logout, user } = useAuth()
   const cartCount = useAppSelector((s) => s.cart.items.length)
   const isClient = isAuthenticated && hasRole('client')
@@ -33,12 +34,33 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [mobileOpen])
+
   return (
     <header className={cn('sticky top-0 z-50 glass-nav transition-all duration-300', scrolled ? 'py-2' : 'py-4')}>
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container mx-auto px-2.5 sm:px-6">
         <div
           className={cn(
-            'nav-pill-light nav-bar-split relative flex h-14 items-center justify-between px-4 sm:px-5',
+            'nav-pill-light nav-bar-split relative flex h-14 items-center justify-between px-3 sm:px-5',
             scrolled && 'nav-pill-scrolled',
           )}
         >
@@ -112,7 +134,9 @@ export function Navbar() {
               type="button"
               className="lg:hidden p-2 rounded-full hover:bg-[rgba(41,98,255,0.08)] transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Menu"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+              aria-controls="public-mobile-navigation"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -126,9 +150,12 @@ export function Navbar() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="lg:hidden container mx-auto px-4 mt-2"
+            className="lg:hidden container mx-auto px-2.5 sm:px-4 mt-2"
           >
-            <nav className="nav-mobile-panel-inner rounded-2xl p-3 flex flex-col gap-1 shadow-xl border border-[var(--border)]">
+            <nav
+              id="public-mobile-navigation"
+              className="nav-mobile-panel-inner flex max-h-[calc(100dvh-5.5rem)] flex-col gap-1 overflow-y-auto overscroll-contain rounded-2xl border border-[var(--border)] p-3 shadow-xl"
+            >
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
@@ -160,7 +187,7 @@ export function Navbar() {
                   <LayoutDashboard className="h-4 w-4" /> Employee portal ({user?.first_name})
                 </Link>
               )}
-              <div className="flex gap-2 pt-3 mt-1 border-t border-[var(--border)]">
+              <div className="grid grid-cols-2 gap-2 pt-3 mt-1 border-t border-[var(--border)]">
                 {!isAuthenticated ? (
                   <>
                     <Link to="/login" onClick={() => setMobileOpen(false)} className="nav-mobile-login flex-1 text-center py-2.5 rounded-xl text-sm font-semibold">
@@ -169,12 +196,12 @@ export function Navbar() {
                     <Link to="/employee" onClick={() => setMobileOpen(false)} className="nav-mobile-login flex-1 text-center py-2.5 rounded-xl text-sm font-semibold">
                       Employee
                     </Link>
-                    <Link to="/register" onClick={() => setMobileOpen(false)} className="nav-pill-cta flex-1 justify-center">
+                    <Link to="/register" onClick={() => setMobileOpen(false)} className="nav-pill-cta col-span-2 justify-center">
                       Register
                     </Link>
                   </>
                 ) : (
-                  <button type="button" onClick={() => { logout(); setMobileOpen(false) }} className="nav-mobile-login w-full py-2.5 rounded-xl text-sm font-semibold">
+                  <button type="button" onClick={() => { logout(); setMobileOpen(false) }} className="nav-mobile-login col-span-2 w-full py-2.5 rounded-xl text-sm font-semibold">
                     Logout
                   </button>
                 )}

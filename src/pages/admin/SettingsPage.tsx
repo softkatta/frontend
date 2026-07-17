@@ -65,6 +65,12 @@ const GENERAL_KEYS: SettingField[] = [
   { key: 'company_logo', label: 'Company Logo', group: 'general', type: 'image', uploadFolder: 'branding', accept: 'image/png,image/jpeg,image/webp,image/svg+xml' },
   { key: 'favicon', label: 'Favicon', group: 'general', type: 'image', uploadFolder: 'branding', accept: 'image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml,image/jpeg' },
   { key: 'support_email', label: 'Support Email', group: 'general' },
+  { key: 'social_facebook', label: 'Facebook URL', group: 'general' },
+  { key: 'social_instagram', label: 'Instagram URL', group: 'general' },
+  { key: 'social_linkedin', label: 'LinkedIn URL', group: 'general' },
+  { key: 'social_twitter', label: 'X / Twitter URL', group: 'general' },
+  { key: 'social_youtube', label: 'YouTube URL', group: 'general' },
+  { key: 'social_whatsapp', label: 'WhatsApp Link / Number', group: 'general' },
   { key: 'default_currency', label: 'Default Currency', group: 'general' },
 ]
 
@@ -498,7 +504,16 @@ export default function SettingsPage() {
             />
             <div className="space-y-6 p-6">
               <div className="admin-settings-grid admin-settings-grid--two space-y-0 gap-4">
-                {GENERAL_KEYS.map(renderField)}
+                {GENERAL_KEYS.filter((field) => !field.key.startsWith('social_')).map(renderField)}
+              </div>
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--input)]/25 p-4">
+                <p className="text-sm font-semibold text-foreground">Social media</p>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                  These links appear as icons on the public website footer. Leave blank to hide a network.
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {GENERAL_KEYS.filter((field) => field.key.startsWith('social_')).map(renderField)}
+                </div>
               </div>
               <AdminSaveBar>
                 <Button className="rounded-xl px-6" onClick={() => void saveGroup(GENERAL_KEYS)} disabled={saving}>
@@ -638,7 +653,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-sm font-medium text-foreground">Require two-factor at login</p>
                     <p className="text-xs text-[var(--muted-foreground)]">
-                      When off, users sign in with email and password only. When on, enabled verification methods apply.
+                      When on, users without 2FA get email OTP enabled at sign-in. Accounts that already enabled authenticator, email OTP, or passkey are always challenged — even if this switch is off.
                     </p>
                   </div>
                   <Switch

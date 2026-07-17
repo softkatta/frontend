@@ -104,11 +104,11 @@ export default function ReportsPage() {
         <AdminToolbar>
           <div className="space-y-1">
             <Label htmlFor="from" className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">From</Label>
-            <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 w-40 rounded-xl bg-[var(--input-background)]" />
+            <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 w-full rounded-xl bg-[var(--input-background)] sm:w-40" />
           </div>
           <div className="space-y-1">
             <Label htmlFor="to" className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">To</Label>
-            <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-10 w-40 rounded-xl bg-[var(--input-background)]" />
+            <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-10 w-full rounded-xl bg-[var(--input-background)] sm:w-40" />
           </div>
           <Button variant="outline" className="rounded-xl" onClick={() => void load()}>
             <RefreshCw className="mr-2 h-4 w-4" />

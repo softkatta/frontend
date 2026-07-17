@@ -71,9 +71,9 @@ export default function EmployeeDocumentsPage() {
   ) : (
     <ul className="space-y-2">
       {docs.map((doc) => (
-        <li key={doc.id} className="flex items-center justify-between gap-2 text-sm border border-[var(--border)] rounded-xl px-3 py-2">
-          <span className="truncate">{doc.original_name} <span className="text-muted-foreground">({getEmployeeDocumentLabel(doc.category)})</span></span>
-          <Button type="button" size="sm" variant="outline" className="rounded-lg gap-1" onClick={() => void handleDownload(doc.id)}>
+        <li key={doc.id} className="flex flex-col items-stretch gap-3 rounded-xl border border-[var(--border)] px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:py-2">
+          <span className="min-w-0 break-all sm:break-normal">{doc.original_name} <span className="text-muted-foreground">({getEmployeeDocumentLabel(doc.category)})</span></span>
+          <Button type="button" size="sm" variant="outline" className="w-full shrink-0 gap-1 rounded-lg sm:w-auto" onClick={() => void handleDownload(doc.id)}>
             <Download className="h-3.5 w-3.5" /> Download
           </Button>
         </li>

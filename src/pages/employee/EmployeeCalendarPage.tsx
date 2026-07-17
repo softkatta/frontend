@@ -289,8 +289,9 @@ export default function EmployeeCalendarPage() {
           {loading ? (
             <div className="flex justify-center py-16"><LoadingSpinner /></div>
           ) : (
-            <div className="p-3 sm:p-4">
-              <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="overflow-x-auto overscroll-x-contain p-3 sm:p-4">
+              <div className="min-w-[40rem]">
+              <div className="mb-2 grid grid-cols-7 gap-1">
                 {WEEKDAYS.map((day) => (
                   <div key={day} className="py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                     {day}
@@ -349,6 +350,7 @@ export default function EmployeeCalendarPage() {
                     </button>
                   )
                 })}
+              </div>
               </div>
             </div>
           )}
@@ -417,7 +419,7 @@ export default function EmployeeCalendarPage() {
                 placeholder="Team standup"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Type</Label>
                 <select
@@ -444,7 +446,7 @@ export default function EmployeeCalendarPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="cal-start">Starts *</Label>
                 <Input

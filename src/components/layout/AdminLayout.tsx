@@ -23,7 +23,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
       <DashboardHeader variant="admin" collapsed={collapsed} onMenuToggle={() => setMobileOpen(true)} />
       <main
         className={cn(
-          'admin-main min-h-screen px-4 pb-6 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10 transition-all duration-300',
+          'admin-main min-h-screen min-w-0 overflow-x-clip px-3 pb-6 transition-all duration-300 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10',
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64',
         )}
       >

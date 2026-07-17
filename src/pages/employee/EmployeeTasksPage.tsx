@@ -186,7 +186,7 @@ export default function EmployeeTasksPage() {
         )}
       />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
           <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">Open</p>
           <p className="mt-1 font-display text-2xl font-bold">{stats.open}</p>
@@ -314,7 +314,7 @@ export default function EmployeeTasksPage() {
                 className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <select

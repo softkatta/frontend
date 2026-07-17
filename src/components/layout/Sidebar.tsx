@@ -508,7 +508,7 @@ export function DashboardHeader({ collapsed, onMenuToggle, variant = 'client' }:
       ) : null}
       <header
         className={cn(
-          'fixed top-0 right-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--border)] glass px-4 sm:px-6 transition-all duration-300',
+          'fixed top-0 right-0 z-30 flex h-16 min-w-0 items-center gap-1.5 border-b border-[var(--border)] glass px-2 transition-all duration-300 sm:gap-3 sm:px-6',
           variant === 'admin' && 'admin-topbar',
           collapsed ? 'left-0 lg:left-[72px]' : 'left-0 lg:left-64',
         )}
@@ -555,7 +555,7 @@ export function DashboardHeader({ collapsed, onMenuToggle, variant = 'client' }:
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden sm:inline-flex rounded-xl"
+                className="inline-flex rounded-xl"
                 onClick={() => setSettingsOpen(true)}
                 aria-label="Admin preferences"
               >
@@ -583,6 +583,23 @@ export function MobileSidebar({ variant, open, onClose }: MobileSidebarProps) {
   const navItems = useMemo(() => navItemsForVariant(variant, user), [variant, user])
   const unreadCount = useAppSelector((s) => s.notifications.unreadCount)
 
+  useEffect(() => {
+    if (!open) return
+
+    const previousOverflow = document.body.style.overflow
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open, onClose])
+
   return (
     <AnimatePresence>
       {open && (
@@ -600,9 +617,12 @@ export function MobileSidebar({ variant, open, onClose }: MobileSidebarProps) {
             exit={{ x: -300 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             className={cn(
-              'fixed left-0 top-0 z-50 flex h-screen w-[min(100vw-3rem,18rem)] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] backdrop-blur-xl lg:hidden',
+              'fixed left-0 top-0 z-50 flex h-dvh w-[min(100vw-2rem,18rem)] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] backdrop-blur-xl lg:hidden',
               variant === 'admin' && 'admin-mobile-sidebar',
             )}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
           >
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--border)] px-4">
               <BrandLogo size="sm" className="min-w-0" />

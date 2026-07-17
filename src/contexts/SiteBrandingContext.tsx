@@ -32,6 +32,12 @@ export type SiteBranding = {
   logoUrl: string
   faviconUrl: string
   gstRate: number
+  socialFacebook: string
+  socialInstagram: string
+  socialLinkedin: string
+  socialTwitter: string
+  socialYoutube: string
+  socialWhatsapp: string
   loading: boolean
   refresh: () => Promise<void>
 }
@@ -50,6 +56,12 @@ const defaultBranding: SiteBranding = {
   logoUrl: BRAND_LOGO_SRC,
   faviconUrl: '',
   gstRate: DEFAULT_GST_RATE,
+  socialFacebook: '',
+  socialInstagram: '',
+  socialLinkedin: '',
+  socialTwitter: '',
+  socialYoutube: '',
+  socialWhatsapp: '',
   loading: true,
   refresh: async () => {},
 }
@@ -94,6 +106,12 @@ async function fetchBranding(): Promise<BrandingData> {
         logoUrl,
         faviconUrl,
         gstRate: normalizeGstRate(data.gst_rate),
+        socialFacebook: (data.social_facebook || '').trim(),
+        socialInstagram: (data.social_instagram || '').trim(),
+        socialLinkedin: (data.social_linkedin || '').trim(),
+        socialTwitter: (data.social_twitter || '').trim(),
+        socialYoutube: (data.social_youtube || '').trim(),
+        socialWhatsapp: (data.social_whatsapp || '').trim(),
       }
       return brandingCache
     })
@@ -119,6 +137,12 @@ export function SiteBrandingProvider({ children }: { children: ReactNode }) {
     logoUrl: brandingCache?.logoUrl ?? BRAND_LOGO_SRC,
     faviconUrl: brandingCache?.faviconUrl ?? '',
     gstRate: brandingCache?.gstRate ?? DEFAULT_GST_RATE,
+    socialFacebook: brandingCache?.socialFacebook ?? '',
+    socialInstagram: brandingCache?.socialInstagram ?? '',
+    socialLinkedin: brandingCache?.socialLinkedin ?? '',
+    socialTwitter: brandingCache?.socialTwitter ?? '',
+    socialYoutube: brandingCache?.socialYoutube ?? '',
+    socialWhatsapp: brandingCache?.socialWhatsapp ?? '',
     loading: !brandingCache,
   })
 

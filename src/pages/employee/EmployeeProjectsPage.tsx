@@ -184,7 +184,7 @@ export default function EmployeeProjectsPage() {
         )}
       />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
           <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">Active</p>
           <p className="mt-1 font-display text-2xl font-bold">{stats.active}</p>
@@ -313,7 +313,7 @@ export default function EmployeeProjectsPage() {
                 className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <select
@@ -347,7 +347,7 @@ export default function EmployeeProjectsPage() {
                 className="h-11"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="project-start">Start date</Label>
                 <Input

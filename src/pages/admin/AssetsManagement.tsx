@@ -325,7 +325,7 @@ export default function AssetsManagement() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Asset tag *</Label>
                 <Input
@@ -355,7 +355,7 @@ export default function AssetsManagement() {
                 className="h-11 rounded-xl"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Brand</Label>
                 <Input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="h-11 rounded-xl" />
@@ -369,7 +369,7 @@ export default function AssetsManagement() {
               <Label>Serial number</Label>
               <Input value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} className="h-11 rounded-xl" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <select
@@ -391,7 +391,7 @@ export default function AssetsManagement() {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Assigned to</Label>
                 <select

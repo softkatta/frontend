@@ -17,15 +17,15 @@ export function SectionHeader({ badge, title, highlight, description, centered =
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.5 }}
-      className={cn(centered && 'text-center', 'mb-14', className)}
+      className={cn(centered && 'text-center', 'mb-9 sm:mb-14', className)}
     >
       {badge && <span className="section-badge mb-4">{badge}</span>}
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
+      <h2 className="mb-4 break-words text-2xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
         {title}{' '}
         {highlight && <span className="text-gradient">{highlight}</span>}
       </h2>
       {description && (
-        <p className={cn('text-lg text-[var(--muted)] max-w-2xl', centered && 'mx-auto')}>
+        <p className={cn('max-w-2xl text-base leading-relaxed text-[var(--muted-foreground)] sm:text-lg', centered && 'mx-auto')}>
           {description}
         </p>
       )}

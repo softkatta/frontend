@@ -10,8 +10,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/hooks/useTheme'
-import { getAdminWorkspaceMode } from '@/services/api/client'
+import { getAdminWorkspaceMode, setAdminWorkspaceMode, type AdminWorkspaceMode } from '@/services/api/client'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 interface AdminSettingsPanelProps {
   open: boolean
@@ -26,7 +27,14 @@ const themeOptions = [
 
 export function AdminSettingsPanel({ open, onOpenChange }: AdminSettingsPanelProps) {
   const { theme, changeTheme } = useTheme()
-  const workspace = getAdminWorkspaceMode()
+  const [workspace, setWorkspace] = useState<AdminWorkspaceMode>(getAdminWorkspaceMode())
+
+  const handleWorkspaceChange = (value: AdminWorkspaceMode) => {
+    setAdminWorkspaceMode(value)
+    setWorkspace(value)
+    onOpenChange(false)
+    window.location.reload()
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,7 +51,7 @@ export function AdminSettingsPanel({ open, onOpenChange }: AdminSettingsPanelPro
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
               Appearance
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
               {themeOptions.map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
@@ -71,8 +79,25 @@ export function AdminSettingsPanel({ open, onOpenChange }: AdminSettingsPanelPro
             </p>
             <p className="mt-2 font-display text-lg font-semibold capitalize">{workspace}</p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-              Switch between live and demo data from the top bar.
+              Switch between live and demo customer data. Available on all screen sizes.
             </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {(['live', 'demo'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleWorkspaceChange(mode)}
+                  className={cn(
+                    'rounded-xl border px-3 py-2.5 text-sm font-semibold capitalize transition-colors',
+                    workspace === mode
+                      ? 'border-[var(--brand-blue)]/40 bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]'
+                      : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-foreground',
+                  )}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
 
           <Button asChild variant="outline" className="w-full rounded-xl">

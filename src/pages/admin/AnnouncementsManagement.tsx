@@ -276,7 +276,7 @@ export default function AnnouncementsManagement() {
                 className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Priority</Label>
                 <select
@@ -295,7 +295,7 @@ export default function AnnouncementsManagement() {
                 <Switch checked={form.is_published} onCheckedChange={(v) => setForm({ ...form, is_published: v })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Publish at</Label>
                 <Input
