@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/toaster'
 type SuccessState = {
   orderNumber?: string
   productName?: string
+  itemCount?: number
 }
 
 export default function CheckoutSuccessPage() {
@@ -16,6 +17,7 @@ export default function CheckoutSuccessPage() {
   const { emptyCart } = useCart()
   const state = (location.state ?? {}) as SuccessState
   const orderNumber = state.orderNumber?.trim()
+  const itemCount = state.itemCount ?? 1
   const handled = useRef(false)
 
   useEffect(() => {
@@ -25,7 +27,9 @@ export default function CheckoutSuccessPage() {
     toast({
       title: 'Payment successful!',
       description: orderNumber
-        ? `Order ${orderNumber} is confirmed. Your subscription is now active.`
+        ? itemCount > 1
+          ? `Order ${orderNumber} confirmed. ${itemCount} subscriptions are now active.`
+          : `Order ${orderNumber} is confirmed. Your subscription is now active.`
         : 'Your subscription is now active.',
       variant: 'success',
     })
@@ -48,8 +52,8 @@ export default function CheckoutSuccessPage() {
           </p>
         ) : null}
         <p className="text-muted-foreground leading-relaxed mb-8">
-          {state.productName ? `${state.productName} is now active. ` : ''}
-          A GST invoice has been sent to your email and is available in your dashboard.
+          {state.productName ? `${state.productName} ${itemCount > 1 ? 'are' : 'is'} now active. ` : ''}
+          GST invoices have been sent to your email and are available in your dashboard.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link

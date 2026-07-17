@@ -1,4 +1,5 @@
 import { adminApi } from '@/services/api'
+import { asRecord, asString } from '@/lib/apiHelpers'
 import type { PlanFormValues } from '@/components/admin/PlanFormDialog'
 
 type ExistingPlan = {
@@ -13,9 +14,13 @@ const CYCLES = [
   { billing_cycle: 'enterprise' as const, name: 'Enterprise', sort_order: 2, key: 'price_enterprise' as const },
 ]
 
+function sameProductId(a: string | number, b: string | number): boolean {
+  return String(a) === String(b)
+}
+
 export async function saveProductPlans(values: PlanFormValues, existingPlans: ExistingPlan[]) {
-  const productId = Number(values.product_id)
-  const forProduct = existingPlans.filter((p) => p.product_id === values.product_id)
+  const forProduct = existingPlans.filter((p) => sameProductId(p.product_id, values.product_id))
+  const keptIds = new Set<string>()
 
   for (const cycle of CYCLES) {
     const price = values[cycle.key]
@@ -23,7 +28,7 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
 
     if (price > 0) {
       const payload = {
-        product_id: productId,
+        product_id: Number(values.product_id),
         name: cycle.name,
         slug: cycle.billing_cycle,
         description: values.description || undefined,
@@ -35,10 +40,19 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
       }
       if (existing) {
         await adminApi.plans.update(existing.id, payload)
+        keptIds.add(existing.id)
       } else {
-        await adminApi.plans.create(payload)
+        const created = await adminApi.plans.create(payload)
+        keptIds.add(asString(asRecord(created).id))
       }
     } else if (existing) {
+      await adminApi.plans.delete(existing.id)
+    }
+  }
+
+  // Remove leftover tier plans (e.g. seeded Basic/Pro/Enterprise all marked monthly).
+  for (const existing of forProduct) {
+    if (!keptIds.has(existing.id)) {
       await adminApi.plans.delete(existing.id)
     }
   }
@@ -46,12 +60,16 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
 
 export function buildPlanFormFromProduct(
   productId: string,
-  plans: Array<{ id: string; product_id: string; billing_cycle: string; price: number; description?: string; is_active?: boolean; is_popular?: boolean }>,
+  plans: Array<{ id: string; product_id: string; billing_cycle: string; price: number; description?: string; is_active?: boolean; is_popular?: boolean; slug?: string }>,
 ): PlanFormValues {
-  const forProduct = plans.filter((p) => p.product_id === productId)
-  const monthly = forProduct.find((p) => p.billing_cycle === 'monthly')
-  const yearly = forProduct.find((p) => p.billing_cycle === 'yearly')
-  const enterprise = forProduct.find((p) => p.billing_cycle === 'enterprise')
+  const forProduct = plans.filter((p) => sameProductId(p.product_id, productId))
+  const pick = (cycle: string) =>
+    forProduct.find((p) => p.billing_cycle === cycle && p.slug === cycle)
+    ?? forProduct.find((p) => p.billing_cycle === cycle)
+
+  const monthly = pick('monthly')
+  const yearly = pick('yearly')
+  const enterprise = pick('enterprise')
   const sample = monthly ?? yearly ?? enterprise
 
   return {

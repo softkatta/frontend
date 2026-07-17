@@ -12,7 +12,12 @@ export default function AdminInvoiceViewPage() {
       backTo="/admin/invoices"
       backLabel="Back to invoices"
       fetchInvoice={(invoiceId) => adminApi.invoices.get(invoiceId)}
-      onMarkPaid={async () => { await adminApi.invoices.update(id, { status: 'paid' }) }}
+      onRecordPayment={async (payload) => {
+        await adminApi.payments.record({
+          invoice_id: id,
+          ...payload,
+        })
+      }}
     />
   )
 }

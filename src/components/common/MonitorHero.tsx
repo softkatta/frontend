@@ -13,11 +13,11 @@ type BootPhase = 'powering' | 'booting' | 'ready'
 /** In-memory only — resets on hard refresh, persists during SPA navigation */
 let heroBootCompleted = false
 
-const BOOT_PROGRESS_MS = 3000
+const BOOT_PROGRESS_MS = 900
 
 const BOOT_TIMINGS = {
-  booting: 520,
-  ready: 520 + BOOT_PROGRESS_MS + 280,
+  booting: 280,
+  ready: 280 + BOOT_PROGRESS_MS + 180,
 } as const
 
 function prefersReducedMotion(): boolean {
@@ -48,7 +48,7 @@ export function MonitorHero({ slides }: MonitorHeroProps) {
     }
 
     if (reducedMotion) {
-      const t = window.setTimeout(finishBoot, 1400)
+      const t = window.setTimeout(finishBoot, 400)
       return () => window.clearTimeout(t)
     }
 
@@ -153,7 +153,7 @@ export function MonitorHero({ slides }: MonitorHeroProps) {
               >
                 <img
                   src={screenSrc}
-                  alt={current?.alt_text ?? current?.title ?? 'SoftKatta dashboard'}
+                  alt={current?.alt_text ?? current?.title ?? 'ERP Software Dashboard — SoftKatta Solutions'}
                   className="monitor-hero__slide monitor-hero__slide--live"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding="async"

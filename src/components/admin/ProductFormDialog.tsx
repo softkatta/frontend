@@ -22,6 +22,7 @@ import {
 import { adminApi } from '@/services/api'
 import { asRecord, asString, unwrapList } from '@/lib/apiHelpers'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
+import { isEmbeddableVideo, resolveDemoVideoUrl } from '@/lib/videoUrl'
 import { slugify } from '@/lib/slug'
 import type { Product } from '@/types'
 
@@ -96,6 +97,9 @@ export function ProductFormDialog({
   const [autoSlug, setAutoSlug] = useState(true)
   const [categories, setCategories] = useState<CategoryOption[]>([])
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
+  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState('')
+  const [uploadingDemoVideo, setUploadingDemoVideo] = useState(false)
+  const [demoVideoPreviewUrl, setDemoVideoPreviewUrl] = useState('')
   const isEdit = Boolean(initial?.id)
 
   useEffect(() => {
@@ -113,6 +117,8 @@ export function ProductFormDialog({
     if (!open) {
       setForm(EMPTY_FORM)
       setAutoSlug(true)
+      setScreenshotPreviewUrl('')
+      setDemoVideoPreviewUrl('')
       return
     }
     if (initial) {
@@ -153,14 +159,34 @@ export function ProductFormDialog({
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const { path } = await adminApi.uploads.create(formData)
+      const { path, url } = await adminApi.uploads.create(formData)
       setForm((f) => ({ ...f, screenshot: path }))
+      setScreenshotPreviewUrl(resolveMediaUrl(url ?? path))
     } finally {
       setUploadingScreenshot(false)
     }
   }
 
-  const screenshotPreview = form.screenshot ? resolveMediaUrl(form.screenshot) : ''
+  const screenshotPreview = screenshotPreviewUrl || (form.screenshot ? resolveMediaUrl(form.screenshot) : '')
+
+  const handleDemoVideoUpload = async (file: File | null) => {
+    if (!file) return
+    setUploadingDemoVideo(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('kind', 'video')
+      formData.append('folder', 'uploads')
+      const { path, url } = await adminApi.uploads.create(formData)
+      setForm((f) => ({ ...f, demo_video_url: path }))
+      setDemoVideoPreviewUrl(resolveMediaUrl(url ?? path))
+    } finally {
+      setUploadingDemoVideo(false)
+    }
+  }
+
+  const demoVideoPreview = demoVideoPreviewUrl || (form.demo_video_url ? resolveDemoVideoUrl(form.demo_video_url) : '')
+  const demoVideoIsEmbed = isEmbeddableVideo(form.demo_video_url)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -298,7 +324,10 @@ export function ProductFormDialog({
             />
             <Input
               value={form.screenshot}
-              onChange={(e) => setForm({ ...form, screenshot: e.target.value })}
+              onChange={(e) => {
+                setScreenshotPreviewUrl('')
+                setForm({ ...form, screenshot: e.target.value })
+              }}
               placeholder="/screenshots/kattaerp.svg or uploaded path"
               className="bg-[var(--input-background)]"
             />
@@ -308,15 +337,36 @@ export function ProductFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="p-demo-video">Demo video URL</Label>
+            <Label>Demo video</Label>
+            <Input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+              disabled={uploadingDemoVideo}
+              onChange={(e) => void handleDemoVideoUpload(e.target.files?.[0] ?? null)}
+              className="bg-[var(--input-background)]"
+            />
             <Input
               id="p-demo-video"
               value={form.demo_video_url}
-              onChange={(e) => setForm({ ...form, demo_video_url: e.target.value })}
-              placeholder="https://www.youtube.com/embed/... or watch link"
+              onChange={(e) => {
+                setDemoVideoPreviewUrl('')
+                setForm({ ...form, demo_video_url: e.target.value })
+              }}
+              placeholder="https://www.youtube.com/embed/... or uploaded path"
               className="bg-[var(--input-background)]"
             />
-            <p className="text-xs text-muted-foreground">YouTube embed or watch URL. Shown on the product page.</p>
+            <p className="text-xs text-muted-foreground">
+              Upload MP4/WebM/MOV or paste a YouTube/Vimeo embed or watch URL.
+            </p>
+            {demoVideoPreview ? (
+              <div className="mt-2 aspect-video overflow-hidden rounded-lg border border-[var(--border)]">
+                {demoVideoIsEmbed ? (
+                  <iframe src={demoVideoPreview} className="h-full w-full" title="Demo video preview" allowFullScreen />
+                ) : (
+                  <video src={demoVideoPreview} controls className="h-full w-full bg-black object-contain" />
+                )}
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-2">

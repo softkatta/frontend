@@ -5,7 +5,7 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiHostname = env.VITE_API_HOSTNAME || 'http://localhost:8000'
+  const apiHostname = env.VITE_API_HOSTNAME || 'http://127.0.0.1:8000'
 
   return {
     plugins: [react(), tailwindcss()],
@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
         '/storage': {
+          target: apiHostname,
+          changeOrigin: true,
+        },
+        '/robot.gif': {
           target: apiHostname,
           changeOrigin: true,
         },

@@ -10,19 +10,15 @@ import './index.css'
 
 const root = createRoot(document.getElementById('root')!)
 
-async function startApp() {
-  await bootstrapAuth()
+root.render(
+  <StrictMode>
+    <Provider store={store}>
+      <SiteBrandingProvider>
+        <App />
+      </SiteBrandingProvider>
+      <Toaster />
+    </Provider>
+  </StrictMode>,
+)
 
-  root.render(
-    <StrictMode>
-      <Provider store={store}>
-        <SiteBrandingProvider>
-          <App />
-        </SiteBrandingProvider>
-        <Toaster />
-      </Provider>
-    </StrictMode>,
-  )
-}
-
-void startApp()
+void bootstrapAuth()

@@ -134,6 +134,7 @@ export function TwoFactorMethodsSection({
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
 
   const policy = platformPolicy ?? {
+    two_factor_login_enabled: false,
     allow_email_otp: true,
     allow_authenticator: true,
     allow_passkeys: true,

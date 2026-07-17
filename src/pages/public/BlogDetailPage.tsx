@@ -8,6 +8,7 @@ import { mapPublicBlog } from '@/lib/apiMappers'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
 import { formatDate } from '@/lib/utils'
 import type { BlogPost } from '@/types'
+import { usePageSeo } from '@/hooks/usePageSeo'
 
 export default function BlogDetailPage() {
   const { slug } = useParams()
@@ -31,6 +32,14 @@ export default function BlogDetailPage() {
       }
     })()
   }, [slug])
+
+  usePageSeo(post ? {
+    title: post.meta_title || post.title,
+    description: post.meta_description || post.excerpt || post.content?.slice(0, 160) || `${post.title} — SoftKatta Solutions blog`,
+    path: `/blog/${post.slug}`,
+    ogType: 'article',
+    image: post.image ? resolveMediaUrl(post.image) : undefined,
+  } : null)
 
   if (loading) {
     return (

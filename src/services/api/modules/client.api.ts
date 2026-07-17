@@ -19,6 +19,19 @@ export const clientApi = {
   purchase: (payload: { product_id: string; plan_id: string; payment_gateway?: string }) =>
     api.post<unknown>('/client/purchase', payload),
 
+  purchaseBatch: (payload: {
+    items: Array<{ product_id: string; plan_id: string }>
+    payment_gateway?: string
+    coupon_code?: string
+  }) => api.post<unknown>('/client/purchase/batch', payload),
+
+  coupons: {
+    validate: (payload: {
+      coupon_code: string
+      items: Array<{ product_id: string; plan_id: string }>
+    }) => api.post<import('@/types/offers').CouponValidation>('/client/coupons/validate', payload),
+  },
+
   payments: {
     verify: (payload: {
       payment_id: string | number
@@ -43,6 +56,11 @@ export const clientApi = {
     list: () => api.get<Invoice[]>('/client/invoices'),
     get: (id: string | number) => api.get<Invoice>(`/client/invoices/${id}`),
     printSource: (id: string | number) => api.get<Blob>(`/client/invoices/${id}/download`, { responseType: 'blob' }),
+  },
+
+  orders: {
+    list: () => api.get<unknown[]>('/client/orders'),
+    get: (id: string | number) => api.get<unknown>(`/client/orders/${id}`),
   },
 
   notifications: {
@@ -72,6 +90,9 @@ export const clientApi = {
     deactivateProduct: (id: string | number) => api.post<unknown>(`/client/licenses/${id}/deactivate-product`),
     activity: (id: string | number) => api.get<unknown>(`/client/licenses/${id}/activity`),
     history: (id: string | number) => api.get<unknown>(`/client/licenses/${id}/history`),
+    installations: (id: string | number) => api.get<unknown>(`/client/licenses/${id}/installations`),
+    deactivateInstallation: (id: string | number, installationId: string | number) =>
+      api.post<unknown>(`/client/licenses/${id}/installations/${installationId}/deactivate`),
   },
 
   profile: {

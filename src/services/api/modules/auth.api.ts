@@ -45,6 +45,7 @@ export type LoginResponse =
     }
 
 export type PlatformSecurityPolicy = {
+  two_factor_login_enabled: boolean
   allow_email_otp: boolean
   allow_authenticator: boolean
   allow_passkeys: boolean
@@ -135,8 +136,12 @@ export const authApi = {
     formData.append('password', payload.password)
     formData.append('first_name', payload.first_name)
     formData.append('last_name', payload.last_name)
-    formData.append('company', payload.company ?? '')
-    formData.append('phone', normalizedPhone)
+    if (payload.company?.trim()) {
+      formData.append('company', payload.company.trim())
+    }
+    if (normalizedPhone) {
+      formData.append('phone', normalizedPhone)
+    }
 
     if (payload.avatar) {
       formData.append('avatar', payload.avatar)

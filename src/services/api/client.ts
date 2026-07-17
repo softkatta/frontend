@@ -163,6 +163,33 @@ function createApiClient(): AxiosInstance {
         const code = typeof errors === 'object' && errors !== null && 'code' in errors
           ? String(errors.code)
           : ''
+
+        if (
+          code === 'SESSION_EXPIRED'
+          && originalRequest
+          && !originalRequest._retry
+          && !isPublicAuthRequest(originalRequest)
+        ) {
+          originalRequest._retry = true
+          const session = await loadSecureAuth()
+
+          if (session?.refreshToken) {
+            try {
+              const { data } = await axios.post(`${getApiBaseUrl()}/auth/refresh`, {
+                refresh_token: session.refreshToken,
+              })
+              const payload = data.data ?? data
+              const accessToken = payload.access_token
+              const refreshToken = payload.refresh_token ?? session.refreshToken
+              await saveSecureAuth({ ...session, accessToken, refreshToken })
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`
+              return client(originalRequest)
+            } catch {
+              // Fall through to logout below.
+            }
+          }
+        }
+
         if (code === 'SESSION_EXPIRED') {
           clearSecureAuth()
           authLogoutHandler?.()

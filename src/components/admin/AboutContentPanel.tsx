@@ -11,9 +11,15 @@ import { toast } from '@/components/ui/toaster'
 import type { AboutMilestone, AboutValue } from '@/hooks/useAboutContent'
 
 type AboutFormState = {
+  heroLabel: string
+  heroTitle: string
+  heroHighlight: string
+  heroDescription: string
   highlightTitle: string
   highlightText: string
   storyText: string
+  missionText: string
+  visionText: string
   values: AboutValue[]
   milestones: AboutMilestone[]
 }
@@ -22,21 +28,29 @@ const EMPTY_VALUE: AboutValue = { title: '', description: '' }
 const EMPTY_MILESTONE: AboutMilestone = { year: '', title: '', description: '' }
 
 const DEFAULT_FORM: AboutFormState = {
-  highlightTitle: "Made for Bharat's SMEs",
-  highlightText: 'We understand GST, Udyam, Shop Act, and the realities of running a business in tier-2 and tier-3 cities — because we build for all of India.',
-  storyText: 'We help Indian enterprises digitize operations with integrated, affordable, and scalable cloud solutions built for local compliance and global quality.',
+  heroLabel: 'About SoftKatta Solutions',
+  heroTitle: 'Building Smart Software Solutions for',
+  heroHighlight: 'Modern Businesses',
+  heroDescription:
+    'SoftKatta Solutions is a software development company based in Talni, Nanded, Maharashtra. We help businesses, educational institutions, healthcare organizations, and startups transform their operations through innovative software solutions.',
+  highlightTitle: 'Our Story',
+  highlightText:
+    'SoftKatta Solutions is a software development company based in Talni, Nanded, Maharashtra. We help businesses, educational institutions, healthcare organizations, and startups transform their operations through innovative software solutions. Our mission is to simplify business processes with secure, scalable, and user-friendly technology.',
+  storyText:
+    "Founded with a vision to make technology accessible for every business, SoftKatta Solutions specializes in developing ERP software, custom business applications, SaaS products, websites, and mobile applications.\n\nWe understand that every business has unique requirements. Instead of providing one-size-fits-all software, we build customized solutions tailored to your business processes. Our team focuses on delivering reliable, secure, and future-ready software that improves efficiency and drives growth.\n\nToday, we proudly serve educational institutes, medical stores, businesses, and organizations across India with innovative digital solutions.",
+  missionText:
+    'To empower businesses through reliable, innovative, and affordable software solutions that simplify operations and accelerate growth.',
+  visionText:
+    "To become one of India's most trusted software development companies by delivering world-class digital solutions that create long-term value for businesses.",
   values: [
-    { title: 'Mission', description: 'Empower every Indian SME with affordable, world-class cloud software.' },
-    { title: 'Vision', description: "India's most trusted SaaS platform for business management." },
-    { title: 'Values', description: 'Integrity, innovation, customer-first, continuous improvement.' },
-    { title: 'Team', description: 'Engineers, designers, and support specialists building for Indian businesses.' },
+    { title: 'Innovation', description: 'Pioneering practical technology solutions for real business challenges.' },
+    { title: 'Quality', description: 'Delivering reliable, well-tested software that meets professional standards.' },
+    { title: 'Customer Satisfaction', description: 'Building long-term relationships through responsive support and results.' },
+    { title: 'Transparency', description: 'Clear communication, honest timelines, and upfront pricing.' },
+    { title: 'Security', description: 'Protecting your data with secure architecture and best practices.' },
+    { title: 'Continuous Improvement', description: 'Evolving products and processes to stay ahead.' },
   ],
-  milestones: [
-    { year: '2020', title: 'Founded', description: 'Started building business software' },
-    { year: '2022', title: 'Product expansion', description: 'Added POS & CRM modules' },
-    { year: '2024', title: 'SaaS platform', description: 'Full multi-product ecosystem' },
-    { year: '2025', title: 'Growing', description: 'Serving businesses across India' },
-  ],
+  milestones: [],
 }
 
 function parseJsonArray<T>(raw: string | undefined, fallback: T[]): T[] {
@@ -65,9 +79,15 @@ export function AboutContentPanel({ onSaved }: AboutContentPanelProps) {
       const map = Object.fromEntries(settings.map((s) => [s.key, s.value]))
 
       setForm({
+        heroLabel: map.about_hero_label || DEFAULT_FORM.heroLabel,
+        heroTitle: map.about_hero_title || DEFAULT_FORM.heroTitle,
+        heroHighlight: map.about_hero_highlight || DEFAULT_FORM.heroHighlight,
+        heroDescription: map.about_hero_description || DEFAULT_FORM.heroDescription,
         highlightTitle: map.about_highlight_title || DEFAULT_FORM.highlightTitle,
         highlightText: map.about_highlight_text || DEFAULT_FORM.highlightText,
         storyText: map.about_story_text || DEFAULT_FORM.storyText,
+        missionText: map.about_mission_text || DEFAULT_FORM.missionText,
+        visionText: map.about_vision_text || DEFAULT_FORM.visionText,
         values: parseJsonArray(map.about_values, DEFAULT_FORM.values),
         milestones: parseJsonArray(map.about_milestones, DEFAULT_FORM.milestones),
       })
@@ -88,9 +108,15 @@ export function AboutContentPanel({ onSaved }: AboutContentPanelProps) {
     try {
       await adminApi.settings.bulkUpdate({
         settings: [
+          { key: 'about_hero_label', value: form.heroLabel.trim(), group: 'content' },
+          { key: 'about_hero_title', value: form.heroTitle.trim(), group: 'content' },
+          { key: 'about_hero_highlight', value: form.heroHighlight.trim(), group: 'content' },
+          { key: 'about_hero_description', value: form.heroDescription.trim(), group: 'content' },
           { key: 'about_highlight_title', value: form.highlightTitle.trim(), group: 'content' },
           { key: 'about_highlight_text', value: form.highlightText.trim(), group: 'content' },
           { key: 'about_story_text', value: form.storyText.trim(), group: 'content' },
+          { key: 'about_mission_text', value: form.missionText.trim(), group: 'content' },
+          { key: 'about_vision_text', value: form.visionText.trim(), group: 'content' },
           { key: 'about_values', value: JSON.stringify(form.values), group: 'content' },
           { key: 'about_milestones', value: JSON.stringify(form.milestones), group: 'content' },
         ],
@@ -144,6 +170,49 @@ export function AboutContentPanel({ onSaved }: AboutContentPanelProps) {
       </div>
 
       <div className="space-y-8 p-6">
+        <div className="space-y-4">
+          <h4 className="font-display text-sm font-semibold">Hero section</h4>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="about-hero-label">Hero label</Label>
+              <Input
+                id="about-hero-label"
+                value={form.heroLabel}
+                onChange={(e) => setForm({ ...form, heroLabel: e.target.value })}
+                className="bg-[var(--input-background)]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about-hero-title">Hero title</Label>
+              <Input
+                id="about-hero-title"
+                value={form.heroTitle}
+                onChange={(e) => setForm({ ...form, heroTitle: e.target.value })}
+                className="bg-[var(--input-background)]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about-hero-highlight">Hero highlight</Label>
+              <Input
+                id="about-hero-highlight"
+                value={form.heroHighlight}
+                onChange={(e) => setForm({ ...form, heroHighlight: e.target.value })}
+                className="bg-[var(--input-background)]"
+              />
+            </div>
+            <div className="space-y-2 lg:col-span-2">
+              <Label htmlFor="about-hero-description">Hero description</Label>
+              <textarea
+                id="about-hero-description"
+                value={form.heroDescription}
+                onChange={(e) => setForm({ ...form, heroDescription: e.target.value })}
+                rows={3}
+                className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="about-highlight-title">Highlight card title</Label>
@@ -165,12 +234,32 @@ export function AboutContentPanel({ onSaved }: AboutContentPanelProps) {
             />
           </div>
           <div className="space-y-2 lg:col-span-2">
-            <Label htmlFor="about-story-text">Company story paragraph</Label>
+            <Label htmlFor="about-story-text">Our story (use blank lines between paragraphs)</Label>
             <textarea
               id="about-story-text"
               value={form.storyText}
               onChange={(e) => setForm({ ...form, storyText: e.target.value })}
-              rows={4}
+              rows={6}
+              className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="about-mission-text">Mission</Label>
+            <textarea
+              id="about-mission-text"
+              value={form.missionText}
+              onChange={(e) => setForm({ ...form, missionText: e.target.value })}
+              rows={3}
+              className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="about-vision-text">Vision</Label>
+            <textarea
+              id="about-vision-text"
+              value={form.visionText}
+              onChange={(e) => setForm({ ...form, visionText: e.target.value })}
+              rows={3}
               className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
             />
           </div>

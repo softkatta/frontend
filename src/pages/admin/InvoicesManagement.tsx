@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, Trash2 } from 'lucide-react'
+import { Eye, IndianRupee, Trash2 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -25,6 +26,33 @@ export default function InvoicesManagement() {
   const { items, loading, error, reload } = useListData(fetcher, mapper)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
+  const [recordingPayment, setRecordingPayment] = useState(false)
+
+  const unpaidStatuses = new Set(['draft', 'sent', 'pending', 'overdue'])
+
+  const handleRecordPayment = async (payload: {
+    payment_method: 'cash' | 'cheque'
+    reference?: string
+    notes?: string
+  }) => {
+    if (!paymentTarget?.invoiceId) return
+    setRecordingPayment(true)
+    try {
+      await adminApi.payments.record({
+        invoice_id: paymentTarget.invoiceId,
+        ...payload,
+      })
+      toast({ title: 'Payment recorded', description: paymentTarget.label, variant: 'success' })
+      setPaymentTarget(null)
+      await reload()
+    } catch (err) {
+      toast({ title: 'Payment failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      throw err
+    } finally {
+      setRecordingPayment(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -72,15 +100,31 @@ export default function InvoicesManagement() {
             { key: 'amount', header: 'Amount', render: (i) => formatCurrency(i.amount) },
             { key: 'status', header: 'Status', render: (i) => <Badge variant={statusVariant[i.status as keyof typeof statusVariant] ?? 'secondary'}>{i.status}</Badge> },
             { key: 'due_date', header: 'Due Date', render: (i) => formatDate(i.due_date) },
-            { key: 'actions', header: 'Actions', className: 'w-[120px] text-right', render: (i) => (
+            { key: 'actions', header: 'Actions', className: 'w-[160px] text-right', render: (i) => (
               <TableActions actions={[
                 actionBtn('View invoice', Eye, () => navigate(`/admin/invoices/${i.id}`)),
+                {
+                  ...actionBtn('Record', IndianRupee, () => setPaymentTarget({
+                    invoiceId: i.id,
+                    label: i.invoice_number,
+                    amount: i.amount,
+                  })),
+                  hidden: !unpaidStatuses.has(i.status),
+                },
                 { ...actionBtn('Delete invoice', Trash2, () => setDeleteTarget(i)), variant: 'destructive' },
               ]} />
             ) },
           ]}
         />
       </PortalPageShell>
+
+      <RecordPaymentDialog
+        open={Boolean(paymentTarget)}
+        onOpenChange={(open) => !open && setPaymentTarget(null)}
+        target={paymentTarget}
+        loading={recordingPayment}
+        onSubmit={handleRecordPayment}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

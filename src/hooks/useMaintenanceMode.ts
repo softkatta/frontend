@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { siteContentApi } from '@/services/api/modules/siteContent.api'
 import { asBool, asRecord, asString } from '@/lib/apiHelpers'
+import { readSessionCache, writeSessionCache } from '@/lib/publicDataCache'
 import type { MaintenancePageContent, MaintenancePageType } from '@/types/maintenance'
 import { EMPTY_MAINTENANCE_CONTENT } from '@/types/maintenance'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
 import { onSiteConfigUpdated, shouldRefreshScope } from '@/lib/siteConfigEvents'
+
+const MAINTENANCE_CACHE_KEY = 'sk_maintenance'
+const MAINTENANCE_CACHE_TTL_MS = 60_000
+const MAINTENANCE_POLL_MS = 60_000
 
 type MaintenanceState = MaintenancePageContent & {
   loading: boolean
@@ -30,32 +35,54 @@ function parseMaintenance(payload: unknown): MaintenancePageContent {
   }
 }
 
+function hydrateMaintenance(parsed: MaintenancePageContent): MaintenancePageContent {
+  return {
+    ...parsed,
+    imageUrl: parsed.imageUrl ? resolveMediaUrl(parsed.imageUrl) : undefined,
+    logoUrl: parsed.logoUrl ? resolveMediaUrl(parsed.logoUrl) : undefined,
+  }
+}
+
+function readCachedMaintenance(): MaintenancePageContent | null {
+  const cached = readSessionCache<MaintenancePageContent>(MAINTENANCE_CACHE_KEY, MAINTENANCE_CACHE_TTL_MS)
+  return cached ? hydrateMaintenance(cached) : null
+}
+
 export function useMaintenanceMode(): MaintenanceState {
+  const cached = readCachedMaintenance()
   const [state, setState] = useState<MaintenanceState>({
-    ...EMPTY_MAINTENANCE_CONTENT,
-    loading: true,
+    ...(cached ?? EMPTY_MAINTENANCE_CONTENT),
+    loading: !cached,
   })
 
   const load = useCallback(() => {
     siteContentApi
       .maintenance()
       .then((data) => {
-        const parsed = parseMaintenance(data)
-        setState({
-          ...parsed,
-          imageUrl: parsed.imageUrl ? resolveMediaUrl(parsed.imageUrl) : undefined,
-          logoUrl: parsed.logoUrl ? resolveMediaUrl(parsed.logoUrl) : undefined,
-          loading: false,
-        })
+        const parsed = hydrateMaintenance(parseMaintenance(data))
+        writeSessionCache(MAINTENANCE_CACHE_KEY, parsed)
+        setState({ ...parsed, loading: false })
       })
       .catch(() => {
-        setState({ ...EMPTY_MAINTENANCE_CONTENT, loading: false })
+        setState((prev) => ({ ...(prev.loading ? EMPTY_MAINTENANCE_CONTENT : prev), loading: false }))
       })
   }, [])
 
   useEffect(() => {
     load()
-    const interval = window.setInterval(load, 15000)
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        load()
+      }
+    }, MAINTENANCE_POLL_MS)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        load()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     const unsubscribe = onSiteConfigUpdated((scope) => {
       if (shouldRefreshScope(scope, 'maintenance') || shouldRefreshScope(scope, 'branding')) {
@@ -65,6 +92,7 @@ export function useMaintenanceMode(): MaintenanceState {
 
     return () => {
       window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
       unsubscribe()
     }
   }, [load])

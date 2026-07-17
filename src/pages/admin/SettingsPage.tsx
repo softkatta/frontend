@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ImagePlus, Building2, FileText, Plug, Wrench, Shield } from 'lucide-react'
+import { ImagePlus, Building2, FileText, Plug, Wrench, Shield, Users } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { PortalPage, PortalPanel, PortalWelcome } from '@/components/common/PortalPage'
 import { AdminTabsList, AdminTabsTrigger, AdminPanelHeader, AdminSaveBar } from '@/components/admin/AdminUi'
@@ -22,12 +22,27 @@ import { adminApi } from '@/services/api'
 import { useAuth } from '@/hooks/useAuth'
 import { asBool, asRecord, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
-import { INTEGRATION_DESCRIPTIONS, INTEGRATION_FIELDS } from '@/lib/integrationConfig'
+import {
+  buildIntegrationCredentials,
+  hasStoredCredential,
+  INTEGRATION_DESCRIPTIONS,
+  INTEGRATION_FIELDS,
+  isMaskedSecret,
+  validateIntegrationSave,
+} from '@/lib/integrationConfig'
 import { toast } from '@/components/ui/toaster'
 import { notifySiteConfigUpdated, type SiteConfigScope } from '@/lib/siteConfigEvents'
+import { HrManagersSettingsPanel } from '@/components/admin/HrManagersSettingsPanel'
 
 type SettingRow = { id?: string; key: string; value: string; group: string }
-type IntegrationRow = { id: string; name: string; provider: string; is_active: boolean; credentials?: Record<string, string> }
+type IntegrationRow = {
+  id: string
+  name: string
+  provider: string
+  is_active: boolean
+  is_configured?: boolean
+  credentials?: Record<string, string>
+}
 
 type SettingField = {
   key: string
@@ -45,6 +60,8 @@ const GENERAL_KEYS: SettingField[] = [
   { key: 'company_address', label: 'Company Address', group: 'general' },
   { key: 'company_phone', label: 'Company Phone', group: 'general' },
   { key: 'company_website', label: 'Company Website', group: 'general' },
+  { key: 'company_description', label: 'Company Description (SEO & NAP fallback)', group: 'general', type: 'textarea' },
+  { key: 'brand_short_name', label: 'Short Brand Name', group: 'general' },
   { key: 'company_logo', label: 'Company Logo', group: 'general', type: 'image', uploadFolder: 'branding', accept: 'image/png,image/jpeg,image/webp,image/svg+xml' },
   { key: 'favicon', label: 'Favicon', group: 'general', type: 'image', uploadFolder: 'branding', accept: 'image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml,image/jpeg' },
   { key: 'support_email', label: 'Support Email', group: 'general' },
@@ -84,6 +101,7 @@ const INVOICE_KEYS: SettingField[] = [
 ]
 
 const SECURITY_KEYS: SettingField[] = [
+  { key: 'two_factor_login_enabled', label: 'Two-Factor Login', group: 'security', type: 'boolean' },
   { key: 'session_timeout_minutes', label: 'Session Timeout (minutes)', group: 'security' },
   { key: 'ip_whitelisting', label: 'IP Whitelisting', group: 'security', type: 'boolean' },
   { key: 'ip_whitelist', label: 'Allowed IPs', group: 'security', type: 'textarea' },
@@ -115,8 +133,32 @@ function mapIntegration(raw: unknown): IntegrationRow {
     name: String(item.name ?? ''),
     provider: String(item.provider ?? ''),
     is_active: asBool(item.is_active),
+    is_configured: item.is_configured === undefined ? undefined : asBool(item.is_configured),
     credentials: creds && typeof creds === 'object' ? Object.fromEntries(Object.entries(asRecord(creds)).map(([k, v]) => [k, String(v)])) : {},
   }
+}
+
+function buildCredentialFields(item: IntegrationRow): Record<string, string> {
+  const fields = INTEGRATION_FIELDS[item.provider] ?? [{ key: 'api_key', label: 'API Key' }]
+  const initial: Record<string, string> = {}
+
+  fields.forEach((field) => {
+    const existing = item.credentials?.[field.key] ?? ''
+    if (isMaskedSecret(existing)) {
+      initial[field.key] = ''
+      return
+    }
+
+    if (field.type === 'select') {
+      const match = field.options?.some((option) => option.value === existing)
+      initial[field.key] = match ? existing : (field.options?.[0]?.value ?? '')
+      return
+    }
+
+    initial[field.key] = existing
+  })
+
+  return initial
 }
 
 function ImageSettingField({
@@ -245,16 +287,8 @@ export default function SettingsPage() {
   }
 
   const openIntegration = (item: IntegrationRow) => {
-    const fields = INTEGRATION_FIELDS[item.provider] ?? [{ key: 'api_key', label: 'API Key' }]
-    const initial: Record<string, string> = {}
-
-    fields.forEach((field) => {
-      const existing = item.credentials?.[field.key] ?? ''
-      initial[field.key] = existing === '••••••••' ? '' : existing
-    })
-
     setConfigure(item)
-    setCredentialFields(initial)
+    setCredentialFields(buildCredentialFields(item))
     setTestEmailTo(user?.email ?? '')
   }
 
@@ -263,59 +297,30 @@ export default function SettingsPage() {
 
     const fields = INTEGRATION_FIELDS[configure.provider] ?? [{ key: 'api_key', label: 'API Key' }]
     const existing = configure.credentials ?? {}
-    const credentials = Object.fromEntries(
-      Object.entries(credentialFields).filter(([, value]) => value.trim() !== ''),
-    )
+    const credentials = buildIntegrationCredentials(fields, existing, credentialFields)
+    const validationError = validateIntegrationSave(configure.provider, fields, existing, credentialFields)
 
-    const hasExistingSecrets = fields.some((field) => {
-      if (field.type !== 'password') return false
-      const value = existing[field.key]
-      return Boolean(value && value !== '••••••••')
-    })
-
-    const hasNewSecrets = fields
-      .filter((field) => field.type === 'password')
-      .some((field) => Boolean(credentialFields[field.key]?.trim()))
-
-    if (configure.provider === 'razorpay') {
-      const hasKeyId = Boolean(credentials.key_id || existing.key_id)
-      const hasSecret = hasNewSecrets || Boolean(existing.api_secret)
-
-      if (!hasKeyId || !hasSecret) {
-        toast({
-          title: 'Razorpay keys required',
-          description: 'Enter Key ID and Key Secret, then save.',
-          variant: 'destructive',
-        })
-        return
-      }
-    }
-
-    if (configure.provider === 'email_smtp') {
-      const required = ['host', 'username', 'from_address']
-      const missing = required.filter((key) => !credentials[key] && !existing[key])
-      if (missing.length > 0 || (!hasNewSecrets && !hasExistingSecrets && !existing.password)) {
-        toast({
-          title: 'SMTP settings incomplete',
-          description: 'Host, username, password, and from email are required.',
-          variant: 'destructive',
-        })
-        return
-      }
+    if (validationError) {
+      toast({
+        title: 'Integration settings incomplete',
+        description: validationError,
+        variant: 'destructive',
+      })
+      return
     }
 
     setSaving(true)
     try {
-      await adminApi.integrations.update(configure.id, {
+      const updated = mapIntegration(await adminApi.integrations.update(configure.id, {
         is_active: configure.is_active,
         credentials,
-      })
-      toast({ title: 'Integration updated', variant: 'success' })
-      setConfigure(null)
-      setCredentialFields({})
+      }))
+      toast({ title: 'Integration saved', description: `${updated.name} settings were saved successfully.`, variant: 'success' })
       await load()
+      setConfigure(updated)
+      setCredentialFields(buildCredentialFields(updated))
     } catch (err) {
-      toast({ title: 'Update failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      toast({ title: 'Save failed', description: getApiErrorMessage(err), variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -330,13 +335,26 @@ export default function SettingsPage() {
       return
     }
 
-    const credentials = Object.fromEntries(
-      Object.entries(credentialFields).filter(([, value]) => value.trim() !== ''),
+    const existing = configure.credentials ?? {}
+    const isReady = configure.is_configured ?? (
+      hasStoredCredential(existing.host)
+      && hasStoredCredential(existing.username)
+      && hasStoredCredential(existing.from_address)
+      && hasStoredCredential(existing.password)
     )
+
+    if (!isReady) {
+      toast({
+        title: 'SMTP settings incomplete',
+        description: 'Enter host, username, password, and from email, then click Save before sending a test email.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     setSendingTestEmail(true)
     try {
-      await adminApi.integrations.sendTestEmail(configure.id, { to, credentials })
+      await adminApi.integrations.sendTestEmail(configure.id, { to })
       toast({ title: 'Test email sent', description: `Check ${to} for the test message.`, variant: 'success' })
     } catch (err) {
       toast({ title: 'Test email failed', description: getApiErrorMessage(err), variant: 'destructive' })
@@ -468,6 +486,7 @@ export default function SettingsPage() {
           <AdminTabsTrigger value="integrations" icon={Plug}>Integrations</AdminTabsTrigger>
           <AdminTabsTrigger value="maintenance" icon={Wrench}>Maintenance</AdminTabsTrigger>
           <AdminTabsTrigger value="security" icon={Shield}>Security</AdminTabsTrigger>
+          <AdminTabsTrigger value="hr-portal" icon={Users}>HR Portal</AdminTabsTrigger>
         </AdminTabsList>
 
         <TabsContent value="general" className="mt-0">
@@ -539,6 +558,11 @@ export default function SettingsPage() {
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${item.is_active ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-[var(--muted)] text-[var(--muted-foreground)]'}`}>
                       {item.is_active ? 'Active' : 'Inactive'}
                     </span>
+                    {item.is_configured && (
+                      <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                        Configured
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                     {INTEGRATION_DESCRIPTIONS[item.provider] ?? item.provider}
@@ -603,6 +627,26 @@ export default function SettingsPage() {
               description="Platform-wide login security policies and session controls."
             />
             <div className="space-y-5 p-6">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4 space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sign-in verification (2FA)</p>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    Control whether users must verify sign-in with email OTP, authenticator, or passkey.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Require two-factor at login</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      When off, users sign in with email and password only. When on, enabled verification methods apply.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={getValue('two_factor_login_enabled') === 'true'}
+                    onCheckedChange={(v) => setValue('two_factor_login_enabled', String(v))}
+                  />
+                </div>
+              </div>
               <div className="rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4">
                 <p className="text-sm font-medium text-foreground">Account two-factor authentication</p>
                 <p className="mt-1 text-xs text-[var(--muted-foreground)]">
@@ -674,6 +718,10 @@ export default function SettingsPage() {
             </div>
           </PortalPanel>
         </TabsContent>
+
+        <TabsContent value="hr-portal" className="mt-0">
+          <HrManagersSettingsPanel />
+        </TabsContent>
       </Tabs>
 
       <Dialog open={Boolean(configure)} onOpenChange={(open) => {
@@ -697,7 +745,7 @@ export default function SettingsPage() {
                 <Label>{field.label}</Label>
                 {field.type === 'select' ? (
                   <select
-                    value={credentialFields[field.key] ?? field.options?.[0]?.value ?? ''}
+                    value={credentialFields[field.key] ?? ''}
                     onChange={(e) => setCredentialFields((prev) => ({ ...prev, [field.key]: e.target.value }))}
                     className="h-11 w-full rounded-xl border border-[var(--border)] bg-background px-3 text-sm"
                   >
@@ -712,9 +760,15 @@ export default function SettingsPage() {
                     onChange={(e) => setCredentialFields((prev) => ({ ...prev, [field.key]: e.target.value }))}
                     className="h-11 rounded-xl"
                     placeholder={field.placeholder}
+                    autoComplete={field.type === 'password' ? 'new-password' : undefined}
                   />
                 )}
                 {field.help && <p className="text-xs text-[var(--muted-foreground)]">{field.help}</p>}
+                {field.type === 'password' && isMaskedSecret(configure?.credentials?.[field.key]) && !credentialFields[field.key]?.trim() && (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    Saved securely. Leave blank to keep the current value, or enter a new one and click Save.
+                  </p>
+                )}
               </div>
             ))}
             {configure?.provider === 'pusher' && (
@@ -725,9 +779,45 @@ export default function SettingsPage() {
             {configure?.provider === 'email_smtp' && (
               <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4">
                 <div>
+                  <p className="text-sm font-medium text-foreground">Quick setup (no Google 2-Step Verification)</p>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    Use Brevo (free) or your hosting email. Gmail is optional and needs a separate App Password.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                      onClick={() => setCredentialFields((prev) => ({
+                        ...prev,
+                        host: 'smtp-relay.brevo.com',
+                        port: '587',
+                        encryption: 'tls',
+                      }))}
+                    >
+                      Use Brevo preset
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                      onClick={() => setCredentialFields((prev) => ({
+                        ...prev,
+                        host: 'mail.softkatta.in',
+                        port: '587',
+                        encryption: 'tls',
+                      }))}
+                    >
+                      Use hosting preset
+                    </Button>
+                  </div>
+                </div>
+                <div>
                   <p className="text-sm font-medium text-foreground">Send test email</p>
                   <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                    Verify SMTP settings using the values above. Saved credentials are used when a field is left blank.
+                    Save SMTP settings first. Test email uses the saved password — do not re-type password in the field before testing.
                   </p>
                 </div>
                 <div className="space-y-2">

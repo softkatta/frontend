@@ -1,0 +1,1 @@
+var e=`softkatta:site-config-updated`;function t(t=`all`){window.dispatchEvent(new CustomEvent(e,{detail:{scope:t}}))}function n(t){let n=e=>{let n=e.detail;t(n?.scope??`all`)};return window.addEventListener(e,n),()=>window.removeEventListener(e,n)}function r(e,t){return e===`all`||t===`all`||e===t}function i(e,t){return r(e,t)}export{n,i as r,t};

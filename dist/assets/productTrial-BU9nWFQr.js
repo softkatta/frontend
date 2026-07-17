@@ -1,0 +1,1 @@
+function e(e){return e.has_free_trial===!0}function t(e){return`/register?redirect=${encodeURIComponent(`/products/${e}?trial=1`)}`}export{t as n,e as t};

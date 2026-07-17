@@ -1,6 +1,6 @@
 import { adminApi } from '@/services/api'
 import type { ProductFormValues } from '@/components/admin/ProductFormDialog'
-import { normalizeEmbedUrl } from '@/lib/videoUrl'
+import { normalizeDemoVideoForSave } from '@/lib/videoUrl'
 
 function productPayload(values: ProductFormValues) {
   return {
@@ -13,7 +13,7 @@ function productPayload(values: ProductFormValues) {
     has_free_trial: values.has_free_trial,
     trial_days: values.trial_days,
     screenshot: values.screenshot || '',
-    demo_video_url: normalizeEmbedUrl(values.demo_video_url),
+    demo_video_url: normalizeDemoVideoForSave(values.demo_video_url),
     features: values.features
       .map((title) => title.trim())
       .filter(Boolean)

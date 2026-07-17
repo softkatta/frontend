@@ -1,9 +1,21 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Phone, MapPin, MessageCircle, Send, Clock, Headphones, Navigation, ExternalLink } from 'lucide-react'
+import {
+  Mail,
+  Phone,
+  MapPin,
+  MessageCircle,
+  Send,
+  Clock,
+  Headphones,
+  Navigation,
+  ExternalLink,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PageSection, SectionHeaderBlock } from '@/components/common/SectionLabel'
 import { contactApi } from '@/services/api'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { toast } from '@/components/ui/toaster'
@@ -17,7 +29,11 @@ import {
   whatsappHref,
 } from '@/lib/companyContact'
 
+import { usePublicPageContent } from '@/hooks/usePublicPageContent'
+
 export default function ContactPage() {
+  const { page } = usePublicPageContent('contact')
+  const TRUST_ITEMS = page.trust_items ?? []
   const {
     companyName,
     companyAddress,
@@ -46,6 +62,7 @@ export default function ContactPage() {
   const mapEmbed = mapsEmbedUrl(companyAddress)
   const mapDirections = mapsDirectionsUrl(companyAddress)
   const mapOpen = mapsSearchUrl(companyAddress)
+  const whatsappLink = whatsappHref(companyPhone)
   const mapMetaItems = useMemo(() => {
     type MapMetaItem = { icon: typeof Clock; label: string; value: string; href?: string }
     const items: Array<MapMetaItem | null> = [
@@ -55,7 +72,6 @@ export default function ContactPage() {
     ]
     return items.filter((item): item is MapMetaItem => item !== null)
   }, [companyPhone, supportEmail])
-  const whatsappLink = whatsappHref(companyPhone)
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' })
   const [submitting, setSubmitting] = useState(false)
@@ -81,93 +97,105 @@ export default function ContactPage() {
   }
 
   return (
-    <div>
-      <section className="hero-cyber pt-24 pb-16 relative overflow-hidden">
-        <div className="hero-horizon-glow opacity-60" aria-hidden />
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <SectionHeaderBlock
-            label="Get In Touch"
-            title="Contact"
-            highlight="Us"
-            description={companyAddress ? `Visit us at ${companyAddress}, or send a message — we're here to help.` : "Send us a message — we're here to help."}
-          />
+    <div className="contact-page">
+      <div className="contact-page__bg" aria-hidden />
+
+      <section className="contact-page__hero relative overflow-hidden pt-24 pb-8 sm:pb-10">
+        <div className="contact-page__hero-glow" aria-hidden />
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl"
+          >
+            <span className="section-label mb-4 inline-block">{page.label}</span>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05] mb-4">
+              {page.title}{' '}
+              {page.highlight && <span className="text-gradient-brand">{page.highlight}</span>}
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">{page.description}</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="contact-page__trust-row mt-8"
+          >
+            {TRUST_ITEMS.map((item) => (
+              <span key={item} className="contact-page__trust-pill">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {item}
+              </span>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      <PageSection tone="muted" className="!pt-8">
-        <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {/* Left: contact info + map */}
-          <div className="space-y-6">
-            <div className="contact-info-panel rounded-2xl border border-[var(--border)] p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-gradient text-white">
-                  <Headphones className="h-5 w-5" />
+      <section className="pb-20 sm:pb-24">
+        <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+          <div className="contact-page__split">
+            {/* Left: form */}
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.45 }}
+              className="contact-page__form-panel"
+            >
+              <div className="contact-page__panel-head">
+                <div className="contact-page__panel-icon">
+                  <Send className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-lg">Talk to our team</h2>
-                  <p className="text-sm text-muted-foreground">Free consultation for services & demos</p>
+                  <h2 className="font-display font-bold text-lg">Send a message</h2>
+                  <p className="text-sm text-muted-foreground">We typically reply within one business day.</p>
                 </div>
               </div>
-              <div className="space-y-3">
-                {channels.map((item) => (
-                  <div
-                    key={item.label}
-                    className="contact-channel-row flex items-center gap-4 p-4 rounded-xl border border-[var(--border)]"
-                  >
-                    <div className="contact-channel-row__icon rounded-xl p-2.5 shrink-0">
-                      <item.icon className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{item.label}</p>
-                      {item.href ? (
-                        <a href={item.href} className="font-semibold text-sm hover:text-[var(--brand-blue)] transition-colors">
-                          {item.value}
-                        </a>
-                      ) : (
-                        <p className="font-semibold text-sm">{item.value}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {whatsappLink && (
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="contact-action-btn contact-action-btn--whatsapp inline-flex items-center justify-center gap-2 w-full rounded-full py-3 text-sm font-semibold mt-5"
-                >
-                  <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
-                </a>
-              )}
-            </div>
-          </div>
 
-          {/* Right: form */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="contact-form-panel rounded-2xl border p-6 sm:p-8 h-full">
-              <span className="contact-form-badge inline-block text-xs font-medium px-3 py-1 rounded-full mb-6">
-                Send us a message
-              </span>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                    <Input
+                      id="name"
+                      required
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="h-11 rounded-xl bg-[var(--background)]/60"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                    <Input
+                      id="email"
+                      type="email"
+                      required
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="h-11 rounded-xl bg-[var(--background)]/60"
+                    />
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
-                    <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                    <Input
+                      id="phone"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="h-11 rounded-xl bg-[var(--background)]/60"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
-                    <Input id="subject" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+                    <Input
+                      id="subject"
+                      required
+                      value={form.subject}
+                      onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                      className="h-11 rounded-xl bg-[var(--background)]/60"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -176,41 +204,98 @@ export default function ContactPage() {
                     id="message"
                     required
                     rows={6}
-                    className="flex w-full rounded-lg border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] min-h-[9rem]"
+                    className="flex w-full rounded-xl border border-[var(--border)] bg-[var(--background)]/60 px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] min-h-[9rem]"
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                   />
                 </div>
-                <div className="flex flex-wrap gap-2 pb-2">
-                  {['24h response', 'Free consultation', 'GST billing'].map((t) => (
-                    <span key={t} className="contact-trust-pill text-xs font-semibold px-3 py-1.5 rounded-full">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                <button type="submit" disabled={submitting} className="glow-btn inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold disabled:opacity-60">
-                  <Send className="h-4 w-4" /> {submitting ? 'Sending…' : 'Send Message'}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="glow-btn inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold disabled:opacity-60"
+                >
+                  <Send className="h-4 w-4" />
+                  {submitting ? 'Sending…' : 'Send Message'}
                 </button>
               </form>
-            </div>
-          </motion.div>
-        </div>
-      </PageSection>
+            </motion.div>
 
-      {/* Map section */}
+            {/* Right: channels + map */}
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.45, delay: 0.05 }}
+              className="contact-page__side"
+            >
+              <div className="contact-page__info-panel">
+                <div className="contact-page__panel-head">
+                  <div className="contact-page__panel-icon contact-page__panel-icon--teal">
+                    <Headphones className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display font-bold text-lg">Talk to our team</h2>
+                    <p className="text-sm text-muted-foreground">Free consultation for services & demos</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  {channels.map((item) => (
+                    <div key={item.label} className="contact-page__channel">
+                      <div className="contact-page__channel-icon">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                        {item.href ? (
+                          <a href={item.href} className="font-semibold text-sm hover:text-[var(--brand-blue)] transition-colors break-words">
+                            {item.value}
+                          </a>
+                        ) : (
+                          <p className="font-semibold text-sm break-words">{item.value}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="contact-page__actions">
+                  {whatsappLink && (
+                    <a
+                      href={whatsappLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="contact-page__action contact-page__action--whatsapp"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      WhatsApp
+                    </a>
+                  )}
+                  <Link to="/products" className="contact-page__action">
+                    Browse products
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Full-width map */}
       <section className="contact-map-section relative overflow-hidden">
         <div className="contact-map-section__bg" aria-hidden />
         <div className="contact-map-section__orb contact-map-section__orb--1" aria-hidden />
         <div className="contact-map-section__orb contact-map-section__orb--2" aria-hidden />
 
-        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14 max-w-6xl">
           <div className="text-center mb-8 sm:mb-10">
             <span className="section-label mb-3 inline-flex">Our Location</span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-hero)] mb-2">
               Find Us on the <span className="text-brand-gradient">Map</span>
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {companyAddress || 'Our office location on the map.'}
+              {companyAddress || 'Locate our office and get directions in Google Maps.'}
             </p>
           </div>
 
@@ -223,7 +308,7 @@ export default function ContactPage() {
                 <div className="min-w-0">
                   <p className="font-display font-semibold text-sm sm:text-base">{companyName}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    {companyAddress}
+                    {companyAddress || 'Set company address in admin settings for an exact pin.'}
                   </p>
                 </div>
               </div>
@@ -259,23 +344,39 @@ export default function ContactPage() {
               <div className="contact-map-section__overlay" aria-hidden />
             </div>
 
-            <div className="contact-map-section__footer">
-              {mapMetaItems.map(({ icon: Icon, label, value, href }) => (
-                <div key={label} className="contact-map-section__meta">
-                  <Icon className="h-4 w-4 text-[var(--brand-teal)] shrink-0" />
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-                    {href ? (
-                      <a href={href} className="text-xs sm:text-sm font-semibold hover:text-[var(--brand-blue)] transition-colors">
-                        {value}
-                      </a>
-                    ) : (
-                      <p className="text-xs sm:text-sm font-semibold">{value}</p>
-                    )}
+            {mapMetaItems.length > 0 && (
+              <div className="contact-map-section__footer">
+                {mapMetaItems.map(({ icon: Icon, label, value, href }) => (
+                  <div key={label} className="contact-map-section__meta">
+                    <Icon className="h-4 w-4 text-[var(--brand-teal)] shrink-0" />
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+                      {href ? (
+                        <a href={href} className="text-xs sm:text-sm font-semibold hover:text-[var(--brand-blue)] transition-colors">
+                          {value}
+                        </a>
+                      ) : (
+                        <p className="text-xs sm:text-sm font-semibold">{value}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="contact-page__cta pb-16">
+        <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+          <div className="premium-card p-8 sm:p-10 rounded-3xl text-center max-w-3xl mx-auto">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold mb-4">{page.cta_title}</h2>
+            <p className="text-muted-foreground leading-relaxed mb-6">{page.cta_description}</p>
+            {whatsappLink && (
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="hero-cta-ghost inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold">
+                <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
+              </a>
+            )}
           </div>
         </div>
       </section>

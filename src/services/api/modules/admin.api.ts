@@ -26,7 +26,19 @@ export const adminApi = {
   },
 
   users: {
-    list: (params?: { role?: string }) => api.get<unknown[]>('/admin/users', { params }),
+    list: (params?: {
+      role?: string
+      staff_role?: string
+      internal?: boolean
+      all?: boolean
+      staff_directory?: boolean
+      customers_only?: boolean
+      exclude_role?: string
+      search?: string
+      page?: number
+      per_page?: number
+      is_active?: boolean | string
+    }) => api.get<unknown[]>('/admin/users', { params }),
     create: (payload: unknown) => api.post<unknown>('/admin/users', payload),
     get: (id: string | number) => api.get<unknown>(`/admin/users/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/users/${id}`, payload),
@@ -55,6 +67,14 @@ export const adminApi = {
     get: (id: string | number) => api.get<unknown>(`/admin/plans/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/plans/${id}`, payload),
     delete: (id: string | number) => api.delete<null>(`/admin/plans/${id}`),
+  },
+
+  coupons: {
+    list: () => api.get<unknown[]>('/admin/coupons'),
+    create: (payload: unknown) => api.post<unknown>('/admin/coupons', payload),
+    get: (id: string | number) => api.get<unknown>(`/admin/coupons/${id}`),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/coupons/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/coupons/${id}`),
   },
 
   services: {
@@ -90,6 +110,16 @@ export const adminApi = {
   payments: {
     list: () => api.get<unknown[]>('/admin/payments'),
     get: (id: string | number) => api.get<unknown>(`/admin/payments/${id}`),
+    record: (payload: {
+      invoice_id?: string
+      order_id?: string
+      subscription_id?: string
+      payment_id?: string
+      payment_method: 'cash' | 'cheque'
+      reference?: string
+      notes?: string
+      paid_at?: string
+    }) => api.post<unknown>('/admin/payments/record', payload),
     delete: (id: string | number) => api.delete<null>(`/admin/payments/${id}`),
   },
 
@@ -107,6 +137,142 @@ export const adminApi = {
     get: (id: string | number) => api.get<unknown>(`/admin/blogs/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/blogs/${id}`, payload),
     delete: (id: string | number) => api.delete<null>(`/admin/blogs/${id}`),
+  },
+
+  careers: {
+    list: () => api.get<unknown[]>('/admin/careers'),
+    create: (payload: unknown) => api.post<unknown>('/admin/careers', payload),
+    get: (id: string | number) => api.get<unknown>(`/admin/careers/${id}`),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/careers/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/careers/${id}`),
+  },
+
+  companyRoles: {
+    list: (params?: { active_only?: boolean; category?: string }) =>
+      api.get<unknown[]>('/admin/company-roles', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/company-roles/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/company-roles', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/company-roles/${id}`, payload),
+    updateMenus: (id: string | number, payload: { employee_portal_menus: string[] | null }) =>
+      api.put<unknown>(`/admin/company-roles/${id}/menus`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/company-roles/${id}`),
+  },
+
+  portalMenus: {
+    list: (params?: { portal?: string; active_only?: boolean }) =>
+      api.get<unknown[]>('/admin/portal-menus', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/portal-menus/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/portal-menus', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/portal-menus/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/portal-menus/${id}`),
+  },
+
+  announcements: {
+    list: (params?: { published?: boolean }) =>
+      api.get<unknown>('/admin/announcements', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/announcements/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/announcements', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/announcements/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/announcements/${id}`),
+  },
+
+  assets: {
+    list: (params?: { status?: string; category?: string; assigned_to?: string | number; search?: string }) =>
+      api.get<unknown>('/admin/assets', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/assets/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/assets', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/assets/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/assets/${id}`),
+  },
+
+  training: {
+    list: (params?: { status?: string; assigned_to?: string | number; search?: string }) =>
+      api.get<unknown>('/admin/training', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/training/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/training', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/training/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/training/${id}`),
+  },
+
+  performance: {
+    list: (params?: { status?: string; employee_id?: string | number; search?: string }) =>
+      api.get<unknown>('/admin/performance', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/performance/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/performance', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/performance/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/performance/${id}`),
+  },
+
+  helpdesk: {
+    list: (params?: { status?: string; priority?: string; search?: string }) =>
+      api.get<unknown>('/admin/helpdesk', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/helpdesk/${id}`),
+    create: (payload: unknown) => api.post<unknown>('/admin/helpdesk', payload),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/helpdesk/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/helpdesk/${id}`),
+  },
+
+  accessRoles: {
+    list: () => api.get<unknown>('/admin/access-roles'),
+    sync: () => api.post<unknown>('/admin/access-roles/sync'),
+    update: (role: string, payload: { permissions: string[] }) =>
+      api.put<unknown>(`/admin/access-roles/${role}`, payload),
+  },
+
+  hrManagers: {
+    create: (payload: { name: string; email: string; password: string; phone?: string }) =>
+      api.post<unknown>('/admin/hr-managers', payload),
+  },
+
+  jobApplications: {
+    list: (params?: { career_id?: string | number; status?: string; search?: string; sort?: string; direction?: string }) =>
+      api.get<unknown[]>('/admin/job-applications', { params }),
+    get: (id: string | number) => api.get<unknown>(`/admin/job-applications/${id}`),
+    update: (id: string | number, payload: { status: string; hr_remarks?: string; interview_scheduled_at?: string }) =>
+      api.put<unknown>(`/admin/job-applications/${id}`, payload),
+    convertEmployee: (id: string | number, payload: unknown) =>
+      api.post<unknown>(`/admin/job-applications/${id}/convert-employee`, payload),
+    downloadDocument: (applicationId: string | number, documentId: string | number) =>
+      api.get<{ download_url: string; original_name: string }>(`/admin/job-applications/${applicationId}/documents/${documentId}/download`),
+    export: (params?: { format?: 'csv' | 'pdf'; status?: string }) =>
+      api.get<Blob>('/admin/job-applications/export', { params, responseType: 'blob' }),
+    delete: (id: string | number) => api.delete<null>(`/admin/job-applications/${id}`),
+  },
+
+  employees: {
+    list: (params?: { status?: string; search?: string }) => api.get<unknown[]>('/admin/employees', { params }),
+    create: (payload: unknown) => api.post<unknown>('/admin/employees', payload),
+    get: (id: string | number) => api.get<unknown>(`/admin/employees/${id}`),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/employees/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/employees/${id}`),
+    uploadDocument: (id: string | number, formData: FormData) =>
+      api.post<unknown>(`/admin/employees/${id}/documents`, formData),
+    downloadDocument: (employeeId: string | number, documentId: string | number) =>
+      api.get<{ download_url: string; original_name: string }>(`/admin/employees/${employeeId}/documents/${documentId}/download`),
+    initiateExit: (id: string | number, payload: unknown) => api.post<unknown>(`/admin/employees/${id}/exit`, payload),
+    updateExit: (id: string | number, payload: unknown) => api.patch<unknown>(`/admin/employees/${id}/exit`, payload),
+    uploadExitDocument: (id: string | number, formData: FormData) =>
+      api.post<unknown>(`/admin/employees/${id}/exit-documents`, formData),
+    provisionPortal: (id: string | number, payload?: { portal_email?: string }) =>
+      api.post<unknown>(`/admin/employees/${id}/portal-access`, payload ?? {}),
+    resendPortalLogin: (id: string | number) =>
+      api.post<unknown>(`/admin/employees/${id}/resend-portal-login`),
+    sendPortalLogin: (
+      id: string | number,
+      payload: { channel: 'email' | 'whatsapp' | 'both'; portal_email?: string },
+    ) => api.post<unknown>(`/admin/employees/${id}/send-portal-login`, payload),
+  },
+
+  leaveRequests: {
+    list: (params?: { status?: string; search?: string }) => api.get<unknown[]>('/admin/leave-requests', { params }),
+    update: (id: string | number, payload: { status: string; hr_remarks?: string }) =>
+      api.patch<unknown>(`/admin/leave-requests/${id}`, payload),
+  },
+
+  attendanceRecords: {
+    list: (params?: { status?: string; month?: string }) => api.get<unknown[]>('/admin/attendance-records', { params }),
+    update: (id: string | number, payload: { status: string; hr_remarks?: string }) =>
+      api.patch<unknown>(`/admin/attendance-records/${id}`, payload),
   },
 
   testimonials: {
@@ -156,8 +322,8 @@ export const adminApi = {
     create: (payload: unknown) => api.post<unknown>('/admin/integrations', payload),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/integrations/${id}`, payload),
     delete: (id: string | number) => api.delete<null>(`/admin/integrations/${id}`),
-    sendTestEmail: (id: string | number, payload: { to?: string; credentials?: Record<string, string> }) =>
-      api.post<null>(`/admin/integrations/${id}/test-email`, payload),
+    sendTestEmail: (id: string | number, payload: { to: string }) =>
+      api.post<null>(`/admin/integrations/${id}/test-email`, payload, { timeout: 60000 }),
   },
 
     licenses: {
@@ -176,6 +342,10 @@ export const adminApi = {
     forceLogout: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/force-logout`),
     activity: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/activity`),
     history: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/history`),
+    installations: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/installations`),
+    resetInstallations: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/installations/reset`),
+    revokeInstallation: (id: string | number, installationId: string | number) =>
+      api.post<unknown>(`/admin/licenses/${id}/installations/${installationId}/revoke`),
     delete: (id: string | number) => api.delete<null>(`/admin/licenses/${id}`),
   },
 
@@ -196,5 +366,37 @@ export const adminApi = {
     reviewDomainReset: (id: string | number, payload: { status: 'approved' | 'rejected' }) =>
       api.post<unknown>(`/admin/product-integrations/domain-reset-requests/${id}/review`, payload),
     delete: (id: string | number) => api.delete<null>(`/admin/product-integrations/${id}`),
+  },
+
+  chatbot: {
+    dashboard: () => api.get<unknown>('/admin/chatbot/dashboard'),
+    analytics: () => api.get<unknown>('/admin/chatbot/analytics'),
+    settings: {
+      get: () => api.get<unknown>('/admin/chatbot/settings'),
+      update: (payload: unknown) => api.put<unknown>('/admin/chatbot/settings', payload),
+    },
+    faqs: {
+      list: (params?: { language?: string; category?: string }) =>
+        api.get<unknown[]>('/admin/chatbot/faqs', { params }),
+      create: (payload: unknown) => api.post<unknown>('/admin/chatbot/faqs', payload),
+      update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/chatbot/faqs/${id}`, payload),
+      delete: (id: string | number) => api.delete<null>(`/admin/chatbot/faqs/${id}`),
+    },
+    categories: {
+      list: () => api.get<unknown[]>('/admin/chatbot/categories'),
+      create: (payload: unknown) => api.post<unknown>('/admin/chatbot/categories', payload),
+      update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/chatbot/categories/${id}`, payload),
+      delete: (id: string | number) => api.delete<null>(`/admin/chatbot/categories/${id}`),
+    },
+    leads: {
+      list: (params?: { status?: string; page?: number }) =>
+        api.get<unknown>('/admin/chatbot/leads', { params }),
+      update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/chatbot/leads/${id}`, payload),
+      delete: (id: string | number) => api.delete<null>(`/admin/chatbot/leads/${id}`),
+    },
+    conversations: {
+      list: (params?: { session_id?: string; page?: number }) =>
+        api.get<unknown>('/admin/chatbot/conversations', { params }),
+    },
   },
 }

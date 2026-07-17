@@ -1,4 +1,10 @@
-export type UserRole = 'client' | 'admin' | 'staff'
+export type UserRole = 'client' | 'admin' | 'employee' | 'hr'
+
+export interface UserCompanyRole {
+  name: string
+  slug: string
+  category?: string
+}
 
 export interface User {
   id: string
@@ -6,6 +12,9 @@ export interface User {
   first_name: string
   last_name: string
   role: UserRole
+  permissions?: string[]
+  company_role?: UserCompanyRole | null
+  employee_portal_paths?: string[]
   avatar?: string
   company?: string
   phone?: string
@@ -39,6 +48,12 @@ export interface RegisterData {
   avatar?: File
 }
 
+export interface ProductFeatureItem {
+  title: string
+  description?: string
+  icon?: string
+}
+
 export interface Product {
   id: string
   name: string
@@ -48,7 +63,9 @@ export interface Product {
   category: string
   price_monthly: number
   price_yearly: number
+  price_enterprise?: number
   features: string[]
+  featureItems: ProductFeatureItem[]
   images: string[]
   demo_video_url?: string
   is_active: boolean
@@ -57,8 +74,10 @@ export interface Product {
   created_at: string
   default_monthly_plan_id?: string
   default_yearly_plan_id?: string
+  default_enterprise_plan_id?: string
   monthly_plan_name?: string
   yearly_plan_name?: string
+  enterprise_plan_name?: string
 }
 
 export interface Subscription {
@@ -189,6 +208,29 @@ export interface BlogPost {
   image?: string
   published_at: string
   read_time: number
+  meta_title?: string
+  meta_description?: string
+}
+
+export interface CareerOpening {
+  id: string
+  title: string
+  slug: string
+  department: string
+  company_role_id?: string
+  company_role_name?: string
+  location: string
+  employment_type: string
+  experience_required?: string
+  salary_display?: string
+  excerpt: string
+  description: string
+  requirements: string
+  apply_email?: string
+  apply_url?: string
+  is_published?: boolean
+  published_at: string
+  sort_order: number
 }
 
 export interface Service {

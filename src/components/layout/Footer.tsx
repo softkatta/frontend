@@ -11,15 +11,20 @@ const footerLinks = {
   ],
   Company: [
     { label: 'About Us', to: '/about' },
+    { label: 'Careers', to: '/careers' },
     { label: 'Services', to: '/services' },
     { label: 'Pricing', to: '/pricing' },
     { label: 'Contact', to: '/contact' },
   ],
   Resources: [
+    { label: 'FAQ', to: '/faq' },
     { label: 'Blog', to: '/blog' },
+    { label: 'Privacy Policy', to: '/privacy' },
+    { label: 'Terms of Service', to: '/terms' },
     { label: 'Software Shop', to: '/products' },
     { label: 'Create Account', to: '/register' },
     { label: 'Login', to: '/login' },
+    { label: 'Employee portal', to: '/employee' },
   ],
 }
 

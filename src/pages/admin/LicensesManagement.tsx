@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import {
-  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History,
+  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History, Server,
 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
@@ -25,7 +25,7 @@ const statusVariant = {
 } as const
 
 type LicenseRow = ReturnType<typeof mapAdminLicense>
-type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout'
+type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout' | 'reset_installations'
 
 type LogRow = {
   id: string
@@ -43,6 +43,15 @@ type HistoryRow = {
   created_at: string
 }
 
+type InstallationRow = {
+  id: string
+  installation_id: string
+  domain: string
+  product_version: string
+  last_verified_at: string
+  revoked_at: string
+}
+
 export default function LicensesManagement() {
   const fetcher = useCallback(() => adminApi.licenses.list(), [])
   const mapper = useCallback((raw: unknown) => unwrapList(raw).map(mapAdminLicense), [])
@@ -53,6 +62,7 @@ export default function LicensesManagement() {
   const [busy, setBusy] = useState(false)
   const [activity, setActivity] = useState<LogRow[] | null>(null)
   const [history, setHistory] = useState<HistoryRow[] | null>(null)
+  const [installations, setInstallations] = useState<InstallationRow[] | null>(null)
 
   const openDetail = async (row: LicenseRow) => {
     try {
@@ -74,6 +84,7 @@ export default function LicensesManagement() {
       else if (action === 'delete') await adminApi.licenses.delete(row.id)
       else if (action === 'reset_domains') await adminApi.licenses.resetDomains(row.id)
       else if (action === 'force_logout') await adminApi.licenses.forceLogout(row.id)
+      else if (action === 'reset_installations') await adminApi.licenses.resetInstallations(row.id)
 
       const messages: Record<Action, string> = {
         suspend: 'License suspended.',
@@ -82,6 +93,7 @@ export default function LicensesManagement() {
         delete: 'License deleted.',
         reset_domains: 'Domain binding reset.',
         force_logout: 'Product force logout issued.',
+        reset_installations: 'All installations revoked.',
       }
       toast({ title: messages[action], variant: 'success' })
       setActionTarget(null)
@@ -133,6 +145,38 @@ export default function LicensesManagement() {
     }
   }
 
+  const loadInstallations = async (row: LicenseRow) => {
+    try {
+      const response = await adminApi.licenses.installations(row.id)
+      setInstallations(unwrapList(response).map((item) => {
+        const rowItem = asRecord(item)
+        return {
+          id: asString(rowItem.id),
+          installation_id: asString(rowItem.installation_id),
+          domain: asString(rowItem.domain, '—'),
+          product_version: asString(rowItem.product_version, '—'),
+          last_verified_at: asString(rowItem.last_verified_at),
+          revoked_at: asString(rowItem.revoked_at),
+        }
+      }))
+    } catch (err) {
+      toast({ title: 'Failed to load installations', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const revokeInstallation = async (license: LicenseRow, installation: InstallationRow) => {
+    setBusy(true)
+    try {
+      await adminApi.licenses.revokeInstallation(license.id, installation.id)
+      toast({ title: 'Installation revoked.', variant: 'success' })
+      await loadInstallations(license)
+    } catch (err) {
+      toast({ title: 'Revoke failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const confirmMessages: Record<Action, { title: string; description: string }> = {
     suspend: {
       title: 'Suspend License',
@@ -152,11 +196,15 @@ export default function LicensesManagement() {
     },
     reset_domains: {
       title: 'Reset Domain Binding',
-      description: 'All registered domains will be cleared. Customer must register domains again.',
+      description: 'All registered domains and install tokens will be cleared. Customer must re-activate.',
     },
     force_logout: {
       title: 'Force Logout Product',
       description: 'Installed products will be forced to re-validate this license on next request.',
+    },
+    reset_installations: {
+      title: 'Reset Installations',
+      description: 'All install tokens will be revoked. Products must activate again.',
     },
   }
 
@@ -281,6 +329,9 @@ export default function LicensesManagement() {
               <Button type="button" variant="outline" size="sm" onClick={() => loadHistory(detail)}>
                 <History className="mr-1 h-4 w-4" /> License History
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => loadInstallations(detail)}>
+                <Server className="mr-1 h-4 w-4" /> Installations
+              </Button>
               {detail.status === 'active' ? (
                 <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'suspend' })}>
                   <ShieldOff className="mr-1 h-4 w-4" /> Suspend
@@ -292,6 +343,9 @@ export default function LicensesManagement() {
               )}
               <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_domains' })}>
                 <RotateCcw className="mr-1 h-4 w-4" /> Reset Domains
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_installations' })}>
+                <Server className="mr-1 h-4 w-4" /> Reset Installations
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'force_logout' })}>
                 <LogOut className="mr-1 h-4 w-4" /> Force Logout
@@ -330,6 +384,27 @@ export default function LicensesManagement() {
               label={row.event.replaceAll('_', ' ')}
               value={row.created_at ? formatDate(row.created_at) : '—'}
             />
+          ))
+        )}
+      </DetailDialog>
+
+      <DetailDialog open={installations !== null} onOpenChange={(open) => !open && setInstallations(null)} title="Installations">
+        {(installations ?? []).length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">No installations yet.</p>
+        ) : (
+          installations?.map((row) => (
+            <div key={row.id} className="space-y-1 border-b border-[var(--border)] pb-3 last:border-0">
+              <DetailRow label="Installation ID" value={<span className="font-mono text-xs break-all">{row.installation_id}</span>} />
+              <DetailRow label="Domain" value={row.domain} />
+              <DetailRow label="Version" value={row.product_version} />
+              <DetailRow label="Last Verified" value={row.last_verified_at ? formatDate(row.last_verified_at) : '—'} />
+              <DetailRow label="Status" value={row.revoked_at ? `Revoked ${formatDate(row.revoked_at)}` : 'Active'} />
+              {!row.revoked_at && detail && (
+                <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => revokeInstallation(detail, row)}>
+                  Revoke Token
+                </Button>
+              )}
+            </div>
           ))
         )}
       </DetailDialog>

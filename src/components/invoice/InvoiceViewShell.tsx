@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
+import { ArrowLeft, IndianRupee, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { InvoiceDocument } from '@/components/invoice/InvoiceDocument'
 import { PortalPage } from '@/components/common/PortalPage'
+import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { mapInvoiceDetail } from '@/lib/apiMappers'
 import { getInvoiceDueMeta } from '@/lib/invoiceDue'
@@ -17,6 +18,11 @@ type InvoiceViewShellProps = {
   backLabel?: string
   fetchInvoice: (id: string) => Promise<unknown>
   onMarkPaid?: () => Promise<void>
+  onRecordPayment?: (payload: {
+    payment_method: 'cash' | 'cheque'
+    reference?: string
+    notes?: string
+  }) => Promise<void>
 }
 
 export function InvoiceViewShell({
@@ -25,10 +31,13 @@ export function InvoiceViewShell({
   backLabel = 'Back to invoices',
   fetchInvoice,
   onMarkPaid,
+  onRecordPayment,
 }: InvoiceViewShellProps) {
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [markingPaid, setMarkingPaid] = useState(false)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [recordingPayment, setRecordingPayment] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -59,7 +68,35 @@ export function InvoiceViewShell({
     }
   }
 
-  const canMarkPaid = Boolean(onMarkPaid && invoice && getInvoiceDueMeta(invoice).hasDue)
+  const handleRecordPayment = async (payload: {
+    payment_method: 'cash' | 'cheque'
+    reference?: string
+    notes?: string
+  }) => {
+    if (!onRecordPayment) return
+    setRecordingPayment(true)
+    try {
+      await onRecordPayment(payload)
+      toast({ title: 'Payment recorded', variant: 'success' })
+      setPaymentOpen(false)
+      await load()
+    } catch (err) {
+      toast({ title: 'Failed to record payment', description: getApiErrorMessage(err), variant: 'destructive' })
+      throw err
+    } finally {
+      setRecordingPayment(false)
+    }
+  }
+
+  const canRecordPayment = Boolean(onRecordPayment && invoice && getInvoiceDueMeta(invoice).hasDue)
+  const canMarkPaid = Boolean(onMarkPaid && !onRecordPayment && invoice && getInvoiceDueMeta(invoice).hasDue)
+  const paymentTarget: RecordPaymentTarget | null = invoice && canRecordPayment
+    ? {
+        invoiceId,
+        label: invoice.invoice_number,
+        amount: invoice.amount,
+      }
+    : null
 
   return (
     <PortalPage className="space-y-4">
@@ -71,6 +108,17 @@ export function InvoiceViewShell({
           </Link>
         </Button>
         <div className="flex items-center gap-2">
+          {canRecordPayment && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 rounded-lg border-emerald-500/40 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400"
+              onClick={() => setPaymentOpen(true)}
+            >
+              <IndianRupee className="mr-1.5 h-4 w-4" />
+              Record payment
+            </Button>
+          )}
           {canMarkPaid && (
             <Button
               variant="outline"
@@ -79,7 +127,6 @@ export function InvoiceViewShell({
               onClick={() => void handleMarkPaid()}
               disabled={markingPaid}
             >
-              <CheckCircle2 className="mr-1.5 h-4 w-4" />
               {markingPaid ? 'Updating…' : 'Mark as Paid'}
             </Button>
           )}
@@ -88,6 +135,14 @@ export function InvoiceViewShell({
           </Button>
         </div>
       </div>
+
+      <RecordPaymentDialog
+        open={paymentOpen}
+        onOpenChange={setPaymentOpen}
+        target={paymentTarget}
+        loading={recordingPayment}
+        onSubmit={handleRecordPayment}
+      />
 
       <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-b from-[color-mix(in_srgb,var(--brand-teal)_6%,white)] to-[color-mix(in_srgb,var(--brand-blue)_5%,white)] p-4 sm:p-8 print:border-0 print:bg-white print:p-0">
         {loading ? (

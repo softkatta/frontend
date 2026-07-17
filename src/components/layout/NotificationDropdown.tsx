@@ -39,7 +39,13 @@ export function NotificationDropdown({ variant = 'client' }: NotificationDropdow
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<NotificationTab>('all')
 
-  const notificationsPath = variant === 'admin' ? '/admin/inbox' : '/dashboard/notifications'
+  const notificationsPath = variant === 'admin'
+    ? '/admin/inbox'
+    : variant === 'employee'
+      ? '/employee/notifications'
+      : variant === 'hr'
+        ? '/hr/notifications'
+        : '/dashboard/notifications'
 
   const refresh = useCallback(async () => {
     try {

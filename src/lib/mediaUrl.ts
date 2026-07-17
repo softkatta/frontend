@@ -2,7 +2,7 @@ import { getApiHostname } from '@/config/env'
 
 /** Resolve image URLs from API (storage paths, relative, or absolute). */
 export function resolveMediaUrl(url?: string | null): string {
-  if (!url) return ''
+  if (!url?.trim()) return ''
 
   const trimmed = url.trim()
 
@@ -39,6 +39,11 @@ export function resolveMediaUrl(url?: string | null): string {
   }
 
   return `/storage/${trimmed.replace(/^\/+/, '')}`
+}
+
+export function mediaSrc(url?: string | null): string | undefined {
+  const resolved = resolveMediaUrl(url)
+  return resolved || undefined
 }
 
 export function testimonialAvatar(name: string, avatar?: string | null, avatarUrl?: string | null): string {

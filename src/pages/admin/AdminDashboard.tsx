@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { StatCard } from '@/components/common/StatCard'
 import { ChartCard } from '@/components/common/ChartCard'
 import { PortalPage, PortalWelcome, chartTooltipStyle } from '@/components/common/PortalPage'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { AdminDashboardSkeleton } from '@/components/admin/shell/AdminPageSkeleton'
 import { formatCurrency } from '@/lib/utils'
 import { adminApi } from '@/services/api'
 import { asRecord, asNumber, getApiErrorMessage } from '@/lib/apiHelpers'
@@ -49,8 +49,8 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <PortalPage className="flex min-h-[50vh] items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <PortalPage className="space-y-8">
+        <AdminDashboardSkeleton />
       </PortalPage>
     )
   }

@@ -1,0 +1,1 @@
+function e(e){let t=Number(e);return!Number.isFinite(t)||t<0?18:Math.min(100,t)}function t(t,n){return Math.round(t*(e(n)/100))}function n(t){return`${e(t)}%`}export{n,e as r,t};

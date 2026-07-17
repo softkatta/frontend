@@ -65,8 +65,8 @@ export function useCart() {
         name: product.name,
         category: product.category,
         price: plan.price,
-        billing: plan.billing,
-        screenshot: product.images[0] ? resolveMediaUrl(product.images[0]) : getProductScreenshot(slug),
+        billing: plan.billing === 'yearly' ? 'yearly' : 'monthly',
+        screenshot: (product.images[0] ? resolveMediaUrl(product.images[0]) : getProductScreenshot(slug)) ?? '',
       }
       dispatch(addItem(payload))
 

@@ -16,7 +16,13 @@ export type AboutMilestone = {
 export type AboutPageContent = {
   highlightTitle: string
   highlightText: string
+  heroLabel: string
+  heroTitle: string
+  heroHighlight: string
+  heroDescription: string
   storyText: string
+  missionText: string
+  visionText: string
   values: AboutValue[]
   milestones: AboutMilestone[]
   loading: boolean
@@ -25,7 +31,13 @@ export type AboutPageContent = {
 const EMPTY_ABOUT: AboutPageContent = {
   highlightTitle: '',
   highlightText: '',
+  heroLabel: '',
+  heroTitle: '',
+  heroHighlight: '',
+  heroDescription: '',
   storyText: '',
+  missionText: '',
+  visionText: '',
   values: [],
   milestones: [],
   loading: true,
@@ -65,7 +77,13 @@ function parseAbout(payload: unknown): Omit<AboutPageContent, 'loading'> {
     return {
       highlightTitle: '',
       highlightText: '',
+      heroLabel: '',
+      heroTitle: '',
+      heroHighlight: '',
+      heroDescription: '',
       storyText: '',
+      missionText: '',
+      visionText: '',
       values: [],
       milestones: [],
     }
@@ -74,7 +92,13 @@ function parseAbout(payload: unknown): Omit<AboutPageContent, 'loading'> {
   return {
     highlightTitle: String(data.highlight_title ?? ''),
     highlightText: String(data.highlight_text ?? ''),
+    heroLabel: String(data.hero_label ?? ''),
+    heroTitle: String(data.hero_title ?? ''),
+    heroHighlight: String(data.hero_highlight ?? ''),
+    heroDescription: String(data.hero_description ?? ''),
     storyText: String(data.story_text ?? ''),
+    missionText: String(data.mission_text ?? ''),
+    visionText: String(data.vision_text ?? ''),
     values: parseValues(data.values),
     milestones: parseMilestones(data.milestones),
   }

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ImagePlus, Loader2, Monitor, Pencil, Plus, Trash2, Upload, Users, HelpCircle, BookOpen } from 'lucide-react'
+import { ImagePlus, Loader2, Monitor, Pencil, Plus, Trash2, Upload, Users, HelpCircle, BookOpen, Megaphone, FileText } from 'lucide-react'
 import { HeroSlideCropDialog } from '@/components/admin/HeroSlideCropDialog'
 import { TestimonialFormDialog, type TestimonialFormValues } from '@/components/admin/TestimonialFormDialog'
 import { AboutContentPanel } from '@/components/admin/AboutContentPanel'
+import { PageContentPanel } from '@/components/admin/PageContentPanel'
 import { FaqsContentPanel } from '@/components/admin/FaqsContentPanel'
+import { OffersContentPanel } from '@/components/admin/OffersContentPanel'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { PortalPage, PortalPanel, PortalWelcome } from '@/components/common/PortalPage'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -249,7 +251,7 @@ export default function SiteContentPage() {
       <PortalWelcome
         eyebrow="Content Management"
         title="Site content"
-        description="Manage homepage hero slides, testimonials, FAQs, and the public About page."
+        description="Manage homepage hero slides, testimonials, FAQs, page copy, and the public About page."
       />
 
       <PageHeader title="Site Content" description="Edit what visitors see on your public website." className="mb-0" />
@@ -259,7 +261,9 @@ export default function SiteContentPage() {
           <AdminTabsTrigger value="hero" icon={Monitor}>Hero Monitor</AdminTabsTrigger>
           <AdminTabsTrigger value="testimonials" icon={Users}>Testimonials</AdminTabsTrigger>
           <AdminTabsTrigger value="faqs" icon={HelpCircle}>FAQs</AdminTabsTrigger>
+          <AdminTabsTrigger value="pages" icon={FileText}>Page copy</AdminTabsTrigger>
           <AdminTabsTrigger value="about" icon={BookOpen}>About Page</AdminTabsTrigger>
+          <AdminTabsTrigger value="offers" icon={Megaphone}>Offers</AdminTabsTrigger>
         </AdminTabsList>
 
         <TabsContent value="hero" className="mt-0">
@@ -548,8 +552,18 @@ export default function SiteContentPage() {
           <FaqsContentPanel onChanged={invalidatePublicContent} />
         </TabsContent>
 
+        <TabsContent value="pages" className="mt-0">
+          <PageContentPanel onSaved={invalidatePublicContent} />
+        </TabsContent>
+
         <TabsContent value="about" className="mt-0">
           <AboutContentPanel onSaved={invalidatePublicContent} />
+        </TabsContent>
+
+        <TabsContent value="offers" className="mt-0">
+          <PortalPanel>
+            <OffersContentPanel />
+          </PortalPanel>
         </TabsContent>
       </Tabs>
 

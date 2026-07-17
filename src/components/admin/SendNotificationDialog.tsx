@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -18,12 +19,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+export type NotificationChannel = 'email' | 'whatsapp' | 'in_app'
+
 export type SendNotificationValues = {
   title: string
   message: string
   type: 'info' | 'success' | 'warning' | 'error'
   target: 'all_clients' | 'all_admins' | 'specific_user'
   user_id: string
+  channels: NotificationChannel[]
 }
 
 const EMPTY: SendNotificationValues = {
@@ -32,7 +36,14 @@ const EMPTY: SendNotificationValues = {
   type: 'info',
   target: 'all_clients',
   user_id: '',
+  channels: ['email', 'whatsapp', 'in_app'],
 }
+
+const CHANNEL_OPTIONS: { key: NotificationChannel; label: string; hint: string }[] = [
+  { key: 'in_app', label: 'In-app', hint: 'Bell icon in dashboard' },
+  { key: 'email', label: 'Email', hint: 'SMTP integration required' },
+  { key: 'whatsapp', label: 'WhatsApp', hint: 'WhatsApp Business API + user phone' },
+]
 
 type SendNotificationDialogProps = {
   open: boolean
@@ -48,6 +59,15 @@ export function SendNotificationDialog({ open, onOpenChange, saving, onSubmit }:
     if (!open) setForm(EMPTY)
   }, [open])
 
+  const toggleChannel = (channel: NotificationChannel, checked: boolean) => {
+    setForm((current) => {
+      const next = checked
+        ? [...current.channels, channel]
+        : current.channels.filter((item) => item !== channel)
+      return { ...current, channels: next.length > 0 ? next : current.channels }
+    })
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     void onSubmit(form)
@@ -58,7 +78,7 @@ export function SendNotificationDialog({ open, onOpenChange, saving, onSubmit }:
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Send notification</DialogTitle>
-          <DialogDescription>Broadcast an in-app notification to users.</DialogDescription>
+          <DialogDescription>Deliver to in-app, email, and WhatsApp (where configured).</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -100,6 +120,25 @@ export function SendNotificationDialog({ open, onOpenChange, saving, onSubmit }:
               </Select>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Delivery channels</Label>
+            <div className="space-y-2 rounded-xl border border-[var(--border)] p-3">
+              {CHANNEL_OPTIONS.map(({ key, label, hint }) => (
+                <div key={key} className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-muted-foreground">{hint}</p>
+                  </div>
+                  <Switch
+                    checked={form.channels.includes(key)}
+                    onCheckedChange={(checked) => toggleChannel(key, checked)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {form.target === 'specific_user' && (
             <div className="space-y-2">
               <Label htmlFor="notif-user">User ID</Label>
@@ -108,7 +147,7 @@ export function SendNotificationDialog({ open, onOpenChange, saving, onSubmit }:
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Sending…' : 'Send'}</Button>
+            <Button type="submit" disabled={saving || form.channels.length === 0}>{saving ? 'Sending…' : 'Send'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

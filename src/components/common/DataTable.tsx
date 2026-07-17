@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -14,6 +15,7 @@ import { TableToolbar } from './TableToolbar'
 import { TablePagination } from './TablePagination'
 import { useTableData, type TableFilterConfig } from '@/hooks/useTableData'
 import { cn } from '@/lib/utils'
+import { AdminTableSkeleton } from '@/components/admin/shell/AdminPageSkeleton'
 
 export interface Column<T> {
   key: string
@@ -39,6 +41,21 @@ interface DataTableProps<T> {
   /** Rows per page — pass to enable pagination without search/filters */
   pageSize?: number
   pageSizeOptions?: number[]
+  /** Server-driven pagination — skips client-side filter/slice */
+  serverPagination?: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+    onPageChange: (page: number) => void
+    onPageSizeChange?: (pageSize: number) => void
+  }
+  /** Controlled toolbar (use with serverPagination) */
+  searchQuery?: string
+  onSearchChange?: (value: string) => void
+  filterValues?: Record<string, string>
+  onFilterChange?: (key: string, value: string) => void
+  onClearFilters?: () => void
 }
 
 export function DataTable<T extends { id: string }>({
@@ -54,41 +71,104 @@ export function DataTable<T extends { id: string }>({
   filters: filterConfigs,
   pageSize: pageSizeProp,
   pageSizeOptions,
+  serverPagination,
+  searchQuery: controlledSearchQuery,
+  onSearchChange: controlledOnSearchChange,
+  filterValues: controlledFilterValues,
+  onFilterChange: controlledOnFilterChange,
+  onClearFilters: controlledOnClearFilters,
 }: DataTableProps<T>) {
+  const { pathname } = useLocation()
+  const isAdmin = pathname.startsWith('/admin')
+  const isServerMode = Boolean(serverPagination)
   const hasToolbar = Boolean(searchKeys?.length || filterConfigs?.length)
-  const hasPagination = Boolean(hasToolbar || pageSizeProp != null)
+  const hasPagination = Boolean(hasToolbar || pageSizeProp != null || isServerMode)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterValues, setFilterValues] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(pageSizeProp ?? 10)
+  const [pageSize, setPageSize] = useState(pageSizeProp ?? serverPagination?.pageSize ?? 10)
 
-  const effectivePageSize = hasPagination ? pageSize : data.length || 1
+  const effectiveSearchQuery = controlledOnSearchChange ? (controlledSearchQuery ?? '') : searchQuery
+  const effectiveFilterValues = controlledOnFilterChange ? (controlledFilterValues ?? {}) : filterValues
+
+  const handleSearchChange = (value: string) => {
+    if (controlledOnSearchChange) {
+      controlledOnSearchChange(value)
+      return
+    }
+    setSearchQuery(value)
+  }
+
+  const handleFilterChange = (key: string, value: string) => {
+    if (controlledOnFilterChange) {
+      controlledOnFilterChange(key, value)
+      return
+    }
+    setFilterValues((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleClearFilters = () => {
+    if (controlledOnClearFilters) {
+      controlledOnClearFilters()
+      return
+    }
+    setSearchQuery('')
+    setFilterValues({})
+  }
+
+  const effectivePageSize = isServerMode
+    ? (serverPagination?.pageSize ?? pageSize)
+    : (hasPagination ? pageSize : data.length || 1)
 
   useEffect(() => {
-    setPage(1)
-  }, [searchQuery, filterValues, pageSize])
+    if (!isServerMode) {
+      setPage(1)
+    }
+  }, [effectiveSearchQuery, effectiveFilterValues, pageSize, isServerMode])
 
   const { paginated, total, totalPages, page: safePage } = useTableData({
     data,
-    searchKeys,
-    searchQuery,
-    filters: filterValues,
-    page,
-    pageSize: effectivePageSize,
+    searchKeys: isServerMode ? [] : searchKeys,
+    searchQuery: isServerMode ? '' : effectiveSearchQuery,
+    filters: isServerMode ? {} : effectiveFilterValues,
+    page: isServerMode ? 1 : page,
+    pageSize: isServerMode ? data.length || 1 : effectivePageSize,
   })
 
-  const displayData = hasPagination ? paginated : data
+  const displayData = isServerMode ? data : (hasPagination ? paginated : data)
+  const paginationPage = isServerMode ? (serverPagination?.page ?? 1) : safePage
+  const paginationTotal = isServerMode ? (serverPagination?.total ?? data.length) : total
+  const paginationTotalPages = isServerMode ? (serverPagination?.totalPages ?? 1) : totalPages
 
   const emptyDescriptionResolved = useMemo(() => {
     if (emptyDescription) return emptyDescription
-    if (hasToolbar && data.length > 0 && total === 0) {
+    if (hasToolbar && data.length > 0 && paginationTotal === 0) {
       return 'Try adjusting your search or filters.'
     }
     return undefined
-  }, [emptyDescription, hasToolbar, data.length, total])
+  }, [emptyDescription, hasToolbar, data.length, paginationTotal])
+
+  const handlePageChange = (nextPage: number) => {
+    if (isServerMode) {
+      serverPagination?.onPageChange(nextPage)
+      return
+    }
+    setPage(nextPage)
+  }
+
+  const handlePageSizeChange = (nextSize: number) => {
+    if (isServerMode) {
+      serverPagination?.onPageSizeChange?.(nextSize)
+      return
+    }
+    setPageSize(nextSize)
+  }
 
   if (isLoading) {
+    if (isAdmin && !embedded) {
+      return <AdminTableSkeleton rows={Math.min(pageSizeProp ?? serverPagination?.pageSize ?? 5, 8)} />
+    }
     return (
       <Card className="flex items-center justify-center p-12">
         <LoadingSpinner size="lg" />
@@ -100,19 +180,14 @@ export function DataTable<T extends { id: string }>({
     <>
       {hasToolbar && (
         <TableToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          searchQuery={effectiveSearchQuery}
+          onSearchChange={handleSearchChange}
           searchPlaceholder={searchKeys?.length ? (searchPlaceholder ?? 'Search...') : ''}
           filters={filterConfigs}
-          filterValues={filterValues}
-          onFilterChange={(key, value) =>
-            setFilterValues((prev) => ({ ...prev, [key]: value }))
-          }
-          onClearFilters={() => {
-            setSearchQuery('')
-            setFilterValues({})
-          }}
-          total={total}
+          filterValues={effectiveFilterValues}
+          onFilterChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
+          total={paginationTotal}
         />
       )}
 
@@ -154,15 +229,15 @@ export function DataTable<T extends { id: string }>({
         </Table>
       )}
 
-      {hasPagination && total > 0 && (
+      {hasPagination && paginationTotal > 0 && (
         <TablePagination
-          page={safePage}
-          totalPages={totalPages}
-          total={total}
+          page={paginationPage}
+          totalPages={paginationTotalPages}
+          total={paginationTotal}
           pageSize={effectivePageSize}
           pageSizeOptions={pageSizeOptions}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
         />
       )}
     </>
@@ -173,7 +248,7 @@ export function DataTable<T extends { id: string }>({
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={cn('overflow-hidden', isAdmin && 'admin-data-table')}>
       {table}
     </Card>
   )

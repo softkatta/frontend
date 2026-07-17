@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Eye, Power, PowerOff, RotateCcw } from 'lucide-react'
+import { Activity, Eye, History, Power, PowerOff, RotateCcw, Server, Trash2 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
@@ -10,7 +10,7 @@ import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
 import { clientApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatDate } from '@/lib/utils'
-import { unwrapList, getApiErrorMessage } from '@/lib/apiHelpers'
+import { asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapAdminLicense } from '@/lib/apiMappers'
 import { useListData } from '@/hooks/useListData'
 import { toast } from '@/components/ui/toaster'
@@ -24,6 +24,30 @@ const statusVariant = {
 
 type LicenseRow = ReturnType<typeof mapAdminLicense>
 
+type LogRow = {
+  id: string
+  endpoint: string
+  domain: string
+  success: boolean
+  error_code: string
+  created_at: string
+}
+
+type HistoryRow = {
+  id: string
+  event: string
+  created_at: string
+}
+
+type InstallationRow = {
+  id: string
+  installation_id: string
+  domain: string
+  product_version: string
+  last_verified_at: string
+  revoked_at: string
+}
+
 export default function LicensesPage() {
   const fetcher = useCallback(() => clientApi.licenses.list(), [])
   const mapper = useCallback((raw: unknown) => unwrapList(raw).map(mapAdminLicense), [])
@@ -31,6 +55,9 @@ export default function LicensesPage() {
   const [detail, setDetail] = useState<LicenseRow | null>(null)
   const [domainInput, setDomainInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [activity, setActivity] = useState<LogRow[] | null>(null)
+  const [history, setHistory] = useState<HistoryRow[] | null>(null)
+  const [installations, setInstallations] = useState<InstallationRow[] | null>(null)
 
   const runAction = async (action: () => Promise<unknown>, successTitle: string) => {
     if (!detail) return
@@ -46,6 +73,60 @@ export default function LicensesPage() {
       toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' })
     } finally {
       setBusy(false)
+    }
+  }
+
+  const loadActivity = async (row: LicenseRow) => {
+    try {
+      const response = await clientApi.licenses.activity(row.id)
+      setActivity(unwrapList(response).map((item) => {
+        const log = asRecord(item)
+        return {
+          id: asString(log.id),
+          endpoint: asString(log.endpoint),
+          domain: asString(log.domain, '—'),
+          success: Boolean(log.success),
+          error_code: asString(log.error_code, '—'),
+          created_at: asString(log.created_at),
+        }
+      }))
+    } catch (err) {
+      toast({ title: 'Failed to load activity', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const loadHistory = async (row: LicenseRow) => {
+    try {
+      const response = await clientApi.licenses.history(row.id)
+      setHistory(unwrapList(response).map((item) => {
+        const event = asRecord(item)
+        return {
+          id: asString(event.id),
+          event: asString(event.event),
+          created_at: asString(event.created_at),
+        }
+      }))
+    } catch (err) {
+      toast({ title: 'Failed to load history', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const loadInstallations = async (row: LicenseRow) => {
+    try {
+      const response = await clientApi.licenses.installations(row.id)
+      setInstallations(unwrapList(response).map((item) => {
+        const rowItem = asRecord(item)
+        return {
+          id: asString(rowItem.id),
+          installation_id: asString(rowItem.installation_id),
+          domain: asString(rowItem.domain, '—'),
+          product_version: asString(rowItem.product_version, '—'),
+          last_verified_at: asString(rowItem.last_verified_at),
+          revoked_at: asString(rowItem.revoked_at),
+        }
+      }))
+    } catch (err) {
+      toast({ title: 'Failed to load installations', description: getApiErrorMessage(err), variant: 'destructive' })
     }
   }
 
@@ -177,6 +258,23 @@ export default function LicensesPage() {
                   Add
                 </Button>
               </div>
+              {detail.allowed_domains.map((domain) => (
+                <div key={domain} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-mono text-xs">{domain}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => runAction(
+                      () => clientApi.licenses.removeDomain(detail.id, { domain }),
+                      'Domain removed',
+                    )}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
 
             <div className="flex flex-wrap gap-2 py-2">
@@ -205,7 +303,16 @@ export default function LicensesPage() {
                   'Domain reset request submitted',
                 )}
               >
-                <RotateCcw className="h-4 w-4 mr-1" /> Request Domain Reset
+                <RotateCcw className="h-4 w-4 mr-1" /> Request Domain Transfer
+              </Button>
+              <Button variant="outline" size="sm" disabled={busy} onClick={() => loadActivity(detail)}>
+                <Activity className="h-4 w-4 mr-1" /> API Activity
+              </Button>
+              <Button variant="outline" size="sm" disabled={busy} onClick={() => loadHistory(detail)}>
+                <History className="h-4 w-4 mr-1" /> Installation History
+              </Button>
+              <Button variant="outline" size="sm" disabled={busy} onClick={() => loadInstallations(detail)}>
+                <Server className="h-4 w-4 mr-1" /> Installations
               </Button>
             </div>
 
@@ -215,6 +322,69 @@ export default function LicensesPage() {
               <DetailRow label="Last API Use" value={formatDate(detail.last_verified_at)} />
             )}
           </>
+        )}
+      </DetailDialog>
+
+      <DetailDialog open={activity !== null} onOpenChange={(open) => !open && setActivity(null)} title="API Activity">
+        {(activity ?? []).length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">No API activity yet.</p>
+        ) : (
+          activity?.map((row) => (
+            <DetailRow
+              key={row.id}
+              label={row.endpoint}
+              value={(
+                <span className="text-xs">
+                  {row.domain} · {row.success ? 'OK' : row.error_code}
+                  {row.created_at ? ` · ${formatDate(row.created_at)}` : ''}
+                </span>
+              )}
+            />
+          ))
+        )}
+      </DetailDialog>
+
+      <DetailDialog open={history !== null} onOpenChange={(open) => !open && setHistory(null)} title="License History">
+        {(history ?? []).length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">No history yet.</p>
+        ) : (
+          history?.map((row) => (
+            <DetailRow
+              key={row.id}
+              label={row.event.replaceAll('_', ' ')}
+              value={row.created_at ? formatDate(row.created_at) : '—'}
+            />
+          ))
+        )}
+      </DetailDialog>
+
+      <DetailDialog open={installations !== null} onOpenChange={(open) => !open && setInstallations(null)} title="Installations">
+        {(installations ?? []).length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">No installations yet.</p>
+        ) : (
+          installations?.map((row) => (
+            <div key={row.id} className="space-y-1 border-b border-[var(--border)] pb-3 last:border-0">
+              <DetailRow label="Installation ID" value={<span className="font-mono text-xs break-all">{row.installation_id}</span>} />
+              <DetailRow label="Domain" value={row.domain} />
+              <DetailRow label="Version" value={row.product_version} />
+              <DetailRow label="Last Verified" value={row.last_verified_at ? formatDate(row.last_verified_at) : '—'} />
+              <DetailRow label="Status" value={row.revoked_at ? `Deactivated ${formatDate(row.revoked_at)}` : 'Active'} />
+              {!row.revoked_at && detail && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => runAction(
+                    () => clientApi.licenses.deactivateInstallation(detail.id, row.id),
+                    'Installation deactivated',
+                  ).then(() => loadInstallations(detail))}
+                >
+                  Deactivate Installation
+                </Button>
+              )}
+            </div>
+          ))
         )}
       </DetailDialog>
     </>

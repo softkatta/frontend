@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar, DashboardHeader, MobileSidebar } from './Sidebar'
 import { SmoothScroll } from '@/components/common/SmoothScroll'
+import { PermissionGate } from '@/routes/PermissionGate'
 import { useNotificationsSync } from '@/hooks/useNotificationsSync'
 import { cn } from '@/lib/utils'
 
@@ -22,7 +23,9 @@ export function ClientLayout() {
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64',
         )}
       >
-        <Outlet />
+        <PermissionGate>
+          <Outlet />
+        </PermissionGate>
       </main>
     </div>
   )

@@ -1,0 +1,1 @@
+import{r as e}from"./motion-XFMutiCo.js";import{t}from"./AdminLayout-Cp_gar0A.js";import{ProtectedRoute as n}from"./ProtectedRoute-DnlmWl6q.js";var r=e();function i(){return(0,r.jsx)(n,{loginPath:`/admin`,allowedRoles:[`admin`],children:(0,r.jsx)(t,{})})}export{i as AdminProtectedLayout};

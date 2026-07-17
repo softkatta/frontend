@@ -7,18 +7,23 @@ export type { AuthSession, ChangePasswordPayload, ProfileUpdatePayload } from '.
 export { productsApi } from './modules/products.api'
 export { servicesApi } from './modules/services.api'
 export { blogsApi } from './modules/blogs.api'
+export { careersApi } from './modules/careers.api'
 export { contactApi } from './modules/contact.api'
+export { chatbotApi } from './modules/chatbot.api'
 export { pricingApi } from './modules/pricing.api'
 export { siteContentApi } from './modules/siteContent.api'
 export { clientApi } from './modules/client.api'
 export { adminApi } from './modules/admin.api'
+export { employeeApi } from './modules/employee.api'
 export { inboxApi } from './modules/inbox.api'
 
 import { adminApi } from './modules/admin.api'
 import { authApi } from './modules/auth.api'
 import { blogsApi } from './modules/blogs.api'
+import { careersApi } from './modules/careers.api'
 import { clientApi } from './modules/client.api'
 import { contactApi } from './modules/contact.api'
+import { chatbotApi } from './modules/chatbot.api'
 import { pricingApi } from './modules/pricing.api'
 import { productsApi } from './modules/products.api'
 import { servicesApi } from './modules/services.api'
@@ -30,7 +35,9 @@ export const ApiService = {
   products: productsApi,
   services: servicesApi,
   blogs: blogsApi,
+  careers: careersApi,
   contact: contactApi,
+  chatbot: chatbotApi,
   pricing: pricingApi,
   siteContent: siteContentApi,
   client: clientApi,

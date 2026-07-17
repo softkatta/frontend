@@ -14,6 +14,7 @@ const navLinks = [
   { to: '/services', label: 'Services' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/about', label: 'About' },
+  { to: '/careers', label: 'Careers' },
   { to: '/contact', label: 'Contact' },
   { to: '/blog', label: 'Blog' },
 ]
@@ -24,6 +25,7 @@ export function Navbar() {
   const { isAuthenticated, hasRole, logout, user } = useAuth()
   const cartCount = useAppSelector((s) => s.cart.items.length)
   const isClient = isAuthenticated && hasRole('client')
+  const isEmployee = isAuthenticated && hasRole('employee')
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)
@@ -83,14 +85,26 @@ export function Navbar() {
               </>
             )}
 
+            {isEmployee && (
+              <>
+                <Link to="/employee" className="nav-link hidden sm:inline-flex text-sm gap-1">
+                  <LayoutDashboard className="h-3.5 w-3.5" /> Employee portal
+                </Link>
+                <button type="button" onClick={logout} className="nav-icon-btn hidden sm:inline-flex" aria-label="Logout">
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </>
+            )}
+
             {!isAuthenticated && (
               <>
                 <Link to="/login" className="nav-link hidden sm:inline-flex text-sm">Login</Link>
+                <Link to="/employee" className="nav-link hidden md:inline-flex text-sm">Employee</Link>
                 <Link to="/register" className="nav-pill-cta hidden sm:inline-flex">Get Started</Link>
               </>
             )}
 
-            {isAuthenticated && hasRole('admin', 'staff') && (
+            {isAuthenticated && hasRole('admin') && (
               <Link to="/admin" className="nav-pill-cta hidden sm:inline-flex text-xs">Admin</Link>
             )}
 
@@ -141,11 +155,19 @@ export function Navbar() {
                   </Link>
                 </>
               )}
+              {isEmployee && (
+                <Link to="/employee" onClick={() => setMobileOpen(false)} className="nav-mobile-link px-4 py-3 rounded-xl flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4" /> Employee portal ({user?.first_name})
+                </Link>
+              )}
               <div className="flex gap-2 pt-3 mt-1 border-t border-[var(--border)]">
                 {!isAuthenticated ? (
                   <>
                     <Link to="/login" onClick={() => setMobileOpen(false)} className="nav-mobile-login flex-1 text-center py-2.5 rounded-xl text-sm font-semibold">
                       Login
+                    </Link>
+                    <Link to="/employee" onClick={() => setMobileOpen(false)} className="nav-mobile-login flex-1 text-center py-2.5 rounded-xl text-sm font-semibold">
+                      Employee
                     </Link>
                     <Link to="/register" onClick={() => setMobileOpen(false)} className="nav-pill-cta flex-1 justify-center">
                       Register

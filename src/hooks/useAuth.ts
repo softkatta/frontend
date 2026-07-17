@@ -2,7 +2,15 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { loginUser, logoutUser, registerUser } from '@/store/slices/authSlice'
-import type { LoginCredentials, RegisterData, User } from '@/types'
+import type { LoginCredentials, RegisterData, User, UserRole } from '@/types'
+import { canAccessPath, hasAnyPermission, hasPermission } from '@/lib/accessControl'
+
+function redirectPathForRole(role: UserRole): string {
+  if (role === 'admin') return '/admin'
+  if (role === 'employee') return '/employee'
+  if (role === 'hr') return '/hr'
+  return '/dashboard'
+}
 
 export function useAuth() {
   const dispatch = useAppDispatch()
@@ -13,11 +21,10 @@ export function useAuth() {
     async (credentials: LoginCredentials, redirectTo?: string) => {
       const result = await dispatch(loginUser({ credentials, redirectTo }))
       if (loginUser.fulfilled.match(result)) {
-        const role = result.payload.user.role
         if (redirectTo) {
           navigate(redirectTo)
         } else {
-          navigate(role === 'admin' || role === 'staff' ? '/admin' : '/dashboard')
+          navigate(redirectPathForRole(result.payload.user.role))
         }
       }
       return result
@@ -37,9 +44,12 @@ export function useAuth() {
   )
 
   const logout = useCallback(async () => {
-    const wasAdmin = user?.role === 'admin' || user?.role === 'staff'
+    const role = user?.role
     await dispatch(logoutUser())
-    navigate(wasAdmin ? '/admin' : '/login')
+    if (role === 'admin') navigate('/admin')
+    else if (role === 'employee') navigate('/employee')
+    else if (role === 'hr') navigate('/hr')
+    else navigate('/login')
   }, [dispatch, navigate, user?.role])
 
   const hasRole = useCallback(
@@ -49,5 +59,20 @@ export function useAuth() {
     [user],
   )
 
-  return { user, isAuthenticated, isLoading, isHydrated, login, register, logout, hasRole }
+  const can = useCallback(
+    (permission: string) => hasPermission(user, permission),
+    [user],
+  )
+
+  const canAny = useCallback(
+    (...permissions: string[]) => hasAnyPermission(user, permissions),
+    [user],
+  )
+
+  const canAccess = useCallback(
+    (path: string) => canAccessPath(user, path),
+    [user],
+  )
+
+  return { user, isAuthenticated, isLoading, isHydrated, login, register, logout, hasRole, can, canAny, canAccess }
 }

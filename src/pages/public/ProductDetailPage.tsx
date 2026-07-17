@@ -1,66 +1,178 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { CheckCircle, ChevronDown, Play, ArrowLeft, ShoppingBag, ShoppingCart, Sparkles } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { formatCurrency } from '@/lib/utils'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronDown,
+  FileCheck,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  Zap,
+} from 'lucide-react'
 import { PageSection } from '@/components/common/SectionLabel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import { useCart } from '@/hooks/useCart'
 import { usePublicProduct } from '@/hooks/usePublicProducts'
 import { getProductScreenshot } from '@/lib/productAssets'
-import { resolveMediaUrl } from '@/lib/mediaUrl'
-import { productHasFreeTrial, productTrialLabel, productTrialRegisterUrl } from '@/lib/productTrial'
-import { activePlansForBilling, getDefaultPlan, resolvePlan } from '@/lib/purchasePlan'
+import { mediaSrc } from '@/lib/mediaUrl'
+import { isEmbeddableVideo, resolveDemoVideoUrl } from '@/lib/videoUrl'
+import { productHasFreeTrial, productTrialRegisterUrl } from '@/lib/productTrial'
+import { SimpleBillingToggle } from '@/components/common/SimpleBillingToggle'
+import { getDefaultPlan, getProductPlanSummary, planForBilling, yearlySavingsPercent } from '@/lib/purchasePlan'
 import { useSiteContent } from '@/hooks/useSiteContent'
+import { usePageSeo } from '@/hooks/usePageSeo'
+
+type ShopBilling = 'monthly' | 'yearly'
+type DetailTab = 'features' | 'faq'
+
+const fadeUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 },
+}
+
+function PurchasePanel({
+  product,
+  raw,
+  billing,
+  onBillingChange,
+  onBuy,
+  onAddToCart,
+}: {
+  product: NonNullable<ReturnType<typeof usePublicProduct>['product']>
+  raw: unknown
+  billing: ShopBilling
+  onBillingChange: (b: ShopBilling) => void
+  onBuy: () => void
+  onAddToCart: () => void
+}) {
+  const showTrial = productHasFreeTrial(product)
+  const summary = getProductPlanSummary(raw)
+  const plan = planForBilling(summary, billing)
+  const savings = yearlySavingsPercent(summary.monthly?.price ?? 0, summary.yearly?.price ?? 0)
+  const price = plan?.price ?? 0
+
+  return (
+    <div className="product-buy-panel">
+      <div className="product-buy-panel__glow" aria-hidden />
+      <div className="product-buy-panel__header">
+        <p className="product-buy-panel__label">Subscribe to {product.name}</p>
+        {price > 0 ? (
+          <div className="product-buy-panel__price">
+            <span className="product-buy-panel__amount">{formatCurrency(price)}</span>
+            <span className="product-buy-panel__cycle">/{billing === 'yearly' ? 'year' : 'mo'}</span>
+          </div>
+        ) : (
+          <p className="font-display text-2xl font-bold">Contact for pricing</p>
+        )}
+      </div>
+
+      <SimpleBillingToggle
+        raw={raw}
+        billing={billing}
+        onBillingChange={(cycle) => {
+          if (cycle === 'monthly' || cycle === 'yearly') onBillingChange(cycle)
+        }}
+      />
+
+      {billing === 'yearly' && savings > 0 && (
+        <div className="product-buy-panel__savings">
+          <Zap className="h-4 w-4 shrink-0" />
+          Save {savings}% with yearly billing
+        </div>
+      )}
+
+      <div className="space-y-2.5">
+        <button type="button" onClick={onBuy} className="glow-btn flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold">
+          <ShoppingBag className="h-4 w-4" /> Buy now
+        </button>
+        <button type="button" onClick={onAddToCart} className="hero-cta-ghost flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold">
+          <ShoppingCart className="h-4 w-4" /> Add to cart
+        </button>
+      </div>
+
+      {showTrial && (
+        <Link to={productTrialRegisterUrl(product.slug)} className="product-buy-panel__trial">
+          <Sparkles className="h-4 w-4" />
+          Try free for {product.trial_days || 14} days
+        </Link>
+      )}
+
+      <ul className="product-buy-panel__trust">
+        {[
+          { icon: FileCheck, text: 'GST invoice' },
+          { icon: ShieldCheck, text: 'Secure checkout' },
+          ...(showTrial ? [{ icon: Sparkles, text: 'Free trial' }] : []),
+        ].map(({ icon: Icon, text }) => (
+          <li key={text}><Icon className="h-3.5 w-3.5" />{text}</li>
+        ))}
+      </ul>
+
+      {(product.price_enterprise ?? 0) > 0 && (
+        <p className="text-center text-xs text-muted-foreground">
+          Enterprise {formatCurrency(product.price_enterprise!)} —{' '}
+          <Link to="/contact" className="text-[var(--brand-blue)] font-medium hover:underline">Contact sales</Link>
+        </p>
+      )}
+    </div>
+  )
+}
 
 export default function ProductDetailPage() {
   const { slug } = useParams()
   const [searchParams] = useSearchParams()
   const { product, raw, loading } = usePublicProduct(slug)
   const [openFaq, setOpenFaq] = useState<string | null>(null)
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>(
-    (searchParams.get('buy') as 'monthly' | 'yearly') || 'monthly',
-  )
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<DetailTab>('features')
+  const [billing, setBilling] = useState<ShopBilling>(() => (
+    searchParams.get('buy') === 'yearly' ? 'yearly' : 'monthly'
+  ))
   const { buyNow, addProduct } = useCart()
   const { faqs } = useSiteContent('below-fold')
   const screenshot = product
-    ? (product.images[0] ? resolveMediaUrl(product.images[0]) : getProductScreenshot(product.slug))
-    : (slug ? getProductScreenshot(slug) : '')
+    ? (product.images[0] ? mediaSrc(product.images[0]) : getProductScreenshot(product.slug))
+    : (slug ? getProductScreenshot(slug) : undefined)
   const showTrial = product ? productHasFreeTrial(product) : false
-  const isTrialLanding = searchParams.get('trial') === '1'
+
+  usePageSeo(product ? {
+    title: `${product.name} — Software by SoftKatta Solutions`,
+    description: product.short_description || product.description?.slice(0, 160) || `Subscribe to ${product.name} from SoftKatta Solutions. GST-ready cloud software for Indian businesses.`,
+    path: `/products/${product.slug}`,
+    ogType: 'product',
+    image: screenshot,
+  } : null)
 
   useEffect(() => {
-    const buy = searchParams.get('buy')
-    if (buy === 'monthly' || buy === 'yearly') setBilling(buy)
+    if (searchParams.get('buy') === 'yearly') setBilling('yearly')
+    else if (searchParams.get('buy') === 'monthly') setBilling('monthly')
   }, [searchParams])
 
-  const billingPlans = useMemo(
-    () => (raw ? activePlansForBilling(raw, billing) : []),
-    [raw, billing],
-  )
+  const selectedPlanId = useMemo(() => {
+    if (!raw) return ''
+    const preferred = searchParams.get('plan')
+    const defaultPlan = getDefaultPlan(raw, billing)
+    return preferred ?? defaultPlan?.id ?? ''
+  }, [raw, billing, searchParams])
+
+  const monthlyPrice = product?.price_monthly ?? 0
 
   useEffect(() => {
-    if (billingPlans.length === 0) {
-      setSelectedPlanId('')
-      return
+    if (!product) return
+    if (product.featureItems.length > 0) {
+      setActiveTab('features')
+    } else if (faqs.length > 0) {
+      setActiveTab('faq')
     }
-    const preferred = searchParams.get('plan')
-    const match = preferred ? billingPlans.find((p) => p.id === preferred) : null
-    const defaultPlan = getDefaultPlan(raw, billing)
-    setSelectedPlanId(match?.id ?? defaultPlan?.id ?? billingPlans[0]?.id ?? '')
-  }, [billing, raw, searchParams, billingPlans])
-
-  const selectedPlan = billingPlans.find((p) => p.id === selectedPlanId)
-  const resolvedPlan = raw && selectedPlanId
-    ? resolvePlan(raw, billing, selectedPlanId)
-    : null
+  }, [product?.id, product?.featureItems.length, faqs.length])
 
   if (loading) {
     return (
-      <PageSection tone="default" className="min-h-[50vh] flex items-center justify-center">
+      <PageSection tone="default" className="min-h-[60vh] flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </PageSection>
     )
@@ -68,194 +180,203 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <PageSection tone="default" className="min-h-[50vh] flex items-center">
-        <div className="text-center w-full">
-          <h1 className="font-display text-2xl font-bold mb-4">Product not found</h1>
-          <Link to="/products" className="hero-cta-primary inline-flex items-center gap-2 px-6 py-3 text-sm">
-            <ArrowLeft className="h-4 w-4" /> Back to Products
+      <PageSection tone="default" className="min-h-[60vh] flex items-center">
+        <div className="text-center w-full max-w-md mx-auto">
+          <h1 className="font-display text-2xl font-bold mb-3">Product not found</h1>
+          <Link to="/products" className="hero-cta-primary inline-flex items-center gap-2 px-6 py-3 text-sm rounded-full">
+            <ArrowLeft className="h-4 w-4" /> Back to store
           </Link>
         </div>
       </PageSection>
     )
   }
 
-  const price = resolvedPlan?.price ?? (billing === 'monthly' ? product.price_monthly : product.price_yearly)
+  const purchaseProps = {
+    product,
+    raw,
+    billing,
+    onBillingChange: setBilling,
+    onBuy: () => buyNow(product.slug, billing, selectedPlanId || undefined),
+    onAddToCart: () => void addProduct(product.slug, billing, { planId: selectedPlanId || undefined }),
+  }
+
+  const tabs = [
+    { key: 'features' as const, label: 'Features', show: product.featureItems.length > 0 },
+    { key: 'faq' as const, label: 'FAQ', show: faqs.length > 0 },
+  ].filter((t) => t.show)
+
+  const demoVideoUrl = product.demo_video_url ? resolveDemoVideoUrl(product.demo_video_url) : ''
+  const demoIsEmbed = demoVideoUrl ? isEmbeddableVideo(product.demo_video_url) : false
 
   return (
-    <div>
-      <section className="hero-cyber pt-24 pb-12 relative overflow-hidden">
-        <div className="hero-horizon-glow opacity-50" aria-hidden />
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <Link to="/products" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[var(--brand-blue)] mb-6 transition-colors">
-            <ArrowLeft className="h-4 w-4" /> All products
-          </Link>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="section-label">{product.category}</span>
-              {showTrial && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-teal)]/15 px-3 py-1 text-xs font-semibold text-[var(--brand-teal)]">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {productTrialLabel(product)}
-                </span>
+    <div className="product-page">
+      <div className="product-page__bg" aria-hidden />
+
+      <section className="product-page__hero relative overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-24 pb-10 max-w-6xl">
+          <motion.nav {...fadeUp} className="product-page__crumb mb-6">
+            <Link to="/products"><ArrowLeft className="h-4 w-4" /> Back to store</Link>
+          </motion.nav>
+
+          <div className="grid lg:grid-cols-2 gap-10 xl:gap-14 items-start">
+            {/* Left — showcase */}
+            <motion.div {...fadeUp} className="min-w-0 space-y-5 order-2 lg:order-1">
+              <div className="product-page__browser">
+                <div className="product-page__browser-bar">
+                  <span className="product-page__browser-dot product-page__browser-dot--red" />
+                  <span className="product-page__browser-dot product-page__browser-dot--amber" />
+                  <span className="product-page__browser-dot product-page__browser-dot--green" />
+                  <span className="product-page__browser-url">{product.slug}.softkatta.in</span>
+                </div>
+                <div className="product-page__browser-screen">
+                  {screenshot ? (
+                    <img src={screenshot} alt={`${product.name} preview`} className="w-full h-full object-cover object-top" />
+                  ) : (
+                    <div className="product-page__browser-fallback" aria-hidden />
+                  )}
+                </div>
+              </div>
+
+              {demoVideoUrl && (
+                <div className="product-page__demo-inline">
+                  <p className="product-page__demo-label">Product demo</p>
+                  <div className="product-page__browser product-page__browser--video">
+                    <div className="product-page__browser-bar">
+                      <span className="product-page__browser-dot product-page__browser-dot--red" />
+                      <span className="product-page__browser-dot product-page__browser-dot--amber" />
+                      <span className="product-page__browser-dot product-page__browser-dot--green" />
+                      <span className="product-page__browser-url">Demo video</span>
+                    </div>
+                    <div className="product-page__demo-frame">
+                      {demoIsEmbed ? (
+                        <iframe
+                          src={demoVideoUrl}
+                          className="product-page__demo-iframe"
+                          title={`${product.name} demo`}
+                          loading="lazy"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video src={demoVideoUrl} controls className="product-page__demo-video" preload="metadata" />
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight mb-4">{product.name}</h1>
-            <p className="text-lg text-muted-foreground max-w-3xl leading-relaxed">{product.description}</p>
-            {isTrialLanding && showTrial && (
-              <p className="mt-4 text-sm font-medium text-[var(--brand-teal)]">
-                Create an account to start your {product.trial_days || 14}-day free trial — no payment required upfront.
-              </p>
-            )}
-          </motion.div>
+
+              {product.featureItems.length > 0 && (
+                <ul className="product-page__highlights">
+                  {product.featureItems.slice(0, 4).map((f) => (
+                    <li key={f.title}><Check className="h-3.5 w-3.5 text-[var(--brand-teal)]" />{f.title}</li>
+                  ))}
+                </ul>
+              )}
+            </motion.div>
+
+            {/* Right — info + buy */}
+            <motion.div {...fadeUp} transition={{ delay: 0.06 }} className="order-1 lg:order-2 space-y-6">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className="product-page__pill">{product.category}</span>
+                  {showTrial && (
+                    <span className="product-page__pill product-page__pill--trial">
+                      <Sparkles className="h-3 w-3" /> Free trial
+                    </span>
+                  )}
+                  {monthlyPrice > 0 && (
+                    <span className="product-page__pill product-page__pill--price">
+                      From {formatCurrency(monthlyPrice)}/mo
+                    </span>
+                  )}
+                </div>
+                <h1 className="font-display text-3xl sm:text-4xl xl:text-5xl font-bold tracking-tight leading-tight">
+                  {product.name}
+                </h1>
+                <p className="text-muted-foreground text-base leading-relaxed">{product.description}</p>
+              </div>
+
+              <PurchasePanel {...purchaseProps} />
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      <PageSection tone="default" className="!pt-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="premium-card p-6 sm:p-8">
-              <h2 className="font-display text-xl font-bold mb-5">Features</h2>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {product.features.map((f) => (
-                  <div key={f} className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-[var(--brand-teal)] shrink-0" />
-                    <span className="text-sm">{f}</span>
-                  </div>
-                ))}
-              </div>
+      {/* Tabbed content */}
+      {tabs.length > 0 && (
+        <PageSection tone="default" className="!py-12 sm:!py-16 !bg-transparent">
+          <div className="max-w-5xl mx-auto px-4 sm:px-0">
+            <div className="product-page__tabs" role="tablist">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn('product-page__tab', activeTab === tab.key && 'product-page__tab--active')}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            <div className="premium-card p-6 sm:p-8 overflow-hidden">
-              <h2 className="font-display text-xl font-bold mb-5">Product Screenshot</h2>
-              <div className="screenshot-frame rounded-xl border border-[var(--border)] overflow-hidden">
-                <div className="screenshot-frame__chrome px-4 py-2.5 flex gap-1.5 border-b border-[var(--border)]">
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--brand-blue)]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--brand-teal)]" />
-                </div>
-                <img src={screenshot} alt={`${product.name} dashboard`} className="w-full aspect-video object-cover object-top" />
-              </div>
-            </div>
-
-            {product.demo_video_url && (
-              <div className="premium-card p-6 sm:p-8">
-                <h2 className="font-display text-xl font-bold mb-5 flex items-center gap-2">
-                  <Play className="h-5 w-5 text-[var(--brand-blue)]" /> Demo Video
-                </h2>
-                <div className="aspect-video rounded-xl overflow-hidden border border-[var(--border)]">
-                  <iframe src={product.demo_video_url} className="w-full h-full" title="Demo" allowFullScreen />
-                </div>
-              </div>
-            )}
-
-            {faqs.length > 0 && (
-            <div>
-              <h2 className="font-display text-xl font-bold mb-4">FAQ</h2>
-              <div className="space-y-2">
-                {faqs.slice(0, 3).map((faq) => (
-                  <div key={faq.id} className="premium-card overflow-hidden">
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between p-4 sm:p-5 text-left text-sm font-semibold"
-                      onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
-                    >
-                      {faq.question}
-                      <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', openFaq === faq.id && 'rotate-180')} />
-                    </button>
-                    {openFaq === faq.id && (
-                      <div className="px-4 sm:px-5 pb-4 sm:pb-5 text-sm text-muted-foreground leading-relaxed">{faq.answer}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            )}
-          </div>
-
-          <div>
-            <div className="premium-card sticky top-24 p-6 sm:p-8 shadow-glow-md">
-              <Tabs value={billing} onValueChange={(v) => setBilling(v as 'monthly' | 'yearly')}>
-                <TabsList className="w-full mb-6">
-                  <TabsTrigger value="monthly" className="flex-1">Monthly</TabsTrigger>
-                  <TabsTrigger value="yearly" className="flex-1">Yearly</TabsTrigger>
-                </TabsList>
-                <TabsContent value={billing}>
-                  {billingPlans.length > 1 && (
-                    <div className="space-y-2 mb-5">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select plan</p>
-                      {billingPlans.map((plan) => {
-                        const active = plan.id === selectedPlanId
-                        return (
-                          <button
-                            key={plan.id}
-                            type="button"
-                            onClick={() => setSelectedPlanId(plan.id)}
-                            className={cn(
-                              'w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors',
-                              active
-                                ? 'border-[var(--brand-blue)] bg-[var(--brand-blue)]/5'
-                                : 'border-[var(--border)] hover:border-[var(--brand-blue)]/40',
-                            )}
-                          >
-                            <span className="text-sm font-semibold">
-                              {plan.name}
-                              {plan.isPopular && (
-                                <span className="ml-2 text-[10px] uppercase text-[var(--brand-teal)]">Popular</span>
-                              )}
-                            </span>
-                            <span className="text-sm font-bold">{formatCurrency(plan.price)}</span>
-                          </button>
-                        )
-                      })}
+            <div className="mt-8">
+              {activeTab === 'features' && product.featureItems.length > 0 && (
+                <div className="product-page__feature-grid">
+                  {product.featureItems.map((feature, i) => (
+                    <div key={feature.title} className="product-page__feature" style={{ '--feat-i': i } as React.CSSProperties}>
+                      <span className="product-page__feature-icon"><Check className="h-4 w-4" /></span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{feature.title}</p>
+                        {feature.description && (
+                          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{feature.description}</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div className="text-center mb-6">
-                    <p className="font-display text-4xl font-bold text-brand-gradient">{formatCurrency(price)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedPlan ? `${selectedPlan.name} · ` : ''}
-                      per {billing === 'monthly' ? 'month' : 'year'}
-                    </p>
-                    {billing === 'yearly' && (
-                      <span className="inline-block mt-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--brand-teal)]/15 text-[var(--brand-teal)]">
-                        Save 17%
-                      </span>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-              <div className="space-y-3">
-                {showTrial && (
-                  <Link
-                    to={productTrialRegisterUrl(product.slug)}
-                    className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-full text-sm font-semibold bg-[var(--brand-teal)]/15 text-[var(--brand-teal)] border border-[var(--brand-teal)]/30 hover:bg-[var(--brand-teal)]/25 transition-colors"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Start {productTrialLabel(product)}
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={() => buyNow(product.slug, billing, selectedPlanId || undefined)}
-                  className="glow-btn flex items-center justify-center gap-2 w-full py-3 rounded-full text-sm font-semibold"
-                >
-                  <ShoppingBag className="h-4 w-4" /> Buy Now
-                </button>
-                <button
-                  type="button"
-                  onClick={() => addProduct(product.slug, billing, { planId: selectedPlanId || undefined })}
-                  className="hero-cta-ghost flex items-center justify-center gap-2 w-full py-3 rounded-full text-sm font-semibold"
-                >
-                  <ShoppingCart className="h-4 w-4" /> Add to Cart
-                </button>
-                <p className="text-xs text-muted-foreground text-center">
-                  {showTrial ? 'Free trial available · ' : ''}
-                  Login required to purchase · GST invoice included
-                </p>
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'faq' && faqs.length > 0 && (
+                <div className="space-y-2">
+                  {faqs.slice(0, 6).map((faq) => (
+                    <div key={faq.id} className={cn('product-page__faq', openFaq === faq.id && 'product-page__faq--open')}>
+                      <button
+                        type="button"
+                        className="product-page__faq-trigger"
+                        onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
+                      >
+                        {faq.question}
+                        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', openFaq === faq.id && 'rotate-180')} />
+                      </button>
+                      {openFaq === faq.id && <div className="product-page__faq-body">{faq.answer}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+        </PageSection>
+      )}
+
+      <section className="product-page__cta mx-4 sm:mx-auto max-w-5xl mb-16 sm:mb-20">
+        <div className="product-page__cta-glow" aria-hidden />
+        <h2 className="font-display text-2xl font-bold mb-2 relative z-10">Get {product.name} today</h2>
+        <p className="text-sm text-muted-foreground mb-6 relative z-10">Instant checkout · GST invoice · Secure payment</p>
+        <div className="flex flex-wrap justify-center gap-3 relative z-10">
+          <button
+            type="button"
+            onClick={() => buyNow(product.slug, billing, selectedPlanId || undefined)}
+            className="glow-btn inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-semibold"
+          >
+            <ShoppingBag className="h-4 w-4" /> Buy now
+          </button>
+          <Link to="/products" className="hero-cta-ghost inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold">
+            More products <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-      </PageSection>
+      </section>
     </div>
   )
 }

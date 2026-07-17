@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
+import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/common/PageHeader'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { PortalPage, PortalPanel, PortalWelcome } from '@/components/common/PortalPage'
+import { AdminPageSkeleton } from '@/components/admin/shell/AdminPageSkeleton'
 
 type PortalPageShellProps = {
   eyebrow: string
@@ -32,10 +34,17 @@ export function PortalPageShell({
   size = 'default',
   layout = 'panel',
 }: PortalPageShellProps) {
+  const { pathname } = useLocation()
+  const isAdmin = pathname.startsWith('/admin')
+
   const body = loading ? (
-    <div className="flex justify-center p-16">
-      <LoadingSpinner size="lg" />
-    </div>
+    isAdmin ? (
+      <AdminPageSkeleton />
+    ) : (
+      <div className="flex justify-center p-16">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--brand-blue)] border-t-transparent" />
+      </div>
+    )
   ) : error ? (
     <div className="portal-page-shell__error" role="alert">
       {error}
@@ -60,7 +69,7 @@ export function PortalPageShell({
       </PageHeader>
 
       {layout === 'sections' ? body : (
-        <PortalPanel className="portal-page-shell__panel">
+        <PortalPanel className={cn('portal-page-shell__panel', isAdmin && 'admin-portal-panel')}>
           <div className="portal-page-shell__body">{body}</div>
         </PortalPanel>
       )}

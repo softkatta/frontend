@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Ban, Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Ban, Eye, IndianRupee, Pencil, Plus, Trash2 } from 'lucide-react'
 import { CreateSubscriptionDialog, type CreateSubscriptionValues } from '@/components/admin/CreateSubscriptionDialog'
 import { SubscriptionFormDialog, type SubscriptionFormValues } from '@/components/admin/SubscriptionFormDialog'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
+import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -41,6 +42,36 @@ export default function SubscriptionsManagement() {
   const [creating, setCreating] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
+  const [recordingPayment, setRecordingPayment] = useState(false)
+
+  const handleRecordPayment = async (payload: {
+    payment_method: 'cash' | 'cheque'
+    reference?: string
+    notes?: string
+  }) => {
+    if (!paymentTarget?.subscriptionId) return
+    setRecordingPayment(true)
+    try {
+      await adminApi.payments.record({
+        subscription_id: paymentTarget.subscriptionId,
+        ...payload,
+      })
+      toast({
+        title: 'Payment recorded',
+        description: paymentTarget.label,
+        variant: 'success',
+      })
+      setPaymentTarget(null)
+      setDetail(null)
+      await reload()
+    } catch (err) {
+      toast({ title: 'Payment failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      throw err
+    } finally {
+      setRecordingPayment(false)
+    }
+  }
 
   const handleCreate = async (values: CreateSubscriptionValues) => {
     setCreating(true)
@@ -155,9 +186,17 @@ export default function SubscriptionsManagement() {
             { key: 'status', header: 'Status', render: (s) => <Badge variant={statusVariant[s.status as keyof typeof statusVariant] ?? 'secondary'}>{s.status.replace('_', ' ')}</Badge> },
             { key: 'amount', header: 'Amount', render: (s) => formatCurrency(s.amount) },
             { key: 'end_date', header: 'Expires', render: (s) => formatDate(s.end_date) },
-            { key: 'actions', header: 'Actions', className: 'w-[150px] text-right', render: (s) => (
+            { key: 'actions', header: 'Actions', className: 'w-[180px] text-right', render: (s) => (
               <TableActions actions={[
                 actionBtn('View subscription', Eye, () => setDetail(s)),
+                {
+                  ...actionBtn('Record', IndianRupee, () => setPaymentTarget({
+                    subscriptionId: s.id,
+                    label: `${s.customer} · ${s.product}`,
+                    amount: s.amount,
+                  })),
+                  hidden: s.status !== 'pending',
+                },
                 actionBtn('Edit subscription', Pencil, () => setEditing(s)),
                 {
                   ...actionBtn('Cancel subscription', Ban, () => setCancelTarget(s)),
@@ -210,6 +249,14 @@ export default function SubscriptionsManagement() {
         } : null}
         saving={saving}
         onSubmit={handleSave}
+      />
+
+      <RecordPaymentDialog
+        open={Boolean(paymentTarget)}
+        onOpenChange={(open) => !open && setPaymentTarget(null)}
+        target={paymentTarget}
+        loading={recordingPayment}
+        onSubmit={handleRecordPayment}
       />
 
       <ConfirmDialog

@@ -1,0 +1,274 @@
+/* Admin Panel design system — scoped to .admin-panel-shell only */
+
+.admin-panel-shell {
+  --admin-sidebar-width: 16rem;
+  --admin-sidebar-collapsed: 4.5rem;
+  --admin-topbar-height: 4rem;
+  --admin-content-max: 90rem;
+  --admin-surface: color-mix(in srgb, var(--card) 94%, var(--brand-blue) 6%);
+  --admin-surface-elevated: var(--card);
+  --admin-accent-line: linear-gradient(90deg, var(--brand-blue), var(--brand-teal));
+}
+
+.dark .admin-panel-shell {
+  --admin-surface: color-mix(in srgb, var(--card) 92%, var(--brand-blue) 8%);
+}
+
+.admin-panel-shell.gradient-bg,
+.admin-panel-shell.dashboard-shell {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -25%, rgba(37, 99, 235, 0.1), transparent 55%),
+    radial-gradient(ellipse 50% 35% at 100% 0%, rgba(20, 184, 166, 0.06), transparent),
+    var(--background);
+}
+
+.dark .admin-panel-shell.gradient-bg,
+.dark .admin-panel-shell.dashboard-shell {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -15%, rgba(37, 99, 235, 0.12), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 5%, rgba(20, 184, 166, 0.08), transparent),
+    var(--background);
+}
+
+/* ── Top bar ── */
+.admin-panel-shell .admin-topbar {
+  height: var(--admin-topbar-height);
+  background: color-mix(in srgb, var(--glass-bg) 88%, var(--card) 12%);
+  backdrop-filter: blur(16px);
+  border-bottom-color: color-mix(in srgb, var(--brand-blue) 12%, var(--border));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--brand-blue) 6%, transparent);
+}
+
+.dark .admin-panel-shell .admin-topbar {
+  background: color-mix(in srgb, var(--sidebar-bg) 92%, transparent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.admin-panel-shell .admin-topbar__workspace {
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+}
+
+/* ── Sidebar ── */
+.admin-panel-shell .admin-sidebar {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--sidebar-bg) 96%, var(--brand-blue) 4%) 0%, var(--sidebar-bg) 100%);
+  border-right-color: color-mix(in srgb, var(--brand-blue) 14%, var(--border));
+  box-shadow: 4px 0 24px rgba(15, 40, 84, 0.04);
+}
+
+.dark .admin-panel-shell .admin-sidebar {
+  box-shadow: 4px 0 32px rgba(0, 0, 0, 0.25);
+}
+
+.admin-panel-shell .admin-sidebar__brand {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-blue) 8%, transparent), transparent);
+}
+
+.admin-panel-shell .admin-sidebar .sidebar-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand-blue) 25%, transparent) transparent;
+}
+
+.admin-panel-shell .admin-sidebar .group\/link[class*='bg-[var(--brand-blue)]'] {
+  position: relative;
+}
+
+.admin-panel-shell .admin-sidebar .group\/link[class*='bg-[var(--brand-blue)]']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: var(--admin-accent-line);
+}
+
+/* ── Main content ── */
+.admin-panel-shell .admin-main {
+  padding-top: calc(var(--admin-topbar-height) + 1.5rem);
+}
+
+.admin-panel-shell .admin-page-container {
+  max-width: var(--admin-content-max);
+  margin-inline: auto;
+}
+
+.admin-panel-shell .admin-page-enter {
+  animation: admin-page-enter 0.35s ease-out;
+}
+
+@keyframes admin-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-panel-shell .admin-page-enter {
+    animation: none;
+  }
+}
+
+/* ── Breadcrumbs ── */
+.admin-panel-shell .admin-breadcrumbs {
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--input) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* ── Welcome / hero ── */
+.admin-panel-shell .dashboard-welcome,
+.admin-panel-shell .admin-page-hero {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--brand-blue) 16%, var(--border));
+  box-shadow: var(--shadow-md);
+}
+
+.admin-panel-shell .dashboard-welcome::after,
+.admin-panel-shell .admin-page-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(40%, 280px);
+  height: 100%;
+  background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--brand-teal) 18%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Stat cards ── */
+.admin-panel-shell .admin-stat-card {
+  position: relative;
+  border-color: color-mix(in srgb, var(--border) 90%, var(--brand-blue) 10%);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.admin-panel-shell .admin-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--brand-blue) 28%, var(--border));
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.admin-panel-shell .admin-stat-card__icon {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-blue) 14%, transparent), color-mix(in srgb, var(--brand-teal) 10%, transparent));
+  border-color: color-mix(in srgb, var(--brand-blue) 20%, transparent);
+}
+
+/* ── Tables ── */
+.admin-panel-shell .admin-data-table {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.admin-panel-shell .admin-data-table .portal-table-toolbar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--input) 70%, var(--card)), var(--card));
+}
+
+.admin-panel-shell .admin-data-table thead tr {
+  background: color-mix(in srgb, var(--brand-blue) 7%, var(--input));
+}
+
+.admin-panel-shell .admin-data-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.admin-panel-shell .admin-data-table tbody tr:hover {
+  background: color-mix(in srgb, var(--brand-blue) 6%, var(--input));
+}
+
+/* ── Forms & panels ── */
+.admin-panel-shell .admin-portal-panel {
+  border-color: color-mix(in srgb, var(--border) 85%, var(--brand-blue) 15%);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-panel-shell .admin-portal-panel:focus-within {
+  border-color: color-mix(in srgb, var(--brand-blue) 30%, var(--border));
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.admin-panel-shell .admin-settings-field input,
+.admin-panel-shell .admin-settings-field textarea,
+.admin-panel-shell .admin-settings-field select,
+.admin-panel-shell .portal-page-shell__panel input,
+.admin-panel-shell .portal-page-shell__panel textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-panel-shell .admin-settings-field input:focus-visible,
+.admin-panel-shell .admin-settings-field textarea:focus-visible,
+.admin-panel-shell .portal-page-shell__panel input:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-teal) 45%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-teal) 15%, transparent);
+}
+
+/* ── Charts ── */
+.admin-panel-shell .admin-chart-card {
+  border-color: color-mix(in srgb, var(--border) 88%, var(--brand-blue) 12%);
+}
+
+.admin-panel-shell .admin-chart-card__header {
+  background: linear-gradient(135deg, var(--card), color-mix(in srgb, var(--input) 40%, var(--card)));
+}
+
+/* ── Empty states ── */
+.admin-panel-shell .portal-empty-state__icon {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-blue) 12%, transparent), color-mix(in srgb, var(--brand-teal) 8%, transparent));
+}
+
+/* ── Profile dropdown (admin) ── */
+.admin-panel-shell .admin-profile-trigger {
+  border: 1px solid transparent;
+  border-radius: 0.875rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+}
+
+.admin-panel-shell .admin-profile-trigger:hover {
+  border-color: color-mix(in srgb, var(--brand-blue) 20%, var(--border));
+  background: color-mix(in srgb, var(--input) 60%, transparent);
+}
+
+/* ── Quick search dialog ── */
+.admin-quick-search {
+  border-color: color-mix(in srgb, var(--brand-blue) 20%, var(--border));
+  box-shadow: var(--shadow-glow-lg);
+}
+
+/* ── Skeleton shimmer ── */
+.admin-panel-shell .animate-pulse {
+  animation: admin-skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes admin-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ── Tabs (admin pages) ── */
+.admin-panel-shell .admin-portal-tabs {
+  background: color-mix(in srgb, var(--card) 82%, var(--input) 18%);
+  border-color: color-mix(in srgb, var(--brand-blue) 12%, var(--border));
+}
+
+.admin-panel-shell .admin-portal-tabs__trigger[data-state='active'] {
+  transform: translateY(-1px);
+}
+
+/* ── Mobile drawer ── */
+.admin-panel-shell .admin-mobile-sidebar {
+  background: var(--sidebar-bg);
+  border-right-color: color-mix(in srgb, var(--brand-blue) 14%, var(--border));
+}

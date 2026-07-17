@@ -73,11 +73,8 @@ export default function AdminLoginPage() {
     }
   }
 
-  const finishAdminLogin = (user?: { is_demo_account?: boolean }) => {
-    // Set workspace to 'demo' if this is a demo account
-    if (user?.is_demo_account) {
-      setAdminWorkspaceMode('demo')
-    }
+  const finishAdminLogin = (user?: { role?: string; is_demo_account?: boolean }) => {
+    setAdminWorkspaceMode(user?.is_demo_account ? 'demo' : 'live')
     toast({ title: 'Welcome back!', variant: 'success' })
     navigate(redirect ?? '/admin', { replace: true })
   }
@@ -92,7 +89,7 @@ export default function AdminLoginPage() {
         const result = await dispatch(verifyPasskeyPrimaryLogin({ email: form.email }))
         if (verifyPasskeyPrimaryLogin.fulfilled.match(result)) {
           const role = result.payload.user.role
-          if (role !== 'admin' && role !== 'staff') {
+          if (role !== 'admin') {
             await dispatch(logoutUser())
             const message = 'This portal is for administrators only.'
             setFormError(message)
@@ -116,9 +113,11 @@ export default function AdminLoginPage() {
 
       if (loginUser.fulfilled.match(result)) {
         const role = result.payload.user.role
-        if (role !== 'admin' && role !== 'staff') {
+        if (role !== 'admin') {
           await dispatch(logoutUser())
-          const message = 'This portal is for administrators only. Use customer login for your account.'
+          const message = role === 'hr'
+            ? 'HR managers should sign in at /hr.'
+            : 'This portal is for administrators only. Use customer login for your account.'
           setFormError(message)
           toast({ title: 'Access denied', description: message, variant: 'destructive' })
           return
@@ -157,7 +156,7 @@ export default function AdminLoginPage() {
       const result = await dispatch(verify2faLogin({ challenge_token: challengeToken, code, method }))
       if (verify2faLogin.fulfilled.match(result)) {
         const role = result.payload.user.role
-        if (role !== 'admin' && role !== 'staff') {
+        if (role !== 'admin') {
           await dispatch(logoutUser())
           const message = 'This portal is for administrators only.'
           setFormError(message)
@@ -186,7 +185,7 @@ export default function AdminLoginPage() {
       const result = await dispatch(verifyPasskeyLogin({ challenge_token: challengeToken }))
       if (verifyPasskeyLogin.fulfilled.match(result)) {
         const role = result.payload.user.role
-        if (role !== 'admin' && role !== 'staff') {
+        if (role !== 'admin') {
           await dispatch(logoutUser())
           const message = 'This portal is for administrators only.'
           setFormError(message)

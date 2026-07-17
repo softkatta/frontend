@@ -19,6 +19,7 @@ interface ServiceCardProps {
   title: string
   description: string
   icon: string
+  image?: string
   duration?: string
   freeConsultation?: boolean
   index?: number
@@ -29,6 +30,7 @@ export function ServiceCard({
   title,
   description,
   icon,
+  image,
   duration,
   freeConsultation = true,
   index = 0,
@@ -45,6 +47,11 @@ export function ServiceCard({
     >
       <div className="service-card-premium__beam" aria-hidden />
       <div className="service-card-premium__mesh" aria-hidden />
+      {image ? (
+        <div className="service-card-premium__image-wrap">
+          <img src={image} alt={title} className="service-card-premium__image" loading="lazy" />
+        </div>
+      ) : null}
       <div className="relative z-10 p-6 h-full flex flex-col">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="service-card-premium__icon">
@@ -59,7 +66,7 @@ export function ServiceCard({
         <h3 className="font-display font-bold text-base mb-2 group-hover:text-[var(--brand-blue)] transition-colors">
           {title}
         </h3>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1 leading-relaxed">{description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1 leading-relaxed">{description}</p>
         <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
           {duration && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">

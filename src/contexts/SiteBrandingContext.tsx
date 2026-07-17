@@ -8,14 +8,21 @@ import {
   type ReactNode,
 } from 'react'
 import { siteContentApi } from '@/services/api'
-import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/brand'
+import { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE, BRAND_DESCRIPTION, BRAND_SHORT_NAME, BRAND_ADDRESS, BRAND_PHONE, BRAND_WEBSITE } from '@/lib/brand'
 import { DEFAULT_GST_RATE, normalizeGstRate } from '@/lib/gst'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
 import { onSiteConfigUpdated, shouldRefreshScope } from '@/lib/siteConfigEvents'
 
+type BrandingData = Omit<SiteBranding, 'loading' | 'refresh'>
+
+let brandingCache: BrandingData | null = null
+let brandingInflight: Promise<BrandingData> | null = null
+
 export type SiteBranding = {
   companyName: string
   companyTagline: string
+  companyDescription: string
+  brandShortName: string
   companyAddress: string
   companyPhone: string
   companyWebsite: string
@@ -31,10 +38,12 @@ export type SiteBranding = {
 
 const defaultBranding: SiteBranding = {
   companyName: BRAND_NAME,
-  companyTagline: '',
-  companyAddress: '',
-  companyPhone: '',
-  companyWebsite: '',
+  companyTagline: BRAND_TAGLINE,
+  companyDescription: BRAND_DESCRIPTION,
+  brandShortName: BRAND_SHORT_NAME,
+  companyAddress: BRAND_ADDRESS,
+  companyPhone: BRAND_PHONE,
+  companyWebsite: BRAND_WEBSITE,
   supportEmail: '',
   gstNumber: '',
   gstEnabled: false,
@@ -59,53 +68,62 @@ function applyFavicon(faviconUrl: string) {
   link.href = faviconUrl
 }
 
-function applyDocumentTitle(companyName: string) {
-  if (companyName) {
-    document.title = companyName
-  }
-}
+async function fetchBranding(): Promise<BrandingData> {
+  if (brandingCache) return brandingCache
+  if (brandingInflight) return brandingInflight
 
-async function fetchBranding(): Promise<Omit<SiteBranding, 'loading' | 'refresh'>> {
-  const data = await siteContentApi.branding()
-  const logoUrl = data.company_logo_url ? resolveMediaUrl(data.company_logo_url) : BRAND_LOGO_SRC
-  const faviconUrl = data.favicon_url ? resolveMediaUrl(data.favicon_url) : ''
-  const companyName = data.company_name || BRAND_NAME
+  brandingInflight = siteContentApi.branding()
+    .then((data) => {
+      const logoUrl = data.company_logo_url ? resolveMediaUrl(data.company_logo_url) : BRAND_LOGO_SRC
+      const faviconUrl = data.favicon_url ? resolveMediaUrl(data.favicon_url) : ''
+      const companyName = data.company_name || BRAND_NAME
 
-  applyFavicon(faviconUrl)
-  applyDocumentTitle(companyName)
+      applyFavicon(faviconUrl)
 
-  return {
-    companyName,
-    companyTagline: data.company_tagline || '',
-    companyAddress: data.company_address || '',
-    companyPhone: data.company_phone || '',
-    companyWebsite: data.company_website || '',
-    supportEmail: data.support_email || '',
-    gstNumber: (data.gst_number || '').trim(),
-    gstEnabled: Boolean((data.gst_number || '').trim()) && Boolean(data.gst_enabled ?? true),
-    logoUrl,
-    faviconUrl,
-    gstRate: normalizeGstRate(data.gst_rate),
-  }
+      brandingCache = {
+        companyName,
+        companyTagline: data.company_tagline || BRAND_TAGLINE,
+        companyDescription: data.company_description || BRAND_DESCRIPTION,
+        brandShortName: data.brand_short_name || BRAND_SHORT_NAME,
+        companyAddress: data.company_address || BRAND_ADDRESS,
+        companyPhone: data.company_phone || BRAND_PHONE,
+        companyWebsite: data.company_website || BRAND_WEBSITE,
+        supportEmail: data.support_email || '',
+        gstNumber: (data.gst_number || '').trim(),
+        gstEnabled: Boolean((data.gst_number || '').trim()) && Boolean(data.gst_enabled ?? true),
+        logoUrl,
+        faviconUrl,
+        gstRate: normalizeGstRate(data.gst_rate),
+      }
+      return brandingCache
+    })
+    .finally(() => {
+      brandingInflight = null
+    })
+
+  return brandingInflight
 }
 
 export function SiteBrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<Omit<SiteBranding, 'refresh'>>({
-    companyName: BRAND_NAME,
-    companyTagline: '',
-    companyAddress: '',
-    companyPhone: '',
-    companyWebsite: '',
-    supportEmail: '',
-    gstNumber: '',
-    gstEnabled: false,
-    logoUrl: BRAND_LOGO_SRC,
-    faviconUrl: '',
-    gstRate: DEFAULT_GST_RATE,
-    loading: true,
+    companyName: brandingCache?.companyName ?? BRAND_NAME,
+    companyTagline: brandingCache?.companyTagline ?? BRAND_TAGLINE,
+    companyDescription: brandingCache?.companyDescription ?? BRAND_DESCRIPTION,
+    brandShortName: brandingCache?.brandShortName ?? BRAND_SHORT_NAME,
+    companyAddress: brandingCache?.companyAddress ?? BRAND_ADDRESS,
+    companyPhone: brandingCache?.companyPhone ?? BRAND_PHONE,
+    companyWebsite: brandingCache?.companyWebsite ?? BRAND_WEBSITE,
+    supportEmail: brandingCache?.supportEmail ?? '',
+    gstNumber: brandingCache?.gstNumber ?? '',
+    gstEnabled: brandingCache?.gstEnabled ?? false,
+    logoUrl: brandingCache?.logoUrl ?? BRAND_LOGO_SRC,
+    faviconUrl: brandingCache?.faviconUrl ?? '',
+    gstRate: brandingCache?.gstRate ?? DEFAULT_GST_RATE,
+    loading: !brandingCache,
   })
 
   const refresh = useCallback(async () => {
+    brandingCache = null
     try {
       const next = await fetchBranding()
       setBranding({ ...next, loading: false })

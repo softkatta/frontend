@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react'
-import { Eye, Trash2 } from 'lucide-react'
+import { Eye, IndianRupee, Trash2 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
+import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -25,6 +27,32 @@ export default function OrdersPage() {
   const [detail, setDetail] = useState<OrderRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<OrderRow | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
+  const [recordingPayment, setRecordingPayment] = useState(false)
+
+  const handleRecordPayment = async (payload: {
+    payment_method: 'cash' | 'cheque'
+    reference?: string
+    notes?: string
+  }) => {
+    if (!paymentTarget?.orderId) return
+    setRecordingPayment(true)
+    try {
+      await adminApi.payments.record({
+        order_id: paymentTarget.orderId,
+        ...payload,
+      })
+      toast({ title: 'Payment recorded', description: paymentTarget.label, variant: 'success' })
+      setPaymentTarget(null)
+      setDetail(null)
+      await reload()
+    } catch (err) {
+      toast({ title: 'Payment failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      throw err
+    } finally {
+      setRecordingPayment(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -73,9 +101,17 @@ export default function OrdersPage() {
             { key: 'amount', header: 'Amount', render: (o) => formatCurrency(o.amount) },
             { key: 'status', header: 'Status', render: (o) => <Badge variant={statusVariant[o.status as keyof typeof statusVariant] ?? 'secondary'}>{o.status}</Badge> },
             { key: 'created_at', header: 'Date', render: (o) => formatDate(o.created_at) },
-            { key: 'actions', header: 'Actions', className: 'w-[100px] text-right', render: (o) => (
+            { key: 'actions', header: 'Actions', className: 'w-[140px] text-right', render: (o) => (
               <TableActions actions={[
                 actionBtn('View order', Eye, () => setDetail(o)),
+                {
+                  ...actionBtn('Record', IndianRupee, () => setPaymentTarget({
+                    orderId: o.id,
+                    label: o.order_number,
+                    amount: o.amount,
+                  })),
+                  hidden: o.status !== 'pending',
+                },
                 { ...actionBtn('Delete order', Trash2, () => setDeleteTarget(o)), variant: 'destructive' },
               ]} />
             ) },
@@ -92,9 +128,36 @@ export default function OrdersPage() {
             <DetailRow label="Amount" value={formatCurrency(detail.amount)} />
             <DetailRow label="Status" value={detail.status} />
             <DetailRow label="Date" value={formatDate(detail.created_at)} />
+            {detail.status === 'pending' ? (
+              <div className="pt-2">
+                <Button
+                  size="sm"
+                  className="w-full rounded-lg"
+                  onClick={() => {
+                    setPaymentTarget({
+                      orderId: detail.id,
+                      label: detail.order_number,
+                      amount: detail.amount,
+                    })
+                    setDetail(null)
+                  }}
+                >
+                  <IndianRupee className="mr-1.5 h-4 w-4" />
+                  Record payment
+                </Button>
+              </div>
+            ) : null}
           </>
         )}
       </DetailDialog>
+
+      <RecordPaymentDialog
+        open={Boolean(paymentTarget)}
+        onOpenChange={(open) => !open && setPaymentTarget(null)}
+        target={paymentTarget}
+        loading={recordingPayment}
+        onSubmit={handleRecordPayment}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

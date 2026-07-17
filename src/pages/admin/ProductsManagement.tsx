@@ -113,8 +113,9 @@ export default function ProductsManagement() {
           columns={[
             { key: 'name', header: 'Name', className: 'font-medium' },
             { key: 'category', header: 'Category', render: (p) => <Badge variant="outline">{p.category}</Badge> },
-            { key: 'price_monthly', header: 'Monthly', render: (p) => formatCurrency(p.price_monthly) },
-            { key: 'price_yearly', header: 'Yearly', render: (p) => formatCurrency(p.price_yearly) },
+            { key: 'price_monthly', header: 'Monthly', render: (p) => p.price_monthly > 0 ? formatCurrency(p.price_monthly) : '—' },
+            { key: 'price_yearly', header: 'Yearly', render: (p) => p.price_yearly > 0 ? formatCurrency(p.price_yearly) : '—' },
+            { key: 'price_enterprise', header: 'Enterprise', render: (p) => (p.price_enterprise ?? 0) > 0 ? formatCurrency(p.price_enterprise!) : '—' },
             { key: 'is_active', header: 'Status', render: (p) => <Badge variant={p.is_active ? 'success' : 'secondary'}>{p.is_active ? 'Active' : 'Inactive'}</Badge> },
             { key: 'actions', header: 'Actions', className: 'w-[120px] text-right', render: (p) => (
               <TableActions actions={[
@@ -135,6 +136,7 @@ export default function ProductsManagement() {
             <DetailRow label="Category" value={detail.category} />
             <DetailRow label="Monthly" value={detail.price_monthly > 0 ? formatCurrency(detail.price_monthly) : '— (add plan)'} />
             <DetailRow label="Yearly" value={detail.price_yearly > 0 ? formatCurrency(detail.price_yearly) : '— (add plan)'} />
+            <DetailRow label="Enterprise" value={(detail.price_enterprise ?? 0) > 0 ? formatCurrency(detail.price_enterprise!) : '— (add plan)'} />
             <DetailRow label="Free trial" value={detail.has_free_trial ? `Enabled (${detail.trial_days} days)` : 'Disabled'} />
             <DetailRow label="Features" value={detail.features.length ? detail.features.join(', ') : '—'} />
             <DetailRow label="Status" value={detail.is_active ? 'Active' : 'Inactive'} />

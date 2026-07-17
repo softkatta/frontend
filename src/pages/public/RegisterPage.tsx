@@ -24,7 +24,30 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const result = await register({ ...form, avatar: avatarFile ?? undefined }, redirect)
+
+    const phone = form.phone.replace(/\D/g, '')
+    if (phone && phone.length !== 10) {
+      toast({
+        title: 'Invalid phone number',
+        description: 'Enter a 10-digit mobile number or leave phone blank.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!avatarFile) {
+      toast({
+        title: 'Profile photo required',
+        description: 'Upload a JPG, PNG, or WEBP image up to 2MB.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const result = await register(
+      { ...form, phone, avatar: avatarFile },
+      redirect,
+    )
     if (registerUser.fulfilled.match(result)) {
       toast({ title: 'Account created!', description: 'You can now buy products from the shop.', variant: 'success' })
     } else {
@@ -130,7 +153,7 @@ export default function RegisterPage() {
                   <Input id="company" placeholder="Acme Corp" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="h-11 rounded-xl" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Phone (optional)</Label>
                   <Input
                     id="phone"
                     inputMode="numeric"
@@ -141,7 +164,7 @@ export default function RegisterPage() {
                     onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                     className="h-11 rounded-xl"
                   />
-                  <p className="text-xs text-muted-foreground">Enter 10-digit mobile number.</p>
+                  <p className="text-xs text-muted-foreground">Optional. Must be exactly 10 digits if provided.</p>
                 </div>
               </div>
               <button type="submit" disabled={isLoading} className="glow-btn w-full py-3.5 rounded-full text-sm font-semibold disabled:opacity-50 mt-2">

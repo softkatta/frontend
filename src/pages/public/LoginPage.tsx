@@ -73,8 +73,14 @@ export default function LoginPage() {
     toast({ title: 'Welcome back!', variant: 'success' })
     if (redirect) {
       navigate(redirect)
+    } else if (role === 'admin') {
+      navigate('/admin')
+    } else if (role === 'employee') {
+      navigate('/employee')
+    } else if (role === 'hr') {
+      navigate('/hr')
     } else {
-      navigate(role === 'admin' || role === 'staff' ? '/admin' : '/dashboard')
+      navigate('/dashboard')
     }
   }
 
@@ -343,6 +349,12 @@ export default function LoginPage() {
                 </Link>
               </p>
               <p className="text-center text-xs text-muted-foreground mt-4">
+                SoftKatta employee?{' '}
+                <Link to="/employee" className="text-[var(--brand-blue)] font-semibold hover:underline">
+                  Employee portal login
+                </Link>
+              </p>
+              <p className="text-center text-xs text-muted-foreground mt-2">
                 Administrator?{' '}
                 <Link to="/admin" className="text-[var(--brand-blue)] font-semibold hover:underline">
                   Admin login

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { siteContentApi } from '@/services/api'
 import { unwrapList } from '@/lib/apiHelpers'
 import { onSiteConfigUpdated, shouldRefreshScope } from '@/lib/siteConfigEvents'
+import { clearPublicPageContentCache } from '@/hooks/usePublicPageContent'
 import type { HeroSlide, SiteTestimonial } from '@/types/siteContent'
 
 let cachedHeroSlides: HeroSlide[] | null = null
@@ -14,6 +15,7 @@ export function clearHeroSlidesCache() {
 
 export function clearSiteContentCache() {
   clearHeroSlidesCache()
+  clearPublicPageContentCache()
 }
 
 export type HomeTestimonial = {
@@ -46,23 +48,6 @@ function mapTestimonial(t: SiteTestimonial): HomeTestimonial {
   }
 }
 
-type IdleHandle = ReturnType<typeof setTimeout>
-
-function scheduleIdle(fn: () => void, timeoutMs = 1200): IdleHandle {
-  if (typeof requestIdleCallback === 'function') {
-    return requestIdleCallback(fn, { timeout: timeoutMs }) as unknown as IdleHandle
-  }
-  return setTimeout(fn, 80)
-}
-
-function cancelIdle(id: IdleHandle) {
-  if (typeof cancelIdleCallback === 'function') {
-    cancelIdleCallback(id as unknown as number)
-    return
-  }
-  clearTimeout(id)
-}
-
 export function useSiteContent(mode: SiteContentMode = 'hero') {
   const [reloadToken, setReloadToken] = useState(contentReloadToken)
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => cachedHeroSlides ?? [])
@@ -81,7 +66,6 @@ export function useSiteContent(mode: SiteContentMode = 'hero') {
 
   useEffect(() => {
     let cancelled = false
-    let restTimer: ReturnType<typeof setTimeout> | undefined
 
     async function loadHero() {
       if (cachedHeroSlides) {
@@ -134,31 +118,16 @@ export function useSiteContent(mode: SiteContentMode = 'hero') {
       }
     }
 
-    const run = () => {
-      if (cancelled) return
-      if (mode === 'hero') {
-        void loadHero()
-        return
-      }
-      restTimer = setTimeout(() => {
-        if (!cancelled) void loadRest()
-      }, 400)
-    }
-
     if (mode === 'hero') {
       void loadHero()
-    } else {
-      const idleId = scheduleIdle(run)
       return () => {
         cancelled = true
-        cancelIdle(idleId)
-        if (restTimer) clearTimeout(restTimer)
       }
     }
 
+    void loadRest()
     return () => {
       cancelled = true
-      if (restTimer) clearTimeout(restTimer)
     }
   }, [mode, reloadToken])
 

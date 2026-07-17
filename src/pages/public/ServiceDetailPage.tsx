@@ -4,7 +4,9 @@ import { ArrowLeft, Code, Cloud, Lightbulb, Rocket, Shield, Palette, BarChart3, 
 import { PageSection } from '@/components/common/SectionLabel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { usePublicService } from '@/hooks/usePublicServices'
+import { usePageSeo } from '@/hooks/usePageSeo'
 import { serviceIconKey } from '@/lib/serviceIcons'
+import { serviceImageSrc } from '@/lib/serviceImages'
 
 const iconMap: Record<string, LucideIcon> = {
   Code, Cloud, Lightbulb, Rocket, Shield, Palette, BarChart: BarChart3,
@@ -13,6 +15,13 @@ const iconMap: Record<string, LucideIcon> = {
 export default function ServiceDetailPage() {
   const { slug } = useParams()
   const { service, loading, notFound } = usePublicService(slug)
+
+  usePageSeo(service ? {
+    title: service.meta_title || `${service.name} — Services | SoftKatta Solutions`,
+    description: service.meta_description || service.description?.slice(0, 160) || `${service.name} by SoftKatta Solutions.`,
+    path: `/services/${service.slug}`,
+    image: serviceImageSrc(service.image),
+  } : null)
 
   if (loading) {
     return (
@@ -36,6 +45,7 @@ export default function ServiceDetailPage() {
   }
 
   const Icon = iconMap[serviceIconKey(service.icon)] || Code
+  const bodyParagraphs = service.body?.split(/\n\n+/).filter(Boolean) ?? []
 
   return (
     <div>
@@ -64,7 +74,27 @@ export default function ServiceDetailPage() {
 
       <PageSection tone="default" className="!pt-8">
         <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2" />
+          <div className="lg:col-span-2 space-y-8">
+            {bodyParagraphs.map((paragraph) => (
+              <p key={paragraph.slice(0, 48)} className="text-muted-foreground text-base leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
+            {service.bullets && service.bullets.length > 0 && (
+              <div>
+                {service.bullets_heading && (
+                  <h2 className="font-display text-xl font-bold mb-4">{service.bullets_heading}</h2>
+                )}
+                <ul className="grid sm:grid-cols-2 gap-3">
+                  {service.bullets.map((item) => (
+                    <li key={item} className="premium-card px-4 py-3 rounded-xl text-sm font-medium">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
           <div>
             <div className="premium-card p-6 sticky top-24 shadow-glow-md">

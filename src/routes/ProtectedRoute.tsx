@@ -6,11 +6,19 @@ import type { UserRole } from '@/types'
 interface ProtectedRouteProps {
   children: React.ReactNode
   allowedRoles?: UserRole[]
+  requiredPermission?: string | string[]
   loginPath?: string
 }
 
-export function ProtectedRoute({ children, allowedRoles, loginPath = '/login' }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user, hasRole } = useAuth()
+function redirectPathForRole(role?: UserRole): string {
+  if (role === 'admin') return '/admin'
+  if (role === 'employee') return '/employee'
+  if (role === 'hr') return '/hr'
+  return '/dashboard'
+}
+
+export function ProtectedRoute({ children, allowedRoles, requiredPermission, loginPath = '/login' }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, user, hasRole, can, canAny } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -26,8 +34,16 @@ export function ProtectedRoute({ children, allowedRoles, loginPath = '/login' }:
   }
 
   if (allowedRoles && user && !hasRole(...allowedRoles)) {
-    const redirect = user.role === 'admin' || user.role === 'staff' ? '/admin' : '/dashboard'
-    return <Navigate to={redirect} replace />
+    return <Navigate to={redirectPathForRole(user.role)} replace />
+  }
+
+  if (requiredPermission && user) {
+    const allowed = Array.isArray(requiredPermission)
+      ? canAny(...requiredPermission)
+      : can(requiredPermission)
+    if (!allowed) {
+      return <Navigate to={redirectPathForRole(user.role)} replace />
+    }
   }
 
   return <>{children}</>

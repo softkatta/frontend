@@ -75,21 +75,32 @@ export async function decryptPayload(raw: string): Promise<SecureAuthPayload | n
   }
 }
 
+let memoryAuth: SecureAuthPayload | null | undefined
+
 export async function saveSecureAuth(payload: SecureAuthPayload): Promise<void> {
   const encrypted = await encryptPayload(payload)
   localStorage.setItem(STORAGE_KEY, encrypted)
   localStorage.removeItem(LEGACY_TOKEN_KEY)
   localStorage.removeItem(LEGACY_REFRESH_KEY)
+  memoryAuth = payload
 }
 
 export async function loadSecureAuth(): Promise<SecureAuthPayload | null> {
+  if (memoryAuth !== undefined) {
+    return memoryAuth
+  }
+
   const encrypted = localStorage.getItem(STORAGE_KEY)
   if (encrypted) {
-    return decryptPayload(encrypted)
+    memoryAuth = await decryptPayload(encrypted)
+    return memoryAuth
   }
 
   const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY)
-  if (!legacyToken) return null
+  if (!legacyToken) {
+    memoryAuth = null
+    return null
+  }
 
   const legacy: SecureAuthPayload = {
     accessToken: legacyToken,
@@ -104,6 +115,7 @@ export function clearSecureAuth(): void {
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem(LEGACY_TOKEN_KEY)
   localStorage.removeItem(LEGACY_REFRESH_KEY)
+  memoryAuth = null
 }
 
 export async function getAccessToken(): Promise<string | null> {

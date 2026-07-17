@@ -14,7 +14,7 @@ export type PurchasePayload = {
 }
 
 export const productsApi = {
-  list: () => api.get<Product[]>('/products'),
-  get: (slug: string) => api.get<Product>(`/products/${slug}`),
+  list: () => api.get<Product[]>('/products', { skipAuth: true }),
+  get: (slug: string) => api.get<Product>(`/products/${slug}`, { skipAuth: true }),
   purchase: (payload: PurchasePayload) => api.post<unknown>('/purchase', payload, { skipAuth: true }),
 }

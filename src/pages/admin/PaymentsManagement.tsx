@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
-import { Eye, Trash2 } from 'lucide-react'
+import { Eye, IndianRupee, Trash2 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
 import { Badge } from '@/components/ui/badge'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -33,6 +34,38 @@ export default function PaymentsManagement() {
   const [detail, setDetail] = useState<PaymentRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PaymentRow | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
+  const [recordingPayment, setRecordingPayment] = useState(false)
+
+  const handleRecordPayment = async (payload: {
+    payment_method: 'cash' | 'cheque'
+    reference?: string
+    notes?: string
+  }) => {
+    if (!paymentTarget) return
+    setRecordingPayment(true)
+    try {
+      await adminApi.payments.record({
+        ...(paymentTarget.paymentId ? { payment_id: paymentTarget.paymentId } : {}),
+        ...(paymentTarget.invoiceId ? { invoice_id: paymentTarget.invoiceId } : {}),
+        ...(paymentTarget.orderId ? { order_id: paymentTarget.orderId } : {}),
+        ...payload,
+      })
+      toast({
+        title: 'Payment recorded',
+        description: paymentTarget.label,
+        variant: 'success',
+      })
+      setPaymentTarget(null)
+      setDetail(null)
+      await reload()
+    } catch (err) {
+      toast({ title: 'Payment failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      throw err
+    } finally {
+      setRecordingPayment(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -81,6 +114,8 @@ export default function PaymentsManagement() {
               label: 'Payment Mode',
               options: [
                 { value: 'Manual', label: 'Manual' },
+                { value: 'Cash', label: 'Cash' },
+                { value: 'Cheque', label: 'Cheque' },
                 { value: 'Razorpay', label: 'Razorpay' },
                 { value: 'UPI', label: 'UPI' },
                 { value: 'Card', label: 'Card' },
@@ -116,10 +151,20 @@ export default function PaymentsManagement() {
             {
               key: 'actions',
               header: 'Actions',
-              className: 'w-[100px] text-right',
+              className: 'w-[140px] text-right',
               render: (p) => (
                 <TableActions actions={[
                   actionBtn('View payment', Eye, () => setDetail(p)),
+                  {
+                    ...actionBtn('Record', IndianRupee, () => setPaymentTarget({
+                      paymentId: p.id,
+                      invoiceId: p.invoice_id,
+                      orderId: p.order_id,
+                      label: p.invoice_number ?? p.order_number ?? p.transaction_id ?? `Payment #${p.id}`,
+                      amount: p.amount,
+                    })),
+                    hidden: p.status !== 'pending',
+                  },
                   { ...actionBtn('Delete payment', Trash2, () => setDeleteTarget(p)), variant: 'destructive' },
                 ]} />
               ),
@@ -143,6 +188,14 @@ export default function PaymentsManagement() {
           </>
         )}
       </DetailDialog>
+
+      <RecordPaymentDialog
+        open={Boolean(paymentTarget)}
+        onOpenChange={(open) => !open && setPaymentTarget(null)}
+        target={paymentTarget}
+        loading={recordingPayment}
+        onSubmit={handleRecordPayment}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

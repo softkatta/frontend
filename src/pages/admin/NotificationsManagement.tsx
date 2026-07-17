@@ -47,6 +47,7 @@ export default function NotificationsManagement() {
         type: values.type,
         target: values.target,
         user_id: values.target === 'specific_user' ? values.user_id : undefined,
+        channels: values.channels,
       })
       toast({ title: 'Notifications sent', variant: 'success' })
       setSendOpen(false)

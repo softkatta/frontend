@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
+import { canAccessPath } from '@/lib/accessControl'
 import { userAvatarUrl } from '@/lib/mediaUrl'
 import { cn } from '@/lib/utils'
 import type { SidebarVariant } from './Sidebar'
@@ -26,17 +27,42 @@ export function ProfileMenu({ variant = 'client' }: ProfileMenuProps) {
     : 'SK'
   const displayName = user ? `${user.first_name} ${user.last_name}`.trim() : 'User'
   const avatarSrc = userAvatarUrl(user?.avatar, displayName)
-  const profilePath = variant === 'admin' ? '/admin/profile' : '/dashboard/profile'
-  const passwordPath = variant === 'admin' ? '/admin/change-password' : '/dashboard/change-password'
-  const securityPath = variant === 'admin' ? '/admin/security' : '/dashboard/security'
+  const profilePath = variant === 'admin'
+    ? '/admin/profile'
+    : variant === 'employee'
+      ? '/employee/profile'
+      : variant === 'hr'
+        ? '/hr/profile'
+        : '/dashboard/profile'
+  const passwordPath = variant === 'admin'
+    ? '/admin/change-password'
+    : variant === 'employee'
+      ? '/employee/change-password'
+      : variant === 'hr'
+        ? '/hr/change-password'
+        : '/dashboard/change-password'
+  const securityPath = variant === 'admin'
+    ? '/admin/security'
+    : variant === 'employee'
+      ? '/employee/security'
+      : variant === 'hr'
+        ? '/hr/security'
+        : '/dashboard/security'
   const settingsPath = '/admin/settings'
+
+  const showProfile = canAccessPath(user, profilePath)
+  const showPassword = canAccessPath(user, passwordPath)
+  const showSecurity = canAccessPath(user, securityPath)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-xl px-1.5 py-1 transition-colors hover:bg-[var(--input)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-blue)]/30"
+          className={cn(
+            'flex items-center gap-2 rounded-xl px-1.5 py-1 transition-colors hover:bg-[var(--input)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-blue)]/30',
+            variant === 'admin' && 'admin-profile-trigger',
+          )}
           aria-label="Open profile menu"
         >
           <Avatar className="h-9 w-9 border border-[var(--border)]">
@@ -69,24 +95,30 @@ export function ProfileMenu({ variant = 'client' }: ProfileMenuProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to={profilePath} className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" />
-            Edit Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to={passwordPath} className="cursor-pointer">
-            <KeyRound className="mr-2 h-4 w-4" />
-            Change Password
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to={securityPath} className="cursor-pointer">
-            <Shield className="mr-2 h-4 w-4" />
-            Security
-          </Link>
-        </DropdownMenuItem>
+        {showProfile ? (
+          <DropdownMenuItem asChild>
+            <Link to={profilePath} className="cursor-pointer">
+              <User className="mr-2 h-4 w-4" />
+              Edit Profile
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {showPassword ? (
+          <DropdownMenuItem asChild>
+            <Link to={passwordPath} className="cursor-pointer">
+              <KeyRound className="mr-2 h-4 w-4" />
+              Change Password
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {showSecurity ? (
+          <DropdownMenuItem asChild>
+            <Link to={securityPath} className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4" />
+              Security
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         {variant === 'admin' ? (
           <DropdownMenuItem asChild>
             <Link to={settingsPath} className="cursor-pointer">

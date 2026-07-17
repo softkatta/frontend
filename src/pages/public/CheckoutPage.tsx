@@ -1,20 +1,20 @@
 import { useRef, useState, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { CreditCard, Shield, Smartphone } from 'lucide-react'
+import { CreditCard, Shield, Smartphone, Tag, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageSection, SectionHeaderBlock } from '@/components/common/SectionLabel'
 import { useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency } from '@/lib/utils'
-import { clientApi } from '@/services/api'
+import { clientApi, productsApi } from '@/services/api'
 import { asBool, asRecord, asString, getApiErrorMessage } from '@/lib/apiHelpers'
 import { openRazorpayCheckout } from '@/lib/razorpay'
 import { resolvePlan, resolvePurchaseIds } from '@/lib/purchasePlan'
-import { productsApi } from '@/services/api'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { calculateGstAmount, formatGstLabel } from '@/lib/gst'
 import { toast } from '@/components/ui/toaster'
+import type { CouponValidation } from '@/types/offers'
 
 type SummaryLine = {
   key: string
@@ -24,6 +24,12 @@ type SummaryLine = {
   price: number
 }
 
+type PurchaseLine = {
+  productId: string
+  planId: string
+  productName: string
+}
+
 export default function CheckoutPage() {
   const { items } = useCart()
   const { isAuthenticated, hasRole, user } = useAuth()
@@ -31,11 +37,16 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false)
   const [summaryLines, setSummaryLines] = useState<SummaryLine[]>([])
   const [summaryLoading, setSummaryLoading] = useState(true)
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
   const { gstRate, gstEnabled } = useSiteBranding()
   const completingPurchase = useRef(false)
   const subtotal = summaryLines.reduce((sum, line) => sum + line.price, 0)
-  const gst = gstEnabled ? calculateGstAmount(subtotal, gstRate) : 0
-  const total = subtotal + gst
+  const discount = appliedCoupon?.discount_amount ?? 0
+  const discountedSubtotal = Math.max(0, subtotal - discount)
+  const gst = gstEnabled ? calculateGstAmount(discountedSubtotal, gstRate) : 0
+  const total = discountedSubtotal + gst
 
   useEffect(() => {
     let cancelled = false
@@ -92,11 +103,11 @@ export default function CheckoutPage() {
     return <Navigate to="/cart" replace />
   }
 
-  const finishSuccess = (orderNumber: string, invoiceId: string, productName: string) => {
+  const finishSuccess = (orderNumber: string, invoiceId: string, itemCount: number, productName: string) => {
     completingPurchase.current = true
     navigate('/checkout/success', {
       replace: true,
-      state: { orderNumber, invoiceId, productName },
+      state: { orderNumber, invoiceId, itemCount, productName },
     })
   }
 
@@ -109,32 +120,78 @@ export default function CheckoutPage() {
     })
   }
 
+  const resolvePurchaseLines = async (): Promise<PurchaseLine[]> => {
+    const lines: PurchaseLine[] = []
+
+    for (const item of items) {
+      const raw = await productsApi.get(item.slug)
+      const { productId, planId } = resolvePurchaseIds(raw, item.billing, item.planId)
+      if (!planId) {
+        throw new Error(`No ${item.billing} plan is configured for ${item.name}.`)
+      }
+
+      lines.push({
+        productId,
+        planId,
+        productName: item.name,
+      })
+    }
+
+    return lines
+  }
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim()
+    if (!code) return
+
+    setCouponLoading(true)
+    try {
+      const purchaseLines = await resolvePurchaseLines()
+      const result = await clientApi.coupons.validate({
+        coupon_code: code,
+        items: purchaseLines.map((line) => ({
+          product_id: line.productId,
+          plan_id: line.planId,
+        })),
+      })
+      setAppliedCoupon(result)
+      toast({ title: 'Coupon applied', description: `${result.code} — You save ${formatCurrency(result.discount_amount)}` })
+    } catch (error) {
+      setAppliedCoupon(null)
+      toast({ title: 'Invalid coupon', description: getApiErrorMessage(error), variant: 'destructive' })
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponInput('')
+  }
+
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault()
     setProcessing(true)
     try {
-      const item = items[0]
-      const raw = await productsApi.get(item.slug)
-      const { productId, planId } = resolvePurchaseIds(raw, item.billing, item.planId)
-      if (!planId) {
-        toast({
-          title: 'Plan not available',
-          description: `No ${item.billing} plan is configured for ${item.name}. Remove it from cart and pick a valid billing cycle.`,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      const result = asRecord(await clientApi.purchase({
-        product_id: productId,
-        plan_id: planId,
+      const purchaseLines = await resolvePurchaseLines()
+      const result = asRecord(await clientApi.purchaseBatch({
+        items: purchaseLines.map((line) => ({
+          product_id: line.productId,
+          plan_id: line.planId,
+        })),
         payment_gateway: 'razorpay',
+        coupon_code: appliedCoupon?.code,
       }))
 
       const order = asRecord(result.order)
       const invoice = asRecord(result.invoice)
       const orderNumber = asString(order.order_number)
       const invoiceId = asString(invoice.id)
+      const itemCount = Number(result.item_count ?? purchaseLines.length)
+      const primaryName = purchaseLines[0]?.productName ?? 'your products'
+      const productLabel = itemCount > 1
+        ? `${itemCount} products`
+        : primaryName
       const requiresPayment = asBool(result.requires_payment)
       const skipReason = asString(result.skip_payment_reason)
 
@@ -142,10 +199,10 @@ export default function CheckoutPage() {
         if (skipReason === 'free_trial') {
           toast({
             title: 'Free trial started',
-            description: 'This product includes a free trial, so Razorpay checkout is not required.',
+            description: 'Your free trial subscriptions are now active.',
           })
         }
-        finishSuccess(orderNumber, invoiceId, item.name)
+        finishSuccess(orderNumber, invoiceId, itemCount, productLabel)
         return
       }
 
@@ -162,7 +219,7 @@ export default function CheckoutPage() {
           title: 'Payment completed (stub mode)',
           description: 'Configure Razorpay in Admin → Settings → Integrations for live payments.',
         })
-        finishSuccess(orderNumber, invoiceId, item.name)
+        finishSuccess(orderNumber, invoiceId, itemCount, productLabel)
         return
       }
 
@@ -172,7 +229,9 @@ export default function CheckoutPage() {
         amount: amountPaise,
         currency: asString(checkout.currency, 'INR'),
         name: 'SoftKatta',
-        description: `${item.name} subscription`,
+        description: itemCount > 1
+          ? `${itemCount} product subscriptions`
+          : `${primaryName} subscription`,
         order_id: razorpayOrderId,
         prefill: {
           name: user?.first_name ? `${user.first_name} ${user.last_name ?? ''}`.trim() : undefined,
@@ -186,7 +245,7 @@ export default function CheckoutPage() {
         ...response,
       })
 
-      finishSuccess(orderNumber, invoiceId, item.name)
+      finishSuccess(orderNumber, invoiceId, itemCount, productLabel)
     } catch (error) {
       toast({ title: 'Payment failed', description: getApiErrorMessage(error), variant: 'destructive' })
     } finally {
@@ -227,6 +286,40 @@ export default function CheckoutPage() {
 
             <div className="premium-card p-6">
               <h3 className="font-display font-bold mb-4 flex items-center gap-2">
+                <Tag className="h-5 w-5 text-[var(--brand-teal)]" /> Coupon Code
+              </h3>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-teal)]/30 bg-[var(--brand-teal)]/5 px-4 py-3">
+                  <div>
+                    <p className="font-semibold text-sm">{appliedCoupon.code}</p>
+                    <p className="text-xs text-[var(--brand-teal)]">−{formatCurrency(appliedCoupon.discount_amount)} applied</p>
+                  </div>
+                  <button type="button" onClick={handleRemoveCoupon} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter coupon e.g. SAVE20"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleApplyCoupon()}
+                    disabled={couponLoading || summaryLoading || !couponInput.trim()}
+                    className="shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border border-[var(--border)] hover:bg-[var(--muted)]/40 disabled:opacity-50 inline-flex items-center gap-2"
+                  >
+                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="premium-card p-6">
+              <h3 className="font-display font-bold mb-4 flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-[var(--brand-teal)]" /> Payment via Razorpay
               </h3>
               <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
@@ -261,6 +354,12 @@ export default function CheckoutPage() {
                 )}
                 <div className="border-t border-[var(--border)] pt-3 space-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-[var(--brand-teal)]">
+                      <span>Coupon ({appliedCoupon?.code})</span>
+                      <span>−{formatCurrency(discount)}</span>
+                    </div>
+                  )}
                   {gstEnabled && (
                     <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">GST ({formatGstLabel(gstRate)})</span><span>{formatCurrency(gst)}</span></div>
                   )}

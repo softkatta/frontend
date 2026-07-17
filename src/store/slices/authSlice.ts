@@ -24,6 +24,9 @@ function normalizeUser(user: User): User {
   if (role === 'super_admin') {
     return { ...user, role: 'admin' }
   }
+  if (role === 'hr_manager') {
+    return { ...user, role: 'hr' }
+  }
   return user
 }
 
@@ -31,25 +34,30 @@ export const hydrateAuth = createAsyncThunk('auth/hydrate', async () => {
   const session = await loadSecureAuth()
   if (!session?.accessToken) return null
 
-  if (session.user) {
+  // Always refresh /auth/me so portal menus & permissions pick up server changes
+  // without requiring a full logout. Fall back to cached user if the request fails.
+  try {
+    const user = await authApi.me()
+    await saveSecureAuth({
+      user,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    })
+
     return {
-      user: normalizeUser(session.user as User),
+      user: normalizeUser(user),
       accessToken: session.accessToken,
       refreshToken: session.refreshToken ?? undefined,
     }
-  }
-
-  const user = await authApi.me()
-  await saveSecureAuth({
-    user,
-    accessToken: session.accessToken,
-    refreshToken: session.refreshToken,
-  })
-
-  return {
-    user: normalizeUser(user),
-    accessToken: session.accessToken,
-    refreshToken: session.refreshToken ?? undefined,
+  } catch {
+    if (session.user) {
+      return {
+        user: normalizeUser(session.user as User),
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken ?? undefined,
+      }
+    }
+    throw new Error('Session expired')
   }
 })
 

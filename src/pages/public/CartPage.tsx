@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { calculateGstAmount, formatGstLabel } from '@/lib/gst'
 import { formatCurrency } from '@/lib/utils'
-import { resolveMediaUrl } from '@/lib/mediaUrl'
+import { mediaSrc } from '@/lib/mediaUrl'
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart } = useCart()
@@ -40,10 +40,16 @@ export default function CartPage() {
         ) : (
           <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => (
+              {items.map((item) => {
+                const thumbSrc = mediaSrc(item.screenshot)
+                return (
                 <div key={item.planId} className="premium-card p-4 sm:p-5 flex gap-4">
                   <div className="shop-cart-thumb shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--muted)]">
-                    <img src={resolveMediaUrl(item.screenshot)} alt={item.name} className="w-full h-full object-cover aspect-[16/10]" />
+                    {thumbSrc ? (
+                      <img src={thumbSrc} alt={item.name} className="w-full h-full object-cover aspect-[16/10]" />
+                    ) : (
+                      <div className="w-full aspect-[16/10] bg-[radial-gradient(circle_at_30%_20%,rgba(41,98,255,0.2),transparent_55%)]" aria-hidden />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -71,7 +77,8 @@ export default function CartPage() {
                     </p>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="premium-card p-6 h-fit sticky top-24 shadow-glow-md">
