@@ -116,7 +116,7 @@ interface SidebarProps {
 }
 
 function roleLabel(role?: UserRole, companyRoleName?: string) {
-  if (role === 'admin') return 'Founder / Owner'
+  if (role === 'admin') return 'Super Admin'
   if (role === 'employee') return companyRoleName || 'Employee'
   if (role === 'hr') return 'HR Manager'
   return 'Client'

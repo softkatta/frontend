@@ -441,7 +441,7 @@ export default function UsersPage({ mode = 'admin', variant = 'staff' }: UsersPa
                         : [
                             { value: 'all', label: 'All roles' },
                             { value: 'client', label: 'Customer' },
-                            { value: 'super_admin', label: 'Founder / Owner' },
+                            { value: 'super_admin', label: 'Super Admin' },
                             { value: 'hr_manager', label: 'HR Manager' },
                             { value: 'employee', label: 'Staff (employee portal)' },
                           ],

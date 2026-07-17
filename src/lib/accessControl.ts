@@ -44,7 +44,7 @@ const PATH_PERMISSIONS: Record<string, string | string[]> = {
   '/hr/performance': 'hr.performance.view',
   '/hr/helpdesk': 'hr.helpdesk.view',
 
-  // Admin — HR-related pages (Founder bypasses all checks)
+  // Admin — HR-related pages (Super Admin bypasses all checks)
   '/admin/roles': 'hr.company-roles.view',
   '/admin/permissions': 'hr.permissions.view',
   '/admin/portal-menus': 'hr.company-roles.view',

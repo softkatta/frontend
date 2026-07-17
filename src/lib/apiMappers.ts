@@ -190,7 +190,8 @@ export function mapAdminUser(raw: unknown) {
   const companyRole = asRecord(employee.company_role)
   const role = asString(item.role, 'client')
   const roleMeta: Record<string, { label: string; portal: string }> = {
-    super_admin: { label: 'Founder / Owner', portal: '/admin' },
+    super_admin: { label: 'Super Admin', portal: '/admin' },
+    admin: { label: 'Super Admin', portal: '/admin' },
     hr_manager: { label: 'HR Manager', portal: '/hr' },
     employee: { label: 'Employee', portal: '/employee' },
     client: { label: 'Customer', portal: '/login' },
