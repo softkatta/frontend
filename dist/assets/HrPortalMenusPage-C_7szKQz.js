@@ -1,1 +1,0 @@
-import{r as e}from"./motion-XFMutiCo.js";import t from"./PortalMenusPage-Bj9Mtg_B.js";var n=e();function r(){return(0,n.jsx)(t,{})}export{r as default};

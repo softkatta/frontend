@@ -18,10 +18,12 @@ function redirectPathForRole(role?: UserRole): string {
 }
 
 export function ProtectedRoute({ children, allowedRoles, requiredPermission, loginPath = '/login' }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user, hasRole, can, canAny } = useAuth()
+  const { isAuthenticated, isLoading, isHydrated, user, hasRole, can, canAny } = useAuth()
   const location = useLocation()
 
-  if (isLoading) {
+  // Wait until session restore finishes — otherwise a cold load briefly looks logged-out
+  // and bounces users (including admins) to /login before hydrateAuth completes.
+  if (!isHydrated || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />

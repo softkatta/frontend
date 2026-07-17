@@ -51,6 +51,29 @@ function isPublicAuthRequest(config?: AuthAwareRequestConfig): boolean {
   return url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh')
 }
 
+function isSoftAuthFailureRequest(config?: AuthAwareRequestConfig): boolean {
+  if (!config) return false
+  const url = config.url ?? ''
+  // Let hydrateAuth / page logic handle these — don't hard-kick the user to /login.
+  return url.includes('/auth/me') || url.includes('/inbox/notifications')
+}
+
+function portalLoginPathForLocation(): string {
+  if (typeof window === 'undefined') return '/login'
+  const path = window.location.pathname
+  if (path.startsWith('/admin')) return '/admin'
+  if (path.startsWith('/employee')) return '/employee'
+  if (path.startsWith('/hr')) return '/hr'
+  return '/login'
+}
+
+function forcePortalLoginRedirect(): void {
+  if (typeof window === 'undefined') return
+  const target = portalLoginPathForLocation()
+  if (window.location.pathname === target) return
+  window.location.href = target
+}
+
 async function ensureCsrfCookie(): Promise<void> {
   if (typeof window === 'undefined') {
     return
@@ -148,7 +171,17 @@ function createApiClient(): AxiosInstance {
             return Promise.reject(error)
           }
 
-          if (!path.startsWith('/dashboard/security')) {
+          if (path.startsWith('/employee') && !path.startsWith('/employee/security')) {
+            window.location.href = '/employee/security'
+            return Promise.reject(error)
+          }
+
+          if (path.startsWith('/hr') && !path.startsWith('/hr/security')) {
+            window.location.href = '/hr/security'
+            return Promise.reject(error)
+          }
+
+          if (!path.startsWith('/dashboard/security') && !path.startsWith('/admin/security')) {
             window.location.href = '/dashboard/security'
             return Promise.reject(error)
           }
@@ -169,6 +202,7 @@ function createApiClient(): AxiosInstance {
           && originalRequest
           && !originalRequest._retry
           && !isPublicAuthRequest(originalRequest)
+          && !isSoftAuthFailureRequest(originalRequest)
         ) {
           originalRequest._retry = true
           const session = await loadSecureAuth()
@@ -191,9 +225,12 @@ function createApiClient(): AxiosInstance {
         }
 
         if (code === 'SESSION_EXPIRED') {
+          if (isSoftAuthFailureRequest(originalRequest)) {
+            return Promise.reject(error)
+          }
           clearSecureAuth()
           authLogoutHandler?.()
-          window.location.href = window.location.pathname.startsWith('/admin') ? '/admin' : '/login'
+          forcePortalLoginRedirect()
           return Promise.reject(error)
         }
       }
@@ -203,6 +240,7 @@ function createApiClient(): AxiosInstance {
         && originalRequest
         && !originalRequest._retry
         && !isPublicAuthRequest(originalRequest)
+        && !isSoftAuthFailureRequest(originalRequest)
       ) {
         originalRequest._retry = true
         const session = await loadSecureAuth()
@@ -220,12 +258,12 @@ function createApiClient(): AxiosInstance {
           } catch {
             clearSecureAuth()
             authLogoutHandler?.()
-            window.location.href = window.location.pathname.startsWith('/admin') ? '/admin' : '/login'
+            forcePortalLoginRedirect()
           }
         } else {
           clearSecureAuth()
           authLogoutHandler?.()
-          window.location.href = window.location.pathname.startsWith('/admin') ? '/admin' : '/login'
+          forcePortalLoginRedirect()
         }
       }
 

@@ -17,7 +17,7 @@ export default function AdminEntry() {
   }
 
   if (isAuthenticated && !hasRole('admin')) {
-    return <Navigate to={hasRole('employee') ? '/employee' : hasRole('hr') ? '/hr' : '/dashboard'} replace />
+    return <Navigate to={hasRole('employee') ? '/employee' : hasRole('hr') ? '/hr' : '/login'} replace />
   }
 
   if (!isAuthenticated) {

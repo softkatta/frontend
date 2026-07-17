@@ -48,7 +48,9 @@ export default function AdminLoginPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname
-  const redirect = searchParams.get('redirect') ?? from ?? undefined
+  const redirectParam = searchParams.get('redirect')
+  const redirect = (redirectParam && redirectParam.startsWith('/') ? redirectParam : undefined)
+    ?? (from && from.startsWith('/') ? from : undefined)
   const [form, setForm] = useState({ email: '', password: '' })
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -76,7 +78,8 @@ export default function AdminLoginPage() {
   const finishAdminLogin = (user?: { role?: string; is_demo_account?: boolean }) => {
     setAdminWorkspaceMode(user?.is_demo_account ? 'demo' : 'live')
     toast({ title: 'Welcome back!', variant: 'success' })
-    navigate(redirect ?? '/admin', { replace: true })
+    const target = redirect && redirect.startsWith('/admin') ? redirect : '/admin'
+    navigate(target, { replace: true })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

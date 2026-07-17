@@ -50,6 +50,15 @@ export const hydrateAuth = createAsyncThunk('auth/hydrate', async () => {
       refreshToken: session.refreshToken ?? undefined,
     }
   } catch {
+    // Re-read storage in case a login completed while /auth/me was in flight.
+    const latest = await loadSecureAuth()
+    if (latest?.accessToken && latest.user) {
+      return {
+        user: normalizeUser(latest.user as User),
+        accessToken: latest.accessToken,
+        refreshToken: latest.refreshToken ?? undefined,
+      }
+    }
     if (session.user) {
       return {
         user: normalizeUser(session.user as User),
@@ -230,7 +239,11 @@ const authSlice = createSlice({
       .addCase(hydrateAuth.rejected, (state) => {
         state.isLoading = false
         state.isHydrated = true
-        clearSecureAuth()
+        // Only clear storage when hydrate truly failed without a usable session.
+        // Avoid wiping a login that completed while /auth/me was still failing.
+        if (!state.isAuthenticated) {
+          clearSecureAuth()
+        }
       })
 
     builder
@@ -239,6 +252,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false
+        state.isHydrated = true
         state.user = action.payload.user
         state.isAuthenticated = true
       })
@@ -252,6 +266,7 @@ const authSlice = createSlice({
       })
       .addCase(verifyPasskeyLogin.fulfilled, (state, action) => {
         state.isLoading = false
+        state.isHydrated = true
         state.user = action.payload.user
         state.isAuthenticated = true
       })
@@ -265,6 +280,7 @@ const authSlice = createSlice({
       })
       .addCase(verifyPasskeyPrimaryLogin.fulfilled, (state, action) => {
         state.isLoading = false
+        state.isHydrated = true
         state.user = action.payload.user
         state.isAuthenticated = true
       })
@@ -278,6 +294,7 @@ const authSlice = createSlice({
       })
       .addCase(verify2faLogin.fulfilled, (state, action) => {
         state.isLoading = false
+        state.isHydrated = true
         state.user = action.payload.user
         state.isAuthenticated = true
       })
@@ -291,6 +308,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false
+        state.isHydrated = true
         state.user = action.payload.user
         state.isAuthenticated = true
       })

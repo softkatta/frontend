@@ -1,0 +1,1 @@
+import{t as e}from"./wrapper-CDytME2I.js";var t={list:()=>e.get(`/services`,{skipAuth:!0}),get:t=>e.get(`/services/${t}`,{skipAuth:!0})};export{t};
