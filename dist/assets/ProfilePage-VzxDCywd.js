@@ -1,0 +1,1 @@
+import e from"./AccountProfilePage-BOKSfTow.js";export{e as default};

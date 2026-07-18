@@ -180,15 +180,15 @@ export default function LicensesManagement() {
   const confirmMessages: Record<Action, { title: string; description: string }> = {
     suspend: {
       title: 'Suspend License',
-      description: 'The product using this license will stop working until re-activated.',
+      description: 'Install tokens are revoked immediately. The product will stop on the next heartbeat (usually within a few minutes). Customer must re-activate after you Activate again.',
     },
     activate: {
       title: 'Activate License',
-      description: 'This will re-enable the license and allow the product to function.',
+      description: 'Re-enables the license. The customer must re-activate the product installation on their server.',
     },
     revoke: {
       title: 'Revoke License',
-      description: 'This permanently revokes the license. The product will lose access immediately.',
+      description: 'Permanently revokes the license and kills all install sessions immediately.',
     },
     delete: {
       title: 'Delete License',
