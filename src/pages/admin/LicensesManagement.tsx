@@ -180,11 +180,11 @@ export default function LicensesManagement() {
   const confirmMessages: Record<Action, { title: string; description: string }> = {
     suspend: {
       title: 'Suspend License',
-      description: 'Product access stops on the next heartbeat (usually within a few minutes). Activate later to restore automatically — customer does not need to re-enter the license key.',
+      description: 'Install tokens are revoked and SoftKatta will reject the product. Access stops on the next API/heartbeat check (usually under a minute). Activate later to restore automatically.',
     },
     activate: {
       title: 'Activate License',
-      description: 'Re-enables the license. The product restores access automatically on its next heartbeat (usually within a few minutes).',
+      description: 'Re-enables the license. The product restores automatically on the next heartbeat (usually within a few minutes).',
     },
     revoke: {
       title: 'Revoke License',
