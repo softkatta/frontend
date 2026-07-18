@@ -107,86 +107,53 @@ export const EXIT_STATUSES = [
 
 
 /** Stage 2 — Joining documents (HR upload after selection) */
-
 export const JOINING_DOC_CATEGORIES = [
-
-  { value: 'offer_letter', label: 'Offer letter (from company)' },
-
-  { value: 'appointment_letter', label: 'Appointment letter' },
-
-  { value: 'joining_form', label: 'Joining form' },
-
-  { value: 'aadhaar', label: 'ID proof — Aadhaar' },
-
-  { value: 'pan', label: 'ID proof — PAN' },
-
-  { value: 'address_proof', label: 'Address proof' },
-
-  { value: 'education', label: 'Educational documents' },
-
-  { value: 'experience', label: 'Previous company experience / relieving letter' },
-
-  { value: 'photo', label: 'Passport size photos' },
-
-  { value: 'bank_proof', label: 'Cancelled cheque / bank passbook' },
-
-  { value: 'pf_uan_document', label: 'UAN / PF details (if applicable)' },
-
-  { value: 'esic_document', label: 'ESIC details (if applicable)' },
-
-  { value: 'nda', label: 'NDA / confidentiality agreement' },
-
-  { value: 'declaration', label: 'Employee declaration form' },
-
-  { value: 'id_card', label: 'Employee ID card' },
-
+  { value: 'offer_letter', label: 'Offer letter (Company provides)', providedBy: 'company' },
+  { value: 'appointment_letter', label: 'Appointment letter (Company provides)', providedBy: 'company' },
+  { value: 'joining_form', label: 'Joining form (Company provides)', providedBy: 'company' },
+  { value: 'aadhaar', label: 'ID proof — Aadhaar (Employee submits)', providedBy: 'employee' },
+  { value: 'pan', label: 'ID proof — PAN (Employee submits)', providedBy: 'employee' },
+  { value: 'address_proof', label: 'Address proof (Employee submits)', providedBy: 'employee' },
+  { value: 'education', label: 'Educational documents (Employee submits)', providedBy: 'employee' },
+  { value: 'experience', label: 'Previous experience / relieving letter (Employee submits)', providedBy: 'employee' },
+  { value: 'photo', label: 'Passport size photos (Employee submits)', providedBy: 'employee' },
+  { value: 'bank_proof', label: 'Cancelled cheque / bank passbook (Employee submits)', providedBy: 'employee' },
+  { value: 'pf_uan_document', label: 'UAN / PF details (Employee submits)', providedBy: 'employee' },
+  { value: 'esic_document', label: 'ESIC details (Employee submits)', providedBy: 'employee' },
+  { value: 'nda', label: 'NDA / confidentiality agreement (Company provides)', providedBy: 'company' },
+  { value: 'declaration', label: 'Employee declaration form (Company provides)', providedBy: 'company' },
+  { value: 'id_card', label: 'Employee ID card (Company provides)', providedBy: 'company' },
 ] as const
-
-
 
 /** Stage 3 — During employment (HR-managed in admin) */
 export const EMPLOYMENT_DOC_CATEGORIES = [
-  { value: 'performance_review', label: 'Appraisal / performance form' },
-  { value: 'promotion', label: 'Promotion letter' },
-  { value: 'increment_letter', label: 'Increment letter' },
-  { value: 'transfer_letter', label: 'Transfer letter (if applicable)' },
-  { value: 'warning', label: 'Warning letter (if applicable)' },
-  { value: 'training', label: 'Training certificates' },
-  { value: 'salary_revision', label: 'Salary revision letter' },
+  { value: 'performance_review', label: 'Appraisal / performance form (Company provides)', providedBy: 'company' },
+  { value: 'promotion', label: 'Promotion letter (Company provides)', providedBy: 'company' },
+  { value: 'increment_letter', label: 'Increment letter (Company provides)', providedBy: 'company' },
+  { value: 'transfer_letter', label: 'Transfer letter (Company provides)', providedBy: 'company' },
+  { value: 'warning', label: 'Warning letter (Company provides)', providedBy: 'company' },
+  { value: 'training', label: 'Training certificates (Company provides)', providedBy: 'company' },
+  { value: 'salary_revision', label: 'Salary revision letter (Company provides)', providedBy: 'company' },
 ] as const
 
 /** Employee self-service (employee portal only) */
 export const EMPLOYEE_SELF_SERVICE_DOC_CATEGORIES = [
-  { value: 'leave_application', label: 'Leave application' },
-  { value: 'attendance_records', label: 'Attendance records' },
+  { value: 'leave_application', label: 'Leave application (Employee submits)', providedBy: 'employee' },
+  { value: 'attendance_records', label: 'Attendance records (Employee submits)', providedBy: 'employee' },
 ] as const
 
-
-
 /** Stage 4 — Resignation / exit */
-
 export const EXIT_DOC_CATEGORIES = [
-
-  { value: 'resignation_form', label: 'Resignation letter' },
-
-  { value: 'resignation_acceptance', label: 'Resignation acceptance letter' },
-
-  { value: 'no_dues', label: 'No dues form' },
-
-  { value: 'asset_handover', label: 'Asset handover form (laptop, ID card, etc.)' },
-
-  { value: 'exit_interview', label: 'Exit interview form' },
-
-  { value: 'full_and_final', label: 'Full & final settlement' },
-
-  { value: 'experience_letter', label: 'Experience letter' },
-
-  { value: 'relieving_letter', label: 'Relieving letter' },
-
-  { value: 'form_16', label: 'Form 16 (income tax)' },
-
-  { value: 'pf_gratuity', label: 'PF / gratuity documents (if applicable)' },
-
+  { value: 'resignation_form', label: 'Resignation letter (Employee submits)', providedBy: 'employee' },
+  { value: 'resignation_acceptance', label: 'Resignation acceptance letter (Company provides)', providedBy: 'company' },
+  { value: 'no_dues', label: 'No dues form (Company provides)', providedBy: 'company' },
+  { value: 'asset_handover', label: 'Asset handover form (Company provides)', providedBy: 'company' },
+  { value: 'exit_interview', label: 'Exit interview form (Company provides)', providedBy: 'company' },
+  { value: 'full_and_final', label: 'Full & final settlement (Company provides)', providedBy: 'company' },
+  { value: 'experience_letter', label: 'Experience letter (Company provides)', providedBy: 'company' },
+  { value: 'relieving_letter', label: 'Relieving letter (Company provides)', providedBy: 'company' },
+  { value: 'form_16', label: 'Form 16 — income tax (Company provides)', providedBy: 'company' },
+  { value: 'pf_gratuity', label: 'PF / gratuity documents (Company provides)', providedBy: 'company' },
 ] as const
 
 

@@ -245,6 +245,10 @@ export const adminApi = {
     get: (id: string | number) => api.get<unknown>(`/admin/employees/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/employees/${id}`, payload),
     delete: (id: string | number) => api.delete<null>(`/admin/employees/${id}`),
+    downloadIdCard: (id: string | number) =>
+      api.get<Blob>(`/admin/employees/${id}/id-card`, { responseType: 'blob' }),
+    exportIdCards: (params?: { status?: string }) =>
+      api.get<Blob>('/admin/employees/id-cards', { params, responseType: 'blob' }),
     uploadDocument: (id: string | number, formData: FormData) =>
       api.post<unknown>(`/admin/employees/${id}/documents`, formData),
     downloadDocument: (employeeId: string | number, documentId: string | number) =>

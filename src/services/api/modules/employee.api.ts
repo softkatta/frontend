@@ -73,6 +73,7 @@ export const employeeApi = {
     upload: (formData: FormData) => api.post<unknown>('/employee/documents', formData),
     download: (documentId: string) =>
       api.get<{ download_url: string; original_name: string }>(`/employee/documents/${documentId}/download`),
+    downloadIdCard: () => api.get<Blob>('/employee/documents/id-card', { responseType: 'blob' }),
   },
   leave: {
     list: () => api.get<unknown>('/employee/leave'),

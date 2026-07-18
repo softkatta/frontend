@@ -247,6 +247,7 @@ export default function ServicesManagement() {
             <Link
               to={`/services/${detail.slug}`}
               target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand-blue)] hover:underline mt-4"
             >
               Open public page <ExternalLink className="h-3.5 w-3.5" />

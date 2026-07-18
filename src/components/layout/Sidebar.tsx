@@ -448,7 +448,13 @@ export function Sidebar({ variant, collapsed, onToggle }: SidebarProps) {
         ) : (
           <BrandLogo size="sm" className="min-w-0" />
         )}
-        <Button variant="ghost" size="icon" onClick={onToggle} className={cn('shrink-0', collapsed && 'mx-auto')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className={cn('shrink-0', collapsed && 'mx-auto')}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
@@ -513,7 +519,7 @@ export function DashboardHeader({ collapsed, onMenuToggle, variant = 'client' }:
           collapsed ? 'left-0 lg:left-[72px]' : 'left-0 lg:left-64',
         )}
       >
-        <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={onMenuToggle}>
+        <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={onMenuToggle} aria-label="Open menu">
           <Menu className="h-5 w-5" />
         </Button>
 

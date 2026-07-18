@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
+import { HERO_MONITOR_EXPORT_HEIGHT, HERO_MONITOR_EXPORT_WIDTH } from '@/lib/heroMonitor'
 import { cn } from '@/lib/utils'
 import type { HeroSlide } from '@/types/siteContent'
 
@@ -20,6 +21,18 @@ export function MonitorHero({ slides }: MonitorHeroProps) {
     const first = slides[0]
     const src = first ? resolveMediaUrl(first.image_url ?? first.image) : null
     if (!src) return
+
+    // Preload LCP image for the browser (in addition to eager img)
+    let link = document.querySelector<HTMLLinkElement>('link[data-hero-lcp]')
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'image'
+      link.setAttribute('data-hero-lcp', '1')
+      document.head.appendChild(link)
+    }
+    link.href = src
+
     const img = new Image()
     img.src = src
   }, [slides])
@@ -47,6 +60,9 @@ export function MonitorHero({ slides }: MonitorHeroProps) {
                   src={screenSrc}
                   alt={current?.alt_text ?? current?.title ?? 'ERP Software Dashboard — SoftKatta Solutions'}
                   className="monitor-hero__slide monitor-hero__slide--live"
+                  width={HERO_MONITOR_EXPORT_WIDTH}
+                  height={HERO_MONITOR_EXPORT_HEIGHT}
+                  sizes="(max-width: 1024px) 92vw, 560px"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding="async"
                   fetchPriority={index === 0 ? 'high' : 'auto'}

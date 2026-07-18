@@ -39,6 +39,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      modulePreload: {
+        resolveDependencies: (_filename, deps) =>
+          deps.filter((dep) => !dep.includes('charts') && !dep.includes('recharts')),
+      },
       rollupOptions: {
         output: {
           manualChunks(id) {

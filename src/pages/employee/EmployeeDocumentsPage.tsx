@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { employeeApi } from '@/services/api/modules/employee.api'
 import { EMPLOYEE_SELF_SERVICE_DOC_CATEGORIES, getEmployeeDocumentLabel } from '@/lib/hrConstants'
-import { asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { asRecord, asString, downloadBlob, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { toast } from '@/components/ui/toaster'
 
 type DocRow = { id: string; original_name: string; category: string }
@@ -17,6 +17,7 @@ export default function EmployeeDocumentsPage() {
   const [myDocs, setMyDocs] = useState<DocRow[]>([])
   const [category, setCategory] = useState<string>(EMPLOYEE_SELF_SERVICE_DOC_CATEGORIES[0]?.value ?? 'leave_application')
   const [uploading, setUploading] = useState(false)
+  const [idCardBusy, setIdCardBusy] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,6 +44,19 @@ export default function EmployeeDocumentsPage() {
       window.open(res.download_url, '_blank', 'noopener,noreferrer')
     } catch (err) {
       toast({ title: 'Download failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const handleDownloadIdCard = async () => {
+    setIdCardBusy(true)
+    try {
+      const blob = await employeeApi.documents.downloadIdCard()
+      downloadBlob(blob, `id-card-${new Date().toISOString().slice(0, 10)}.pdf`)
+      toast({ title: 'ID card downloaded', variant: 'success' })
+    } catch (err) {
+      toast({ title: 'ID card failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setIdCardBusy(false)
     }
   }
 
@@ -87,6 +101,16 @@ export default function EmployeeDocumentsPage() {
 
       <PortalPanel>
         <div className="p-4 sm:p-6 space-y-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--input)]/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-display font-semibold text-sm">Employee ID card</p>
+              <p className="text-xs text-muted-foreground">Download your SoftKatta identity card (PDF).</p>
+            </div>
+            <Button type="button" variant="outline" className="gap-2 rounded-xl shrink-0" disabled={idCardBusy} onClick={() => void handleDownloadIdCard()}>
+              <Download className="h-4 w-4" />
+              {idCardBusy ? 'Generating…' : 'Download ID card'}
+            </Button>
+          </div>
           <div>
             <h2 className="font-display font-semibold mb-3">Company documents (view / download)</h2>
             {renderList(companyDocs, 'No company documents uploaded by HR yet.')}

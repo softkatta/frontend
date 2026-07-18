@@ -20,6 +20,7 @@ const footerLinks = {
   ],
   Company: [
     { label: 'About Us', to: '/about' },
+    { label: 'Portfolio', to: '/portfolio' },
     { label: 'Careers', to: '/careers' },
     { label: 'Services', to: '/services' },
     { label: 'Pricing', to: '/pricing' },
@@ -30,7 +31,9 @@ const footerLinks = {
     { label: 'FAQ', to: '/faq' },
     { label: 'Blog', to: '/blog' },
     { label: 'Privacy Policy', to: '/privacy' },
-    { label: 'Terms of Service', to: '/terms' },
+    { label: 'Terms & Conditions', to: '/terms' },
+    { label: 'Refund Policy', to: '/refund-policy' },
+    { label: 'Shipping Policy', to: '/shipping-policy' },
     { label: 'Software Shop', to: '/products' },
     { label: 'Create Account', to: '/register' },
     { label: 'Login', to: '/login' },
@@ -171,6 +174,8 @@ export function Footer() {
             <div className="flex flex-wrap items-center gap-3">
               <Link to="/privacy" className="hover:text-white">Privacy</Link>
               <Link to="/terms" className="hover:text-white">Terms</Link>
+              <Link to="/refund-policy" className="hover:text-white">Refund</Link>
+              <Link to="/shipping-policy" className="hover:text-white">Shipping</Link>
               {gstEnabled && gstNumber ? <span>GSTIN: {gstNumber}</span> : null}
             </div>
             <p>&copy; {new Date().getFullYear()} {companyName}. All rights reserved.</p>

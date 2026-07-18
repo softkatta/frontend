@@ -1,3 +1,4 @@
+import '@/styles/chatbot-widget.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { chatbotApi } from '@/services/api'

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 
-import { Download, Eye, FileText, LogOut, Trash2, Upload, UserRound } from 'lucide-react'
+import { Download, Eye, FileText, IdCard, LogOut, Trash2, Upload, UserRound } from 'lucide-react'
 
 import { EmployeeLoginSendMenu } from '@/components/admin/EmployeeLoginSendMenu'
 import { PortalPanel } from '@/components/common/PortalPage'
@@ -36,7 +36,7 @@ import { actionBtn } from '@/lib/tableActions'
 
 import { formatDate } from '@/lib/utils'
 
-import { getApiErrorMessage, unwrapList, asRecord } from '@/lib/apiHelpers'
+import { getApiErrorMessage, unwrapList, asRecord, downloadBlob } from '@/lib/apiHelpers'
 
 import { mapAdminEmployee } from '@/lib/apiMappers'
 
@@ -256,6 +256,7 @@ export function HrEmployeesPanel() {
   const [sendLoginTarget, setSendLoginTarget] = useState<EmployeeRow | null>(null)
   const [sendLoginChannel, setSendLoginChannel] = useState<SendChannel>('email')
   const [sendLoginEmail, setSendLoginEmail] = useState('')
+  const [idCardBusy, setIdCardBusy] = useState(false)
 
   const handleDownload = async (employeeId: string, documentId: string) => {
 
@@ -271,6 +272,32 @@ export function HrEmployeesPanel() {
 
     }
 
+  }
+
+  const handleDownloadIdCard = async (employee: EmployeeRow) => {
+    setIdCardBusy(true)
+    try {
+      const blob = await adminApi.employees.downloadIdCard(employee.id)
+      downloadBlob(blob, `id-card-${employee.employee_code || employee.id}.pdf`)
+      toast({ title: 'ID card downloaded', variant: 'success' })
+    } catch (err) {
+      toast({ title: 'ID card failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setIdCardBusy(false)
+    }
+  }
+
+  const handleExportAllIdCards = async () => {
+    setIdCardBusy(true)
+    try {
+      const blob = await adminApi.employees.exportIdCards()
+      downloadBlob(blob, `employee-id-cards-${new Date().toISOString().slice(0, 10)}.pdf`)
+      toast({ title: 'All ID cards downloaded', description: 'Active, probation, and on-notice members included.', variant: 'success' })
+    } catch (err) {
+      toast({ title: 'ID cards export failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setIdCardBusy(false)
+    }
   }
 
   const showSendLoginResult = (portal: Record<string, unknown>, channel: SendChannel) => {
@@ -461,6 +488,19 @@ export function HrEmployeesPanel() {
 
           description="HR uploads joining letters and company documents. Leave, attendance, and resignation are submitted by employees at /employee."
 
+          action={(
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2 rounded-xl"
+              disabled={idCardBusy || items.length === 0}
+              onClick={() => void handleExportAllIdCards()}
+            >
+              <IdCard className="h-4 w-4" />
+              {idCardBusy ? 'Generating…' : 'Download all ID cards'}
+            </Button>
+          )}
+
         />
 
         <div className="p-4 sm:p-6">
@@ -515,13 +555,14 @@ export function HrEmployeesPanel() {
 
                 { key: 'date_of_joining', header: 'Joined', render: (row) => row.date_of_joining ? formatDate(row.date_of_joining) : '—' },
 
-                { key: 'actions', header: '', className: 'w-[168px] text-right', render: (row) => (
+                { key: 'actions', header: '', className: 'w-[200px] text-right', render: (row) => (
                   <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="group">
                     <EmployeeLoginSendMenu
                       disabled={portalBusy}
                       onSelect={(channel) => handleSendLoginSelect(row, channel)}
                     />
                     <TableActions actions={[
+                      actionBtn('Download ID card', IdCard, () => void handleDownloadIdCard(row)),
                       actionBtn('View employee', Eye, () => setDetail(row)),
                       { ...actionBtn('Delete employee', Trash2, () => setDeleteTarget(row)), variant: 'destructive' },
                     ]} />
@@ -576,6 +617,19 @@ export function HrEmployeesPanel() {
             <DetailRow label="PF / UAN" value={detail.pf_uan || '—'} />
 
             <DetailRow label="ESIC" value={detail.esic_number || '—'} />
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2 rounded-xl"
+                disabled={idCardBusy}
+                onClick={() => void handleDownloadIdCard(detail)}
+              >
+                <IdCard className="h-4 w-4" />
+                Download ID card
+              </Button>
+            </div>
 
 
 

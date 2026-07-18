@@ -1,9 +1,11 @@
+import { lazy, Suspense } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { AdminLayout } from '@/components/layout/AdminLayout'
-import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
+
+const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'))
 
 export default function AdminEntry() {
   const { isAuthenticated, isHydrated, hasRole } = useAuth()
@@ -26,7 +28,15 @@ export default function AdminEntry() {
 
   return (
     <AdminLayout>
-      <AdminDashboard />
+      <Suspense
+        fallback={(
+          <div className="flex justify-center py-20">
+            <LoadingSpinner size="lg" />
+          </div>
+        )}
+      >
+        <AdminDashboard />
+      </Suspense>
     </AdminLayout>
   )
 }

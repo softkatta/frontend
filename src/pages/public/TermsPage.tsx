@@ -1,6 +1,5 @@
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { FileText } from 'lucide-react'
+import { LegalPage } from '@/components/common/LegalPage'
 import { usePageSeo } from '@/hooks/usePageSeo'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { STATIC_PAGE_SEO } from '@/lib/seo/siteSeo'
@@ -8,7 +7,7 @@ import { STATIC_PAGE_SEO } from '@/lib/seo/siteSeo'
 const sections = [
   {
     title: 'Acceptance of terms',
-    body: 'By accessing softkatta.in, creating an account, or purchasing our software, you agree to these Terms of Service. If you do not agree, please do not use our services.',
+    body: 'By accessing softkatta.in, creating an account, or purchasing our software, you agree to these Terms & Conditions. If you do not agree, please do not use our services.',
   },
   {
     title: 'Services & products',
@@ -28,7 +27,11 @@ const sections = [
   },
   {
     title: 'Cancellations & refunds',
-    body: 'You may cancel subscriptions from your client dashboard. Refund eligibility depends on the nature of the purchase and timing of the request. Contact support@softkatta.in with your order number for refund inquiries.',
+    body: 'You may cancel subscriptions from your client dashboard. Refund eligibility is described in our Refund Policy. Contact support with your order number for refund inquiries.',
+  },
+  {
+    title: 'Delivery of products',
+    body: 'Software and digital services are delivered electronically as described in our Shipping Policy. There is no physical courier shipment for standard online purchases.',
   },
   {
     title: 'Acceptable use',
@@ -52,68 +55,28 @@ const sections = [
   },
   {
     title: 'Changes',
-    body: 'We may update these Terms of Service. Continued use after changes constitutes acceptance of the updated terms.',
+    body: 'We may update these Terms & Conditions. Continued use after changes constitutes acceptance of the updated terms.',
   },
 ]
 
 export default function TermsPage() {
-  const { supportEmail, companyName } = useSiteBranding()
-  const email = supportEmail.trim() || 'support@softkatta.in'
+  const { companyName } = useSiteBranding()
   const seo = STATIC_PAGE_SEO['/terms']
 
   usePageSeo(seo ? { ...seo, path: '/terms' } : null)
 
   return (
-    <div className="legal-page">
-      <div className="legal-page__bg" aria-hidden />
-
-      <section className="relative overflow-hidden pt-24 pb-10">
-        <div className="container mx-auto px-4 sm:px-6 max-w-3xl relative z-10">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <span className="section-label mb-4 inline-flex items-center gap-2">
-              <FileText className="h-3.5 w-3.5" /> Legal
-            </span>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight mb-4">Terms of Service</h1>
-            <p className="text-muted-foreground leading-relaxed">
-              Terms governing your use of {companyName} website, accounts, and software subscriptions.
-            </p>
-            <p className="text-xs text-muted-foreground mt-4">Last updated: July 2026</p>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="pb-20">
-        <div className="container mx-auto px-4 sm:px-6 max-w-3xl">
-          <div className="legal-page__content space-y-8">
-            {sections.map((section, i) => (
-              <motion.article
-                key={section.title}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.04 }}
-                className="legal-page__section"
-              >
-                <h2 className="font-display font-bold text-lg mb-2">{section.title}</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">{section.body}</p>
-              </motion.article>
-            ))}
-
-            <div className="legal-page__contact premium-card p-6 rounded-2xl">
-              <h2 className="font-display font-bold text-lg mb-2">Questions?</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Email{' '}
-                <a href={`mailto:${email}`} className="text-[var(--brand-blue)] font-semibold hover:underline">{email}</a>
-                {' '}or{' '}
-                <Link to="/contact" className="text-[var(--brand-blue)] font-semibold hover:underline">contact our team</Link>.
-              </p>
-              <Link to="/privacy" className="text-sm font-semibold text-[var(--brand-blue)] hover:underline">
-                Read Privacy Policy →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <LegalPage
+      icon={FileText}
+      title="Terms & Conditions"
+      intro={`Terms governing your use of ${companyName} website, accounts, and software subscriptions.`}
+      sections={sections}
+      contactBlurb="For questions about these terms, email"
+      relatedLinks={[
+        { label: 'Privacy Policy', to: '/privacy' },
+        { label: 'Refund Policy', to: '/refund-policy' },
+        { label: 'Shipping Policy', to: '/shipping-policy' },
+      ]}
+    />
   )
 }

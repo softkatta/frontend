@@ -1,9 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Navbar } from './Navbar'
 import { Footer } from './Footer'
 import { AnnouncementBar } from './AnnouncementBar'
-import { ChatWidget } from '@/components/public/chatbot/ChatWidget'
 import { SmoothScroll } from '@/components/common/SmoothScroll'
 import { PublicRouteSeo } from '@/components/common/PublicRouteSeo'
 import { useSiteOffers } from '@/hooks/useSiteOffers'
@@ -11,6 +10,10 @@ import { prefetchPublicProducts } from '@/hooks/usePublicProducts'
 import { prefetchPublicServices } from '@/hooks/usePublicServices'
 import { prefetchHomeReviews } from '@/hooks/useHomeReviews'
 import { siteApi } from '@/services/api/modules/site.api'
+
+const ChatWidget = lazy(() =>
+  import('@/components/public/chatbot/ChatWidget').then((m) => ({ default: m.ChatWidget })),
+)
 
 const SESSION_KEY = 'sk_visit_session'
 
@@ -40,11 +43,11 @@ export function PublicLayout() {
     }
 
     if (typeof requestIdleCallback === 'function') {
-      const id = requestIdleCallback(prefetch, { timeout: 800 })
+      const id = requestIdleCallback(prefetch, { timeout: 2500 })
       return () => cancelIdleCallback(id)
     }
 
-    const timer = window.setTimeout(prefetch, 100)
+    const timer = window.setTimeout(prefetch, 1200)
     return () => window.clearTimeout(timer)
   }, [])
 
@@ -66,7 +69,9 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
-      <ChatWidget />
+      <Suspense fallback={null}>
+        <ChatWidget />
+      </Suspense>
     </div>
   )
 }

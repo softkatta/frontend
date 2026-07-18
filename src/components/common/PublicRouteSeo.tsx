@@ -25,7 +25,6 @@ export function PublicRouteSeo() {
       ...dbSeo,
       path: pathname,
       siteName: companyName,
-      image: logoUrl || undefined,
       title: (dbSeo.title || staticSeo?.title)?.replace('SoftKatta Solutions', companyName),
       description,
       jsonLd: pathname === '/'

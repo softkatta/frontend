@@ -1,3 +1,4 @@
+import '@/styles/admin-panel.css'
 import { useState, type ReactNode } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'

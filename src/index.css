@@ -1,5 +1,4 @@
 ﻿@import "tailwindcss";
-@import "./styles/admin-panel.css";
 
 /* â”€â”€ Tailwind theme bridge â”€â”€ */
 @theme {
@@ -7057,6 +7056,188 @@ html:not(.dark) .public-site .offer-strip__close:hover {
   pointer-events: none;
 }
 
+/* ── Portfolio page ── */
+.portfolio-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.portfolio-page__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% -10%, rgba(37, 99, 235, 0.08), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 95% 20%, rgba(20, 184, 166, 0.07), transparent 50%);
+}
+
+.dark .public-site .portfolio-page__bg {
+  background:
+    radial-gradient(ellipse 70% 50% at 10% -10%, rgba(37, 99, 235, 0.12), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 95% 20%, rgba(20, 184, 166, 0.1), transparent 50%);
+}
+
+.portfolio-page > section {
+  position: relative;
+  z-index: 1;
+}
+
+.portfolio-page__hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 60% at 30% 0%, rgba(37, 99, 235, 0.12), transparent 60%),
+    radial-gradient(ellipse 40% 50% at 80% 30%, rgba(20, 184, 166, 0.1), transparent 55%);
+}
+
+.portfolio-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.portfolio-page__filter {
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  color: var(--muted-foreground);
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.portfolio-page__filter:hover {
+  color: var(--foreground);
+  border-color: rgba(20, 184, 166, 0.35);
+}
+
+.portfolio-page__filter--active {
+  color: #0f766e;
+  border-color: rgba(20, 184, 166, 0.45);
+  background: rgba(20, 184, 166, 0.12);
+}
+
+.dark .public-site .portfolio-page__filter--active {
+  color: #5eead4;
+}
+
+.portfolio-page__grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .portfolio-page__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .portfolio-page__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.portfolio-page__item {
+  --portfolio-accent: #2563eb;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  padding: 1.35rem 1.35rem 1.25rem;
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+
+.portfolio-page__item:hover {
+  border-color: color-mix(in srgb, var(--portfolio-accent) 45%, var(--border));
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px -24px color-mix(in srgb, var(--portfolio-accent) 55%, transparent);
+}
+
+.dark .public-site .portfolio-page__item {
+  background: rgba(12, 12, 28, 0.72);
+}
+
+.portfolio-page__item-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--portfolio-accent), transparent 80%);
+  opacity: 0.9;
+}
+
+.portfolio-page__industry {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--portfolio-accent);
+}
+
+.portfolio-page__tag {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+}
+
+.portfolio-page__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--portfolio-accent);
+  transition: gap 0.2s;
+}
+
+.portfolio-page__link:hover {
+  gap: 0.55rem;
+}
+
+.portfolio-page__cta {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  padding: 2rem 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .portfolio-page__cta {
+    padding: 2.5rem 2.5rem;
+  }
+}
+
+.dark .public-site .portfolio-page__cta {
+  background: rgba(12, 12, 28, 0.88);
+}
+
+.portfolio-page__cta-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 80% at 0% 50%, rgba(37, 99, 235, 0.12), transparent 55%),
+    radial-gradient(ellipse 50% 70% at 100% 0%, rgba(20, 184, 166, 0.1), transparent 50%);
+}
+
 .blog-page__category-pill {
   padding: 0.45rem 0.9rem;
   border-radius: 9999px;
@@ -7274,9 +7455,6 @@ html:not(.dark) .public-site .offer-strip__close:hover {
   font-weight: 800;
   border: 1px solid;
 }
-
-/* â”€â”€ Chatbot widget â”€â”€ */
-@import "./styles/chatbot-widget.css";
 
 /* â”€â”€ Invoice print â”€â”€ */
 @media print {

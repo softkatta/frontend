@@ -99,12 +99,13 @@ export function AnnouncementBar({ offers }: AnnouncementBarProps) {
             )}
 
             {active.length > 1 && (
-              <div className="hidden sm:flex items-center gap-1" aria-hidden>
+              <div className="hidden sm:flex items-center gap-1" role="group" aria-label="Offer slides">
                 {active.map((_, i) => (
                   <button
                     key={i}
                     type="button"
                     aria-label={`Show offer ${i + 1}`}
+                    aria-current={i === current % active.length ? 'true' : undefined}
                     onClick={() => {
                       setCurrent(i)
                       setAnimKey((k) => k + 1)

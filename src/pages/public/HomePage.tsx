@@ -6,9 +6,6 @@ import { HeroPathAnimation } from '@/components/common/HeroPathAnimation'
 import { hasHeroBootCompleted, MonitorHero } from '@/components/common/MonitorHero'
 import { useSiteContent } from '@/hooks/useSiteContent'
 import { usePublicPageContent } from '@/hooks/usePublicPageContent'
-import { prefetchHomeReviews } from '@/hooks/useHomeReviews'
-import { prefetchPublicProducts } from '@/hooks/usePublicProducts'
-import { prefetchPublicServices } from '@/hooks/usePublicServices'
 import { cn } from '@/lib/utils'
 
 const homeBelowFoldImport = () => import('./HomeBelowFold')
@@ -23,10 +20,16 @@ export default function HomePage() {
   const typewriterPhrases = page.typewriter_phrases ?? []
 
   useEffect(() => {
-    void homeBelowFoldImport()
-    prefetchPublicProducts()
-    prefetchPublicServices()
-    prefetchHomeReviews()
+    // Prefetch below-fold after first paint so hero LCP is not competing for bandwidth
+    const warm = () => {
+      void homeBelowFoldImport()
+    }
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(warm, { timeout: 2000 })
+      return () => cancelIdleCallback(id)
+    }
+    const timer = window.setTimeout(warm, 800)
+    return () => window.clearTimeout(timer)
   }, [])
 
   return (

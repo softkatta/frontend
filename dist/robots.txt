@@ -6,4 +6,4 @@ Disallow: /checkout
 Disallow: /cart
 Disallow: /login
 
-Sitemap: https://softkatta.com/sitemap.xml
+Sitemap: https://softkatta.in/sitemap.xml

@@ -1,6 +1,5 @@
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { ShieldCheck } from 'lucide-react'
+import { LegalPage } from '@/components/common/LegalPage'
 import { usePageSeo } from '@/hooks/usePageSeo'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { STATIC_PAGE_SEO } from '@/lib/seo/siteSeo'
@@ -45,63 +44,23 @@ const sections = [
 ]
 
 export default function PrivacyPage() {
-  const { supportEmail, companyName } = useSiteBranding()
-  const email = supportEmail.trim() || 'support@softkatta.in'
+  const { companyName } = useSiteBranding()
   const seo = STATIC_PAGE_SEO['/privacy']
 
   usePageSeo(seo ? { ...seo, path: '/privacy' } : null)
 
   return (
-    <div className="legal-page">
-      <div className="legal-page__bg" aria-hidden />
-
-      <section className="relative overflow-hidden pt-24 pb-10">
-        <div className="container mx-auto px-4 sm:px-6 max-w-3xl relative z-10">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <span className="section-label mb-4 inline-flex items-center gap-2">
-              <ShieldCheck className="h-3.5 w-3.5" /> Legal
-            </span>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight mb-4">Privacy Policy</h1>
-            <p className="text-muted-foreground leading-relaxed">
-              How {companyName} collects, uses, and protects your information when you use our website and software products.
-            </p>
-            <p className="text-xs text-muted-foreground mt-4">Last updated: July 2026</p>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="pb-20">
-        <div className="container mx-auto px-4 sm:px-6 max-w-3xl">
-          <div className="legal-page__content space-y-8">
-            {sections.map((section, i) => (
-              <motion.article
-                key={section.title}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.04 }}
-                className="legal-page__section"
-              >
-                <h2 className="font-display font-bold text-lg mb-2">{section.title}</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">{section.body}</p>
-              </motion.article>
-            ))}
-
-            <div className="legal-page__contact premium-card p-6 rounded-2xl">
-              <h2 className="font-display font-bold text-lg mb-2">Contact us</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                For privacy-related questions or data requests, email{' '}
-                <a href={`mailto:${email}`} className="text-[var(--brand-blue)] font-semibold hover:underline">{email}</a>
-                {' '}or visit our{' '}
-                <Link to="/contact" className="text-[var(--brand-blue)] font-semibold hover:underline">contact page</Link>.
-              </p>
-              <Link to="/terms" className="text-sm font-semibold text-[var(--brand-blue)] hover:underline">
-                Read Terms of Service →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <LegalPage
+      icon={ShieldCheck}
+      title="Privacy Policy"
+      intro={`How ${companyName} collects, uses, and protects your information when you use our website and software products.`}
+      sections={sections}
+      contactBlurb="For privacy-related questions or data requests, email"
+      relatedLinks={[
+        { label: 'Terms & Conditions', to: '/terms' },
+        { label: 'Refund Policy', to: '/refund-policy' },
+        { label: 'Shipping Policy', to: '/shipping-policy' },
+      ]}
+    />
   )
 }

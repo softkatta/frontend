@@ -1,8 +1,10 @@
 /** Hero monitor screen — must match `.monitor-hero__screen` in index.css */
 export const HERO_MONITOR_ASPECT = 16 / 10
-export const HERO_MONITOR_EXPORT_WIDTH = 1600
-export const HERO_MONITOR_EXPORT_HEIGHT = 1000
-export const HERO_MONITOR_LABEL = '16:10 (1600 × 1000)'
+/** 1200px is enough for retina mobile + desktop monitor frame; smaller LCP payload */
+export const HERO_MONITOR_EXPORT_WIDTH = 1200
+export const HERO_MONITOR_EXPORT_HEIGHT = 750
+export const HERO_MONITOR_LABEL = '16:10 (1200 × 750)'
+export const HERO_MONITOR_JPEG_QUALITY = 0.78
 
 export type HeroCropTransform = {
   zoom: number
@@ -58,7 +60,7 @@ export async function cropImageToHeroMonitor(
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Crop failed'))),
       'image/jpeg',
-      0.92,
+      HERO_MONITOR_JPEG_QUALITY,
     )
   })
 }

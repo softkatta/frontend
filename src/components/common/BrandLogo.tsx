@@ -5,10 +5,10 @@ import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 
 type BrandLogoSize = 'sm' | 'md' | 'lg'
 
-const sizes: Record<BrandLogoSize, { img: string; text: string; gap: string }> = {
-  sm: { img: 'h-8 w-8', text: 'text-sm', gap: 'gap-2' },
-  md: { img: 'h-9 w-9 sm:h-10 sm:w-10', text: 'text-base sm:text-lg', gap: 'gap-2.5' },
-  lg: { img: 'h-11 w-11 sm:h-12 sm:w-12', text: 'text-lg sm:text-xl', gap: 'gap-3' },
+const sizes: Record<BrandLogoSize, { img: string; text: string; gap: string; px: number }> = {
+  sm: { img: 'h-8 w-8', text: 'text-sm', gap: 'gap-2', px: 32 },
+  md: { img: 'h-9 w-9 sm:h-10 sm:w-10', text: 'text-base sm:text-lg', gap: 'gap-2.5', px: 40 },
+  lg: { img: 'h-11 w-11 sm:h-12 sm:w-12', text: 'text-lg sm:text-xl', gap: 'gap-3', px: 48 },
 }
 
 interface BrandLogoProps {
@@ -37,6 +37,9 @@ export function BrandLogo({
       <img
         src={logoUrl || BRAND_LOGO_SRC}
         alt={`${fullName} logo`}
+        width={s.px}
+        height={s.px}
+        decoding="async"
         className={cn('brand-logo__img object-contain shrink-0', s.img)}
       />
       {showText && (

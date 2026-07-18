@@ -686,7 +686,7 @@ export default function CareersManagement({ initialTab: initialTabProp }: Career
               <DetailRow
                 label="Public URL"
                 value={(
-                  <Link to={`/careers/${detail.slug}`} target="_blank" className="text-[var(--brand-blue)] font-semibold hover:underline">
+                  <Link to={`/careers/${detail.slug}`} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold hover:underline">
                     /careers/{detail.slug}
                   </Link>
                 )}

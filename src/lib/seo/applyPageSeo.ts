@@ -1,4 +1,4 @@
-import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/brand'
+import { BRAND_NAME } from '@/lib/brand'
 import { getSiteUrl } from '@/config/env'
 import { buildOrganizationJsonLd, buildPageTitle, SITE_SEO_DEFAULTS, type PageSeoConfig } from '@/lib/seo/siteSeo'
 
@@ -37,9 +37,19 @@ function injectJsonLd(id: string, data: Record<string, unknown> | Array<Record<s
   document.head.appendChild(script)
 }
 
+function absoluteAssetUrl(siteUrl: string, pathOrUrl: string): string {
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+    return pathOrUrl
+  }
+  const base = siteUrl.replace(/\/$/, '')
+  const path = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`
+  return `${base}${path}`
+}
+
 export type ApplyPageSeoOptions = PageSeoConfig & {
   siteName?: string
   image?: string
+  imageAlt?: string
 }
 
 export function applyPageSeo(options: ApplyPageSeoOptions = {}) {
@@ -51,8 +61,13 @@ export function applyPageSeo(options: ApplyPageSeoOptions = {}) {
   const title = buildPageTitle(options.title, siteName)
   const description = options.description || SITE_SEO_DEFAULTS.description
   const keywords = options.keywords || SITE_SEO_DEFAULTS.keywords
-  const image = options.image || `${siteUrl}${BRAND_LOGO_SRC.startsWith('/') ? BRAND_LOGO_SRC : `/${BRAND_LOGO_SRC}`}`
+  const defaultImage = absoluteAssetUrl(siteUrl, SITE_SEO_DEFAULTS.ogImagePath)
+  const image = options.image
+    ? absoluteAssetUrl(siteUrl, options.image)
+    : defaultImage
+  const imageAlt = options.imageAlt || SITE_SEO_DEFAULTS.ogImageAlt
   const ogType = options.ogType || 'website'
+  const isDefaultShareImage = image === defaultImage
 
   const ogTitle = options.ogTitle || title
   const ogDescription = options.ogDescription || description
@@ -73,11 +88,19 @@ export function applyPageSeo(options: ApplyPageSeoOptions = {}) {
   upsertMeta('og:site_name', siteName, 'property')
   upsertMeta('og:locale', SITE_SEO_DEFAULTS.locale, 'property')
   upsertMeta('og:image', image, 'property')
+  upsertMeta('og:image:secure_url', image, 'property')
+  upsertMeta('og:image:alt', imageAlt, 'property')
+  if (isDefaultShareImage) {
+    upsertMeta('og:image:type', 'image/jpeg', 'property')
+    upsertMeta('og:image:width', SITE_SEO_DEFAULTS.ogImageWidth, 'property')
+    upsertMeta('og:image:height', SITE_SEO_DEFAULTS.ogImageHeight, 'property')
+  }
 
   upsertMeta('twitter:card', SITE_SEO_DEFAULTS.twitterCard)
   upsertMeta('twitter:title', twitterTitle)
   upsertMeta('twitter:description', twitterDescription)
   upsertMeta('twitter:image', image)
+  upsertMeta('twitter:image:alt', imageAlt)
 
   upsertLink('canonical', canonical)
 
@@ -99,7 +122,9 @@ export function applyOrganizationJsonLd(
     email?: string
   } = {},
 ) {
-  const logo = details.logo || `${siteUrl}${BRAND_LOGO_SRC.startsWith('/') ? BRAND_LOGO_SRC : `/${BRAND_LOGO_SRC}`}`
+  const logo = details.logo
+    ? absoluteAssetUrl(siteUrl, details.logo)
+    : absoluteAssetUrl(siteUrl, SITE_SEO_DEFAULTS.ogImagePath)
   injectJsonLd('org-jsonld', buildOrganizationJsonLd({
     name: siteName,
     url: siteUrl,

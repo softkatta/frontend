@@ -53,6 +53,11 @@ export const SITE_SEO_DEFAULTS = {
   twitterCard: 'summary_large_image' as const,
   canonicalUrl: `${BRAND_WEBSITE}/`,
   robots: 'index, follow, max-image-preview:large',
+  /** Default share image for WhatsApp / Facebook / LinkedIn (1200×630 recommended) */
+  ogImagePath: '/og-image.jpg',
+  ogImageWidth: '1200',
+  ogImageHeight: '630',
+  ogImageAlt: 'SoftKatta Solutions — Custom Software Development & ERP Solutions',
   ogTitle: 'SoftKatta Solutions | Custom Software Development & ERP Solutions',
   ogDescription:
     'SoftKatta Solutions develops ERP software, websites, mobile applications, and custom business software for education, healthcare, retail, and enterprises.',
@@ -111,6 +116,12 @@ export const STATIC_PAGE_SEO: Record<string, PageSeoConfig> = {
       'SoftKatta Solutions is a software development company in Talni, Nanded, Maharashtra. We build ERP software, custom applications, websites, and mobile apps for education, healthcare, retail, and enterprises.',
     keywords: `${DEFAULT_KEYWORDS}, about SoftKatta, software company Talni Nanded`,
   },
+  '/portfolio': {
+    title: `Portfolio — Products & Projects | ${BRAND_NAME}`,
+    description:
+      'Explore SoftKatta Solutions portfolio: Study Point, Medical Store, Nursery School, Hospital management software, custom ERP, websites, and mobile apps built for businesses across India.',
+    keywords: `${DEFAULT_KEYWORDS}, SoftKatta portfolio, software projects Nanded, ERP case studies`,
+  },
   '/contact': {
     title: `Contact ${BRAND_NAME} — Let's Build Something Great Together`,
     description:
@@ -148,10 +159,22 @@ export const STATIC_PAGE_SEO: Record<string, PageSeoConfig> = {
     keywords: `${DEFAULT_KEYWORDS}, privacy policy, data protection`,
   },
   '/terms': {
-    title: `Terms of Service | ${BRAND_NAME}`,
+    title: `Terms & Conditions | ${BRAND_NAME}`,
     description:
-      'Terms of Service for SoftKatta Solutions software subscriptions, accounts, free trials, payments, and custom development services.',
-    keywords: `${DEFAULT_KEYWORDS}, terms of service, software license`,
+      'Terms & Conditions for SoftKatta Solutions software subscriptions, accounts, free trials, payments, and custom development services.',
+    keywords: `${DEFAULT_KEYWORDS}, terms and conditions, software license`,
+  },
+  '/refund-policy': {
+    title: `Refund Policy | ${BRAND_NAME}`,
+    description:
+      'Refund and cancellation policy for SoftKatta Solutions SaaS subscriptions, digital licenses, and custom software development purchases.',
+    keywords: `${DEFAULT_KEYWORDS}, refund policy, cancellation policy, software refund India`,
+  },
+  '/shipping-policy': {
+    title: `Shipping Policy | ${BRAND_NAME}`,
+    description:
+      'How SoftKatta Solutions delivers digital software, licenses, and custom project deliverables electronically — timelines and access after purchase.',
+    keywords: `${DEFAULT_KEYWORDS}, shipping policy, digital delivery, software delivery India`,
   },
   '/cart': {
     title: `Cart — ${BRAND_NAME}`,
