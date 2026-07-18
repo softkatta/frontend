@@ -37,6 +37,7 @@ export type JobApplicationPayload = {
   preferred_location?: string
   message?: string
   resume?: File
+  recaptcha_token?: string
 } & Partial<Record<(typeof APPLICATION_DOCUMENTS)[number]['key'], File>>
 
 export const careersApi = {
@@ -47,7 +48,7 @@ export const careersApi = {
     const scalarKeys = [
       'name', 'email', 'phone', 'date_of_birth', 'gender', 'current_address', 'permanent_address',
       'qualification', 'skills', 'total_experience', 'current_company', 'current_salary',
-      'expected_salary', 'notice_period', 'preferred_location', 'message',
+      'expected_salary', 'notice_period', 'preferred_location', 'message', 'recaptcha_token',
     ] as const
 
     for (const key of scalarKeys) {

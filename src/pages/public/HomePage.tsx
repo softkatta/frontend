@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle, Sparkles } from 'lucide-react'
 import { TypewriterText } from '@/components/common/TypewriterText'
@@ -6,9 +6,13 @@ import { HeroPathAnimation } from '@/components/common/HeroPathAnimation'
 import { hasHeroBootCompleted, MonitorHero } from '@/components/common/MonitorHero'
 import { useSiteContent } from '@/hooks/useSiteContent'
 import { usePublicPageContent } from '@/hooks/usePublicPageContent'
+import { prefetchHomeReviews } from '@/hooks/useHomeReviews'
+import { prefetchPublicProducts } from '@/hooks/usePublicProducts'
+import { prefetchPublicServices } from '@/hooks/usePublicServices'
 import { cn } from '@/lib/utils'
 
-const HomeBelowFold = lazy(() => import('./HomeBelowFold'))
+const homeBelowFoldImport = () => import('./HomeBelowFold')
+const HomeBelowFold = lazy(homeBelowFoldImport)
 
 export default function HomePage() {
   const { page } = usePublicPageContent('home')
@@ -17,6 +21,13 @@ export default function HomePage() {
   const trustItems = page.trust_items ?? []
   const heroBadges = page.hero_badges ?? []
   const typewriterPhrases = page.typewriter_phrases ?? []
+
+  useEffect(() => {
+    void homeBelowFoldImport()
+    prefetchPublicProducts()
+    prefetchPublicServices()
+    prefetchHomeReviews()
+  }, [])
 
   return (
     <div>

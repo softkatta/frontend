@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { mapPublicCareer } from '@/lib/apiMappers'
 import { ACCEPTED_FILE_TYPES, APPLICATION_DOCUMENTS, type ApplicationDocumentKey } from '@/lib/hrConstants'
 import { usePageSeo } from '@/hooks/usePageSeo'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { toast } from '@/components/ui/toaster'
 import type { CareerOpening } from '@/types'
 
@@ -36,6 +37,7 @@ type FileState = Record<string, File | null>
 export default function CareerApplyPage() {
   const { slug = '' } = useParams()
   const navigate = useNavigate()
+  const { getToken } = useRecaptcha('career_apply')
   const [job, setJob] = useState<CareerOpening | null>(null)
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(EMPTY)
@@ -80,6 +82,7 @@ export default function CareerApplyPage() {
         phone: form.phone.replace(/\D/g, '').slice(0, 10),
         ...filePayload,
         resume: files.resume!,
+        recaptcha_token: await getToken('career_apply'),
       })
       toast({
         title: 'Application submitted!',
@@ -141,7 +144,7 @@ export default function CareerApplyPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Mobile number *</Label>
-                  <Input required inputMode="numeric" maxLength={10} value={form.phone} onChange={(e) => update({ phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} className="h-11 rounded-xl" />
+                  <Input required digitsOnly maxDigits={10} maxLength={10} value={form.phone} onChange={(e) => update({ phone: e.target.value })} className="h-11 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label>Email address *</Label>
@@ -198,11 +201,11 @@ export default function CareerApplyPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Current salary (₹)</Label>
-                  <Input type="number" min={0} value={form.current_salary} onChange={(e) => update({ current_salary: e.target.value })} className="h-11 rounded-xl" />
+                  <Input digitsOnly allowDecimal maxDigits={12} value={form.current_salary} onChange={(e) => update({ current_salary: e.target.value })} className="h-11 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label>Expected salary (₹)</Label>
-                  <Input type="number" min={0} value={form.expected_salary} onChange={(e) => update({ expected_salary: e.target.value })} className="h-11 rounded-xl" />
+                  <Input digitsOnly allowDecimal maxDigits={12} value={form.expected_salary} onChange={(e) => update({ expected_salary: e.target.value })} className="h-11 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label>Notice period</Label>

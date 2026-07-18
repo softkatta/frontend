@@ -75,7 +75,7 @@ export default function EmployeeProfilePage() {
         <form onSubmit={handleSave} className="p-4 sm:p-6 border-t border-[var(--border)] grid sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Mobile number (editable)</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="h-11 rounded-xl" />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} digitsOnly maxDigits={10} maxLength={10} className="h-11 rounded-xl" />
           </div>
           <div className="flex items-end">
             <Button type="submit" disabled={saving} className="rounded-xl">{saving ? 'Saving…' : 'Save changes'}</Button>

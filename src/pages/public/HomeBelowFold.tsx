@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -10,8 +10,10 @@ import { ServiceCard } from '@/components/common/ServiceCard'
 import { HomeDemoVideoSection } from '@/components/public/HomeDemoVideoSection'
 import { HomeTechnologySection } from '@/components/public/HomeTechnologySection'
 import { PageSection, SectionHeaderBlock } from '@/components/common/SectionLabel'
-import { useSiteContent } from '@/hooks/useSiteContent'
+import { RatingSummary } from '@/components/reviews/RatingSummary'
+import { fetchTestimonialsFallback, useSiteContent, type HomeTestimonial } from '@/hooks/useSiteContent'
 import { useHomeSections } from '@/hooks/useHomeSections'
+import { fetchHomeReviews } from '@/hooks/useHomeReviews'
 import { usePublicProducts } from '@/hooks/usePublicProducts'
 import { usePublicServices } from '@/hooks/usePublicServices'
 import { serviceIconKey } from '@/lib/serviceIcons'
@@ -21,6 +23,9 @@ import { getLatestProductWithDemo } from '@/lib/latestProductDemo'
 import { usePublicPageContent } from '@/hooks/usePublicPageContent'
 import { whyCardIcon } from '@/lib/whyCardIcons'
 import { cn } from '@/lib/utils'
+import type { PublicReview, ReviewStats } from '@/types/reviews'
+
+/** Homepage below-fold: products, services, featured reviews carousel, FAQ, CTA. */
 
 const DEFAULT_WHY_HIGHLIGHT = {
   stat: 'India',
@@ -47,7 +52,41 @@ export default function HomeBelowFold() {
   const { products } = usePublicProducts()
   const { services } = usePublicServices()
   const { sections: homeSections } = useHomeSections()
-  const { testimonials, faqs } = useSiteContent('below-fold')
+  const { faqs } = useSiteContent('faqs')
+  const [featuredReviews, setFeaturedReviews] = useState<PublicReview[]>([])
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
+  const [cmsTestimonials, setCmsTestimonials] = useState<HomeTestimonial[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchHomeReviews(true).then(async (bundle) => {
+      if (cancelled) return
+      setFeaturedReviews(bundle.featured)
+      setReviewStats(bundle.stats)
+      if (bundle.featured.length === 0) {
+        const fallback = await fetchTestimonialsFallback()
+        if (!cancelled) setCmsTestimonials(fallback)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const carouselItems = useMemo(() => {
+    if (featuredReviews.length > 0) {
+      return featuredReviews.map((r) => ({
+        id: r.uuid,
+        name: r.full_name,
+        role: r.target_name || (r.review_type === 'product' ? 'Product review' : 'Service review'),
+        company: r.company_name || '',
+        content: r.description,
+        rating: r.rating,
+        avatar: r.profile_image_url,
+      }))
+    }
+    return cmsTestimonials
+  }, [featuredReviews, cmsTestimonials])
   const [openFaq, setOpenFaq] = useState<string | null>(null)
   const featuredProducts = products.filter((p) => p.is_active).slice(0, 4)
 
@@ -180,15 +219,25 @@ export default function HomeBelowFold() {
         </div>
       </PageSection>
 
-      {testimonials.length > 0 && (
+      {(carouselItems.length > 0 || (reviewStats && reviewStats.approved > 0)) && (
       <PageSection tone="default" className="testimonials-glass-section">
         <div className="testimonials-glass-stage p-8 sm:p-12 rounded-3xl">
           <div className="testimonials-glass-stage__bg" aria-hidden />
           <div className="testimonials-glass-orb testimonials-glass-orb--1" aria-hidden />
           <div className="testimonials-glass-orb testimonials-glass-orb--2" aria-hidden />
-          <div className="relative z-10">
-            <SectionHeaderBlock label="Testimonials" title="Loved by" highlight="Business Owners" />
-            <TestimonialCarousel items={testimonials} />
+          <div className="relative z-10 space-y-10">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <SectionHeaderBlock label="Testimonials" title="Loved by" highlight="Business Owners" className="mb-0" />
+              <Link to="/reviews/write" className="hero-cta-ghost inline-flex items-center justify-center gap-2 self-start rounded-full px-5 py-2.5 text-sm font-semibold lg:self-auto">
+                Write a review <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {reviewStats && reviewStats.approved > 0 && (
+              <RatingSummary stats={reviewStats} className="rounded-2xl border border-[var(--border)] bg-[var(--card)]/50 p-5" />
+            )}
+
+            {carouselItems.length > 0 && <TestimonialCarousel items={carouselItems} />}
           </div>
         </div>
       </PageSection>
@@ -269,3 +318,5 @@ export default function HomeBelowFold() {
     </>
   )
 }
+
+

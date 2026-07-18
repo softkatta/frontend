@@ -52,13 +52,16 @@ type SettingField = {
   uploadFolder?: string
   accept?: string
   options?: { value: string; label: string }[]
+  digitsOnly?: boolean
+  maxDigits?: number
+  allowDecimal?: boolean
 }
 
 const GENERAL_KEYS: SettingField[] = [
   { key: 'company_name', label: 'Company Name', group: 'general' },
   { key: 'company_tagline', label: 'Company Tagline', group: 'general' },
   { key: 'company_address', label: 'Company Address', group: 'general' },
-  { key: 'company_phone', label: 'Company Phone', group: 'general' },
+  { key: 'company_phone', label: 'Company Phone', group: 'general', digitsOnly: true, maxDigits: 15 },
   { key: 'company_website', label: 'Company Website', group: 'general' },
   { key: 'company_description', label: 'Company Description (SEO & NAP fallback)', group: 'general', type: 'textarea' },
   { key: 'brand_short_name', label: 'Short Brand Name', group: 'general' },
@@ -98,7 +101,7 @@ const INVOICE_KEYS: SettingField[] = [
   { key: 'invoice_prefix', label: 'Invoice Prefix', group: 'invoice' },
   { key: 'invoice_number_start', label: 'Invoice Number Starts From', group: 'invoice', type: 'number' },
   { key: 'upi_vpa', label: 'UPI ID (for payment QR)', group: 'invoice' },
-  { key: 'invoice_account_no', label: 'Bank Account Number', group: 'invoice' },
+  { key: 'invoice_account_no', label: 'Bank Account Number', group: 'invoice', digitsOnly: true, maxDigits: 18 },
   { key: 'invoice_account_name', label: 'Bank Account Name', group: 'invoice' },
   { key: 'invoice_ifsc_code', label: 'IFSC Code', group: 'invoice' },
   { key: 'invoice_signatory', label: 'Authorized Signatory Name', group: 'invoice' },
@@ -108,11 +111,14 @@ const INVOICE_KEYS: SettingField[] = [
 
 const SECURITY_KEYS: SettingField[] = [
   { key: 'two_factor_login_enabled', label: 'Two-Factor Login', group: 'security', type: 'boolean' },
-  { key: 'session_timeout_minutes', label: 'Session Timeout (minutes)', group: 'security' },
+  { key: 'session_timeout_minutes', label: 'Session Timeout (minutes)', group: 'security', digitsOnly: true, maxDigits: 5 },
   { key: 'ip_whitelisting', label: 'IP Whitelisting', group: 'security', type: 'boolean' },
   { key: 'ip_whitelist', label: 'Allowed IPs', group: 'security', type: 'textarea' },
   { key: 'demo_account_email', label: 'Demo Account Email', group: 'security' },
   { key: 'demo_account_2fa_enabled', label: 'Require 2FA for Demo Account', group: 'security', type: 'boolean' },
+  { key: 'recaptcha_enabled', label: 'Enable reCAPTCHA on Forms', group: 'security', type: 'boolean' },
+  { key: 'recaptcha_site_key', label: 'Google reCAPTCHA Site Key (v3)', group: 'security' },
+  { key: 'recaptcha_secret_key', label: 'Google reCAPTCHA Secret Key (v3)', group: 'security' },
 ]
 
 function settingsScopeForGroup(group: SettingField['group']): SiteConfigScope {
@@ -430,10 +436,9 @@ export default function SettingsPage() {
         <>
           <Label>{k.label}</Label>
           <Input
-            type="number"
-            min={0}
-            max={100}
-            step={0.01}
+            digitsOnly
+            allowDecimal={k.key === 'gst_rate'}
+            maxDigits={k.key === 'gst_rate' ? 5 : 10}
             value={getValue(k.key, k.key === 'gst_rate' ? '18' : k.key === 'invoice_number_start' ? '1' : '0')}
             onChange={(e) => setValue(k.key, e.target.value)}
             className="h-11 rounded-xl bg-[var(--input-background)]"
@@ -456,6 +461,10 @@ export default function SettingsPage() {
       <>
         <Label>{k.label}</Label>
         <Input
+          digitsOnly={k.digitsOnly}
+          maxDigits={k.maxDigits}
+          allowDecimal={k.allowDecimal}
+          maxLength={k.maxDigits}
           value={getValue(
             k.key,
             k.key === 'default_currency' ? 'INR' : '',
@@ -703,7 +712,7 @@ export default function SettingsPage() {
               <Separator />
               <div className="space-y-2">
                 <Label>Session Timeout (minutes)</Label>
-                <Input value={getValue('session_timeout_minutes', '30')} onChange={(e) => setValue('session_timeout_minutes', e.target.value)} className="h-10 w-28 rounded-xl bg-[var(--input-background)]" />
+                <Input digitsOnly maxDigits={5} value={getValue('session_timeout_minutes', '30')} onChange={(e) => setValue('session_timeout_minutes', e.target.value)} className="h-10 w-28 rounded-xl bg-[var(--input-background)]" />
                 <p className="text-xs text-[var(--muted-foreground)]">Users are signed out after this many minutes of inactivity. Set 0 for no limit.</p>
               </div>
               <Separator />
@@ -724,6 +733,47 @@ export default function SettingsPage() {
                   className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
                 />
                 <p className="text-xs text-[var(--muted-foreground)]">One IP per line or comma-separated. Localhost is allowed when the list is empty.</p>
+              </div>
+              <Separator />
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--input)]/30 p-4 space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Google reCAPTCHA (v3)</p>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    Protects public forms (contact, login, register, careers, reviews, chatbot leads, guest purchase).
+                    Create keys at Google reCAPTCHA admin, then enable below.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Enable reCAPTCHA on forms</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      Requires both site key and secret key. When off, forms work without captcha.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={getValue('recaptcha_enabled') === 'true'}
+                    onCheckedChange={(v) => setValue('recaptcha_enabled', String(v))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Site Key (v3)</Label>
+                  <Input
+                    value={getValue('recaptcha_site_key')}
+                    onChange={(e) => setValue('recaptcha_site_key', e.target.value)}
+                    placeholder="6Lc..."
+                    className="h-10 rounded-xl bg-[var(--input-background)] font-mono text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Secret Key (v3)</Label>
+                  <Input
+                    type="password"
+                    value={getValue('recaptcha_secret_key')}
+                    onChange={(e) => setValue('recaptcha_secret_key', e.target.value)}
+                    placeholder="6Lc..."
+                    className="h-10 rounded-xl bg-[var(--input-background)] font-mono text-sm"
+                  />
+                </div>
               </div>
               <AdminSaveBar>
                 <Button className="rounded-xl px-6" onClick={() => void saveGroup(SECURITY_KEYS)} disabled={saving}>

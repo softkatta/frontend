@@ -21,6 +21,7 @@ import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { toast } from '@/components/ui/toaster'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
 import { SocialMediaLinks } from '@/components/common/SocialMediaLinks'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import {
   mailtoHref,
   mapsDirectionsUrl,
@@ -35,6 +36,7 @@ import { usePublicPageContent } from '@/hooks/usePublicPageContent'
 export default function ContactPage() {
   const { page } = usePublicPageContent('contact')
   const TRUST_ITEMS = page.trust_items ?? []
+  const { getToken } = useRecaptcha('contact')
   const {
     companyName,
     companyAddress,
@@ -94,14 +96,25 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const phone = form.phone.replace(/\D/g, '')
+    if (phone && phone.length !== 10) {
+      toast({
+        title: 'Invalid phone number',
+        description: 'Enter a 10-digit mobile number or leave phone blank.',
+        variant: 'destructive',
+      })
+      return
+    }
     setSubmitting(true)
     try {
+      const token = await getToken('contact')
       await contactApi.submit({
         name: form.name,
         email: form.email,
-        phone: form.phone || undefined,
+        phone: phone || undefined,
         subject: form.subject || undefined,
         message: form.message,
+        recaptcha_token: token,
       })
       toast({ title: 'Message sent!', description: "We'll get back to you within 24 hours.", variant: 'success' })
       setForm({ name: '', email: '', phone: '', subject: '', message: '' })
@@ -198,6 +211,9 @@ export default function ContactPage() {
                     <Label htmlFor="phone">Phone</Label>
                     <Input
                       id="phone"
+                      digitsOnly
+                      maxDigits={10}
+                      maxLength={10}
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       className="h-11 rounded-xl bg-[var(--background)]/60"

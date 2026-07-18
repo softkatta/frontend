@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Users, DollarSign, Package, LifeBuoy, TrendingUp } from 'lucide-react'
+import { Users, DollarSign, Package, LifeBuoy, TrendingUp, Eye } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 import { PageHeader } from '@/components/common/PageHeader'
 import { StatCard } from '@/components/common/StatCard'
@@ -19,7 +19,14 @@ const fallbackChart = [
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ customers: 0, revenue: 0, products: 0, tickets: 0 })
+  const [stats, setStats] = useState({
+    customers: 0,
+    revenue: 0,
+    products: 0,
+    tickets: 0,
+    visitorsToday: 0,
+    visitorsMonth: 0,
+  })
   const [chartData, setChartData] = useState(fallbackChart)
 
   useEffect(() => {
@@ -30,11 +37,14 @@ export default function AdminDashboard() {
         const revenue = asRecord(data.revenue)
         const support = asRecord(data.support)
         const subscriptions = asRecord(data.subscriptions)
+        const visitors = asRecord(data.visitors)
         setStats({
           customers: asNumber(users.active ?? users.total),
           revenue: asNumber(revenue.paid_invoices ?? revenue.total_orders),
           products: asNumber(subscriptions.active),
           tickets: asNumber(support.open_tickets) + asNumber(support.in_progress),
+          visitorsToday: asNumber(visitors.today),
+          visitorsMonth: asNumber(visitors.month),
         })
         const revenueReport = asRecord(await adminApi.reports.revenue())
         const monthly = Array.isArray(revenueReport.monthly) ? revenueReport.monthly : fallbackChart
@@ -60,7 +70,7 @@ export default function AdminDashboard() {
       <PortalWelcome
         eyebrow="Admin Portal"
         title="Platform overview"
-        description="Monitor revenue, customers, and support activity across SoftKatta."
+        description="Monitor revenue, customers, visitors, and support activity across SoftKatta."
         aside={(
           <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--input)] px-4 py-3 text-sm">
             <TrendingUp className="h-4 w-4 text-[var(--brand-teal)]" />
@@ -72,11 +82,18 @@ export default function AdminDashboard() {
 
       <PageHeader title="Key Metrics" description="Platform performance at a glance" className="mb-0" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard title="Total Customers" value={stats.customers} icon={Users} gradient="blue" />
         <StatCard title="Monthly Revenue" value={formatCurrency(stats.revenue)} icon={DollarSign} gradient="green" />
         <StatCard title="Active Subscriptions" value={stats.products} icon={Package} gradient="teal" />
         <StatCard title="Open Tickets" value={stats.tickets} icon={LifeBuoy} gradient="purple" />
+        <StatCard
+          title="Visitors Today"
+          value={stats.visitorsToday}
+          description={`${stats.visitorsMonth} unique this month`}
+          icon={Eye}
+          gradient="amber"
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

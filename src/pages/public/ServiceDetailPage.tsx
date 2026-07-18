@@ -1,12 +1,18 @@
 import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Code, Cloud, Lightbulb, Rocket, Shield, Palette, BarChart3, type LucideIcon } from 'lucide-react'
 import { PageSection } from '@/components/common/SectionLabel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { RatingSummary } from '@/components/reviews/RatingSummary'
+import { ReviewList } from '@/components/reviews/ReviewList'
+import { StarRating } from '@/components/reviews/StarRating'
 import { usePublicService } from '@/hooks/usePublicServices'
 import { usePageSeo } from '@/hooks/usePageSeo'
 import { serviceIconKey } from '@/lib/serviceIcons'
 import { serviceImageSrc } from '@/lib/serviceImages'
+import { reviewsApi } from '@/services/api/modules/reviews.api'
+import type { PublicReview, ReviewStats } from '@/types/reviews'
 
 const iconMap: Record<string, LucideIcon> = {
   Code, Cloud, Lightbulb, Rocket, Shield, Palette, BarChart: BarChart3,
@@ -15,13 +21,43 @@ const iconMap: Record<string, LucideIcon> = {
 export default function ServiceDetailPage() {
   const { slug } = useParams()
   const { service, loading, notFound } = usePublicService(slug)
+  const [serviceReviews, setServiceReviews] = useState<PublicReview[]>([])
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
 
   usePageSeo(service ? {
     title: service.meta_title || `${service.name} — Services | SoftKatta Solutions`,
     description: service.meta_description || service.description?.slice(0, 160) || `${service.name} by SoftKatta Solutions.`,
     path: `/services/${service.slug}`,
     image: serviceImageSrc(service.image),
+    jsonLd: reviewStats && reviewStats.approved > 0 ? {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: service.name,
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: reviewStats.average_rating,
+        reviewCount: reviewStats.approved,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : undefined,
   } : null)
+
+  useEffect(() => {
+    if (!slug) return
+    setReviewsLoading(true)
+    void reviewsApi.serviceReviews(slug, { per_page: 12 })
+      .then((res) => {
+        setServiceReviews(res.reviews?.data ?? [])
+        setReviewStats(res.stats)
+      })
+      .catch(() => {
+        setServiceReviews([])
+        setReviewStats(null)
+      })
+      .finally(() => setReviewsLoading(false))
+  }, [slug])
 
   if (loading) {
     return (
@@ -59,6 +95,12 @@ export default function ServiceDetailPage() {
             <div className="flex-1">
               <span className="section-label mb-4">Professional Services</span>
               <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight mb-4">{service.name}</h1>
+              {reviewStats && reviewStats.approved > 0 && (
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <StarRating value={reviewStats.average_rating} readOnly size="sm" showValue />
+                  <span className="text-sm text-muted-foreground">{reviewStats.approved} reviews</span>
+                </div>
+              )}
               {service.description && (
                 <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">{service.description}</p>
               )}
@@ -94,6 +136,31 @@ export default function ServiceDetailPage() {
                 </ul>
               </div>
             )}
+
+            <div className="space-y-5 pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-xl font-bold">Customer reviews</h2>
+                <Link
+                  to={`/reviews/write?type=service&slug=${service.slug}`}
+                  className="hero-cta-primary inline-flex items-center rounded-full px-5 py-2.5 text-sm font-semibold"
+                >
+                  Write a review
+                </Link>
+              </div>
+              {reviewStats && <RatingSummary stats={reviewStats} />}
+              <ReviewList
+                reviews={serviceReviews}
+                loading={reviewsLoading}
+                emptyMessage="No reviews for this service yet."
+                onHelpful={(uuid) => {
+                  void reviewsApi.markHelpful(uuid).then((res) => {
+                    setServiceReviews((prev) =>
+                      prev.map((r) => (r.uuid === uuid ? { ...r, helpful_count: res.helpful_count } : r)),
+                    )
+                  })
+                }}
+              />
+            </div>
           </div>
 
           <div>
@@ -104,6 +171,12 @@ export default function ServiceDetailPage() {
               </p>
               <Link to="/contact" className="glow-btn flex items-center justify-center w-full py-3 rounded-full text-sm font-semibold mb-3">
                 Request Quote
+              </Link>
+              <Link
+                to={`/reviews/write?type=service&slug=${service.slug}`}
+                className="hero-cta-ghost flex items-center justify-center w-full py-3 rounded-full text-sm font-semibold mb-3"
+              >
+                Write a Review
               </Link>
               <Link to="/register" className="hero-cta-ghost flex items-center justify-center w-full py-3 rounded-full text-sm font-semibold">
                 Create Account

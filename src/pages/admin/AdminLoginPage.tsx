@@ -5,6 +5,7 @@ import { AuthFormError } from '@/components/auth/AuthFormError'
 import { PortalAuthShell } from '@/components/auth/PortalAuthShell'
 import { TwoFactorLoginStep } from '@/components/auth/TwoFactorLoginStep'
 import { useMaintenanceMode } from '@/hooks/useMaintenanceMode'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { isTwoFactorChallengePayload } from '@/lib/authChallenge'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { setAdminWorkspaceMode } from '@/services/api/client'
@@ -20,6 +21,7 @@ export default function AdminLoginPage() {
   const navigate = useNavigate()
   const isLoading = useAppSelector((state) => state.auth.isLoading)
   const { enabled: maintenanceEnabled } = useMaintenanceMode()
+  const { getToken } = useRecaptcha('login')
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname
@@ -92,7 +94,11 @@ export default function AdminLoginPage() {
         return
       }
 
-      const result = await dispatch(loginUser({ credentials: form, redirectTo: redirect ?? '/admin' }))
+      const token = await getToken('login')
+      const result = await dispatch(loginUser({
+        credentials: { ...form, recaptcha_token: token },
+        redirectTo: redirect ?? '/admin',
+      }))
 
       if (loginUser.fulfilled.match(result)) {
         const role = result.payload.user.role

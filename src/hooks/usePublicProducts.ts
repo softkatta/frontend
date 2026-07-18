@@ -26,7 +26,7 @@ async function fetchProductList(): Promise<ProductListCache> {
   if (listInflight) return listInflight
 
   listInflight = productsApi
-    .list()
+    .list({ lite: true })
     .then((raw) => {
       const list = unwrapList(raw)
       const products = list.map(mapApiProduct)

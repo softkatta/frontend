@@ -34,7 +34,7 @@ export type HomeFaq = {
   answer: string
 }
 
-export type SiteContentMode = 'hero' | 'below-fold'
+export type SiteContentMode = 'hero' | 'below-fold' | 'faqs'
 
 function mapTestimonial(t: SiteTestimonial): HomeTestimonial {
   return {
@@ -48,16 +48,55 @@ function mapTestimonial(t: SiteTestimonial): HomeTestimonial {
   }
 }
 
+let cachedFaqs: HomeFaq[] | null = null
+let faqsInflight: Promise<HomeFaq[]> | null = null
+let cachedTestimonials: HomeTestimonial[] | null = null
+
+async function fetchFaqs(): Promise<HomeFaq[]> {
+  if (cachedFaqs) return cachedFaqs
+  if (faqsInflight) return faqsInflight
+
+  faqsInflight = siteContentApi
+    .faqs()
+    .then((raw) => {
+      const list = unwrapList(raw).map((f) => ({
+        id: String((f as { id: unknown }).id),
+        question: String((f as { question: string }).question),
+        answer: String((f as { answer: string }).answer),
+      }))
+      cachedFaqs = list
+      return list
+    })
+    .finally(() => {
+      faqsInflight = null
+    })
+
+  return faqsInflight
+}
+
+export async function fetchTestimonialsFallback(): Promise<HomeTestimonial[]> {
+  if (cachedTestimonials) return cachedTestimonials
+  try {
+    const list = unwrapList(await siteContentApi.testimonials()).map((t) => mapTestimonial(t as SiteTestimonial))
+    cachedTestimonials = list
+    return list
+  } catch {
+    return []
+  }
+}
+
 export function useSiteContent(mode: SiteContentMode = 'hero') {
   const [reloadToken, setReloadToken] = useState(contentReloadToken)
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => cachedHeroSlides ?? [])
-  const [testimonials, setTestimonials] = useState<HomeTestimonial[]>([])
-  const [faqs, setFaqs] = useState<HomeFaq[]>([])
+  const [testimonials, setTestimonials] = useState<HomeTestimonial[]>(() => cachedTestimonials ?? [])
+  const [faqs, setFaqs] = useState<HomeFaq[]>(() => cachedFaqs ?? [])
 
   useEffect(() => {
     return onSiteConfigUpdated((scope) => {
       if (shouldRefreshScope(scope, 'content')) {
         cachedHeroSlides = null
+        cachedFaqs = null
+        cachedTestimonials = null
         contentReloadToken += 1
         setReloadToken(contentReloadToken)
       }
@@ -85,28 +124,33 @@ export function useSiteContent(mode: SiteContentMode = 'hero') {
       }
     }
 
+    async function loadFaqsOnly() {
+      try {
+        const list = await fetchFaqs()
+        if (!cancelled) setFaqs(list)
+      } catch {
+        if (!cancelled) setFaqs([])
+      }
+    }
+
     async function loadRest() {
       try {
         const [testimonialItems, faqItems] = await Promise.allSettled([
           siteContentApi.testimonials(),
-          siteContentApi.faqs(),
+          fetchFaqs(),
         ])
         if (cancelled) return
 
         if (testimonialItems.status === 'fulfilled') {
-          const list = unwrapList(testimonialItems.value)
-          setTestimonials(list.map((t) => mapTestimonial(t as SiteTestimonial)))
+          const list = unwrapList(testimonialItems.value).map((t) => mapTestimonial(t as SiteTestimonial))
+          cachedTestimonials = list
+          setTestimonials(list)
         } else {
           setTestimonials([])
         }
 
         if (faqItems.status === 'fulfilled') {
-          const list = unwrapList(faqItems.value)
-          setFaqs(list.map((f) => ({
-            id: String((f as { id: unknown }).id),
-            question: String((f as { question: string }).question),
-            answer: String((f as { answer: string }).answer),
-          })))
+          setFaqs(faqItems.value)
         } else {
           setFaqs([])
         }
@@ -120,6 +164,13 @@ export function useSiteContent(mode: SiteContentMode = 'hero') {
 
     if (mode === 'hero') {
       void loadHero()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    if (mode === 'faqs') {
+      void loadFaqsOnly()
       return () => {
         cancelled = true
       }

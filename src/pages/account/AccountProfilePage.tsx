@@ -170,7 +170,7 @@ export default function AccountProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label>Phone</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="h-11 rounded-xl" />
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} digitsOnly maxDigits={10} maxLength={10} className="h-11 rounded-xl" />
               </div>
             </div>
             <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</Button>

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 export default function FaqPage() {
   const { page } = usePublicPageContent('faq')
-  const { faqs } = useSiteContent('below-fold')
+  const { faqs } = useSiteContent('faqs')
   const [openFaq, setOpenFaq] = useState<string | null>(null)
 
   return (

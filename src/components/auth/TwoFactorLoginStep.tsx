@@ -169,9 +169,11 @@ export function TwoFactorLoginStep({
             <Input
               id="two-factor-code"
               value={code}
-              onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(e) => onCodeChange(e.target.value)}
+              digitsOnly
+              maxDigits={6}
+              maxLength={6}
               className="h-11 rounded-xl tracking-[0.3em]"
-              inputMode="numeric"
               autoComplete="one-time-code"
               placeholder="000000"
             />

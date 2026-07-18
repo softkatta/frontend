@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { chatbotApi } from '@/services/api'
 import { useAuth } from '@/hooks/useAuth'
 import { useChatbotConfig } from '@/hooks/useChatbotConfig'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import {
   getChatLanguage,
   getChatOnboarded,
@@ -47,6 +48,7 @@ function resolveVisitorName(user: { first_name?: string; last_name?: string; ema
 export function ChatWidget() {
   const [shouldLoadConfig, setShouldLoadConfig] = useState(false)
   const { config, loading } = useChatbotConfig(shouldLoadConfig)
+  const { getToken } = useRecaptcha('chatbot_lead')
 
   useEffect(() => {
     const start = () => setShouldLoadConfig(true)
@@ -230,7 +232,8 @@ export function ChatWidget() {
   }
 
   const handleLeadSubmit = async (values: Record<string, string>) => {
-    await chatbotApi.saveLead(values)
+    const token = await getToken('chatbot_lead')
+    await chatbotApi.saveLead({ ...values, recaptcha_token: token })
     const confirmation = 'Thank you! Our team will contact you shortly.'
     setMessages((prev) => [...prev, createMessage('bot', confirmation)])
     setLatestResponse({

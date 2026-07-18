@@ -27,6 +27,6 @@ export const chatbotApi = {
     response?: string
     language?: string
   }) => api.post<unknown>('/chatbot/conversations', payload, { skipAuth: true }),
-  saveLead: (payload: Partial<ChatbotLeadFormValues>) =>
+  saveLead: (payload: Partial<ChatbotLeadFormValues> & { recaptcha_token?: string }) =>
     api.post<unknown>('/chatbot/leads', payload, { skipAuth: true }),
 }

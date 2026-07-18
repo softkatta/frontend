@@ -122,11 +122,12 @@ export function CareerApplyDialog({ open, onOpenChange, jobTitle, jobSlug }: Car
               <Label htmlFor="apply-phone">Phone (optional)</Label>
               <Input
                 id="apply-phone"
-                inputMode="numeric"
+                digitsOnly
+                maxDigits={10}
                 maxLength={10}
                 placeholder="9876543210"
                 value={form.phone}
-                onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
                 className="h-11 rounded-xl bg-[var(--background)]/60"
               />
             </div>

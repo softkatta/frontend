@@ -24,6 +24,7 @@ const footerLinks = {
     { label: 'Services', to: '/services' },
     { label: 'Pricing', to: '/pricing' },
     { label: 'Contact', to: '/contact' },
+    { label: 'Write a Review', to: '/reviews/write' },
   ],
   Resources: [
     { label: 'FAQ', to: '/faq' },

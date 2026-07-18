@@ -124,9 +124,12 @@ export function EmployeeFormDialog({
               <Label htmlFor="employee-phone">Phone</Label>
               <Input
                 id="employee-phone"
+                digitsOnly
+                maxDigits={10}
+                maxLength={10}
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                placeholder="+91..."
+                placeholder="9876543210"
               />
             </div>
           </div>

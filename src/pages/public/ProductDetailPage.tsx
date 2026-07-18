@@ -26,9 +26,14 @@ import { SimpleBillingToggle } from '@/components/common/SimpleBillingToggle'
 import { getDefaultPlan, getProductPlanSummary, planForBilling, yearlySavingsPercent } from '@/lib/purchasePlan'
 import { useSiteContent } from '@/hooks/useSiteContent'
 import { usePageSeo } from '@/hooks/usePageSeo'
+import { RatingSummary } from '@/components/reviews/RatingSummary'
+import { ReviewList } from '@/components/reviews/ReviewList'
+import { StarRating } from '@/components/reviews/StarRating'
+import { reviewsApi } from '@/services/api/modules/reviews.api'
+import type { PublicReview, ReviewStats } from '@/types/reviews'
 
 type ShopBilling = 'monthly' | 'yearly'
-type DetailTab = 'features' | 'faq'
+type DetailTab = 'features' | 'faq' | 'reviews'
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -133,7 +138,10 @@ export default function ProductDetailPage() {
     searchParams.get('buy') === 'yearly' ? 'yearly' : 'monthly'
   ))
   const { buyNow, addProduct } = useCart()
-  const { faqs } = useSiteContent('below-fold')
+  const { faqs } = useSiteContent('faqs')
+  const [productReviews, setProductReviews] = useState<PublicReview[]>([])
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
   const screenshot = product
     ? (product.images[0] ? mediaSrc(product.images[0]) : getProductScreenshot(product.slug))
     : (slug ? getProductScreenshot(slug) : undefined)
@@ -145,7 +153,34 @@ export default function ProductDetailPage() {
     path: `/products/${product.slug}`,
     ogType: 'product',
     image: screenshot,
+    jsonLd: reviewStats && reviewStats.approved > 0 ? {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: product.name,
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: reviewStats.average_rating,
+        reviewCount: reviewStats.approved,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : undefined,
   } : null)
+
+  useEffect(() => {
+    if (!slug) return
+    setReviewsLoading(true)
+    void reviewsApi.productReviews(slug, { per_page: 12 })
+      .then((res) => {
+        setProductReviews(res.reviews?.data ?? [])
+        setReviewStats(res.stats)
+      })
+      .catch(() => {
+        setProductReviews([])
+        setReviewStats(null)
+      })
+      .finally(() => setReviewsLoading(false))
+  }, [slug])
 
   useEffect(() => {
     if (searchParams.get('buy') === 'yearly') setBilling('yearly')
@@ -203,6 +238,7 @@ export default function ProductDetailPage() {
   const tabs = [
     { key: 'features' as const, label: 'Features', show: product.featureItems.length > 0 },
     { key: 'faq' as const, label: 'FAQ', show: faqs.length > 0 },
+    { key: 'reviews' as const, label: 'Reviews', show: true },
   ].filter((t) => t.show)
 
   const demoVideoUrl = product.demo_video_url ? resolveDemoVideoUrl(product.demo_video_url) : ''
@@ -293,6 +329,17 @@ export default function ProductDetailPage() {
                 <h1 className="font-display text-3xl sm:text-4xl xl:text-5xl font-bold tracking-tight leading-tight">
                   {product.name}
                 </h1>
+                {reviewStats && reviewStats.approved > 0 && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StarRating value={reviewStats.average_rating} readOnly size="sm" showValue />
+                    <span className="text-sm text-muted-foreground">
+                      {reviewStats.approved} review{reviewStats.approved === 1 ? '' : 's'}
+                    </span>
+                    <Link to={`/reviews/write?type=product&slug=${product.slug}`} className="text-sm font-medium text-[var(--brand-blue)] hover:underline">
+                      Write a review
+                    </Link>
+                  </div>
+                )}
                 <p className="text-muted-foreground text-base leading-relaxed">{product.description}</p>
               </div>
 
@@ -353,6 +400,32 @@ export default function ProductDetailPage() {
                       {openFaq === faq.id && <div className="product-page__faq-body">{faq.answer}</div>}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div className="space-y-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    {reviewStats && <RatingSummary stats={reviewStats} compact className="flex-1" />}
+                    <Link
+                      to={`/reviews/write?type=product&slug=${product.slug}`}
+                      className="hero-cta-primary inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
+                    >
+                      Write a review
+                    </Link>
+                  </div>
+                  <ReviewList
+                    reviews={productReviews}
+                    loading={reviewsLoading}
+                    emptyMessage="No reviews for this product yet. Be the first to share your experience."
+                    onHelpful={(uuid) => {
+                      void reviewsApi.markHelpful(uuid).then((res) => {
+                        setProductReviews((prev) =>
+                          prev.map((r) => (r.uuid === uuid ? { ...r, helpful_count: res.helpful_count } : r)),
+                        )
+                      })
+                    }}
+                  />
                 </div>
               )}
             </div>

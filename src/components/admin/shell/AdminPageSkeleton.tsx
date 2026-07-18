@@ -49,8 +49,8 @@ export function AdminDashboardSkeleton() {
         <Skeleton className="mt-3 h-4 w-full max-w-lg" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
             <div className="flex items-start justify-between">
               <div className="space-y-2">

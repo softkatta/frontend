@@ -146,6 +146,9 @@ export const authApi = {
     if (payload.avatar) {
       formData.append('avatar', payload.avatar)
     }
+    if (payload.recaptcha_token) {
+      formData.append('recaptcha_token', payload.recaptcha_token)
+    }
 
     return api.post<AuthSession>('/auth/register', formData, { skipAuth: true })
   },

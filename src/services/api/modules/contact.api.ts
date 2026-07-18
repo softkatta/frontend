@@ -7,6 +7,7 @@ export type ContactPayload = {
   company?: string
   subject?: string
   message: string
+  recaptcha_token?: string
 }
 
 export const contactApi = {

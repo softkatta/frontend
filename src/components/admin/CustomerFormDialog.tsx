@@ -113,9 +113,12 @@ export function CustomerFormDialog({
             <Label htmlFor="customer-phone">Phone</Label>
             <Input
               id="customer-phone"
+              digitsOnly
+              maxDigits={10}
+              maxLength={10}
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              placeholder="+91..."
+              placeholder="9876543210"
             />
           </div>
           <div className="space-y-2">

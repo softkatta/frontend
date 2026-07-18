@@ -428,7 +428,10 @@ export function TwoFactorMethodsSection({
                   ) : null}
                   <Input
                     value={confirmCode}
-                    onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setConfirmCode(e.target.value)}
+                    digitsOnly
+                    maxDigits={6}
+                    maxLength={6}
                     placeholder="000000"
                     className="h-11 rounded-xl tracking-[0.3em]"
                   />
@@ -451,7 +454,10 @@ export function TwoFactorMethodsSection({
                   />
                   <Input
                     value={disableCode}
-                    onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setDisableCode(e.target.value)}
+                    digitsOnly
+                    maxDigits={6}
+                    maxLength={6}
                     placeholder="Authenticator code"
                     className="h-11 rounded-xl tracking-[0.3em]"
                   />
@@ -491,7 +497,10 @@ export function TwoFactorMethodsSection({
                   <p className="text-sm text-[var(--muted-foreground)]">Enter the 6-digit code sent to your email.</p>
                   <Input
                     value={emailCode}
-                    onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setEmailCode(e.target.value)}
+                    digitsOnly
+                    maxDigits={6}
+                    maxLength={6}
                     placeholder="000000"
                     className="h-11 rounded-xl tracking-[0.3em]"
                   />
@@ -517,7 +526,10 @@ export function TwoFactorMethodsSection({
                   />
                   <Input
                     value={emailCode}
-                    onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setEmailCode(e.target.value)}
+                    digitsOnly
+                    maxDigits={6}
+                    maxLength={6}
                     placeholder="Email code"
                     className="h-11 rounded-xl tracking-[0.3em]"
                   />

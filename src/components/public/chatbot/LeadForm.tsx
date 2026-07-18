@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usePublicProducts } from '@/hooks/usePublicProducts'
+import { toast } from '@/components/ui/toaster'
 import type { ChatbotLeadFormType, ChatbotLeadFormValues } from '@/types/chatbot'
 
 interface LeadFormProps {
@@ -60,6 +61,17 @@ export function LeadForm({ formType, fields, onSubmit }: LeadFormProps) {
       } else {
         payload.message = values.message || `Preferred: ${values.preferred_datetime}`
       }
+      if (payload.phone) {
+        payload.phone = payload.phone.replace(/\D/g, '').slice(0, 10)
+        if (payload.phone.length !== 10) {
+          toast({
+            title: 'Invalid mobile number',
+            description: 'Enter a valid 10-digit mobile number.',
+            variant: 'destructive',
+          })
+          return
+        }
+      }
       await onSubmit(payload)
     } finally {
       setSubmitting(false)
@@ -109,6 +121,9 @@ export function LeadForm({ formType, fields, onSubmit }: LeadFormProps) {
         id={`chatbot-${field}`}
         className="chatbot-lead-form__input"
         type={field === 'email' ? 'email' : field.includes('datetime') ? 'datetime-local' : 'text'}
+        digitsOnly={field === 'phone'}
+        maxDigits={field === 'phone' ? 10 : undefined}
+        maxLength={field === 'phone' ? 10 : undefined}
         value={values[key] ?? ''}
         required={required}
         onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}

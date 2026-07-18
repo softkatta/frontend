@@ -6,6 +6,7 @@ import { PortalAuthShell } from '@/components/auth/PortalAuthShell'
 import { TwoFactorLoginStep } from '@/components/auth/TwoFactorLoginStep'
 import { isTwoFactorChallengePayload } from '@/lib/authChallenge'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import type { TwoFactorMethodName } from '@/services/api/modules/auth.api'
 import { loginUser, verify2faLogin, verifyPasskeyLogin } from '@/store/slices/authSlice'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
@@ -16,6 +17,7 @@ export default function EmployeeLoginPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const isLoading = useAppSelector((state) => state.auth.isLoading)
+  const { getToken } = useRecaptcha('login')
   const [form, setForm] = useState({ email: '', password: '' })
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -37,6 +39,7 @@ export default function EmployeeLoginPage() {
       const credentials = {
         email: form.email.trim().toLowerCase(),
         password: form.password.trim(),
+        recaptcha_token: await getToken('login'),
       }
       const result = await dispatch(loginUser({ credentials }))
       if (loginUser.fulfilled.match(result)) {

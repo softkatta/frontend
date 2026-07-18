@@ -5,6 +5,7 @@ import { BrandLogo } from '@/components/common/BrandLogo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { registerUser } from '@/store/slices/authSlice'
 import { toast } from '@/components/ui/toaster'
 import { useState } from 'react'
@@ -14,6 +15,7 @@ const PERKS = ['Required before purchase', 'Instant shop access', 'Manage subscr
 
 export default function RegisterPage() {
   const { register, isLoading } = useAuth()
+  const { getToken } = useRecaptcha('register')
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect') ?? undefined
   const [form, setForm] = useState({
@@ -44,8 +46,9 @@ export default function RegisterPage() {
       return
     }
 
+    const token = await getToken('register')
     const result = await register(
-      { ...form, phone, avatar: avatarFile },
+      { ...form, phone, avatar: avatarFile, recaptcha_token: token },
       redirect,
     )
     if (registerUser.fulfilled.match(result)) {
@@ -156,12 +159,12 @@ export default function RegisterPage() {
                   <Label htmlFor="phone">Phone (optional)</Label>
                   <Input
                     id="phone"
-                    inputMode="numeric"
-                    pattern="[0-9]{10}"
+                    digitsOnly
+                    maxDigits={10}
                     maxLength={10}
                     placeholder="9876543210"
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="h-11 rounded-xl"
                   />
                   <p className="text-xs text-muted-foreground">Optional. Must be exactly 10 digits if provided.</p>

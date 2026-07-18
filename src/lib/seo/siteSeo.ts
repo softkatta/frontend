@@ -117,6 +117,12 @@ export const STATIC_PAGE_SEO: Record<string, PageSeoConfig> = {
       'Contact SoftKatta Solutions for custom software, ERP solutions, website development, and mobile applications. Request a consultation — we respond within 24 hours.',
     keywords: `${DEFAULT_KEYWORDS}, contact SoftKatta Nanded, software demo Talni`,
   },
+  '/reviews/write': {
+    title: `Write a Review — ${BRAND_NAME}`,
+    description:
+      'Share your experience with SoftKatta products or services. Your feedback helps businesses across India choose the right software partner.',
+    keywords: `${DEFAULT_KEYWORDS}, SoftKatta reviews, customer testimonials, software review India`,
+  },
   '/blog': {
     title: `Technology Insights, Software Tips & Business Automation | ${BRAND_NAME}`,
     description:

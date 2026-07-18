@@ -282,6 +282,20 @@ export const adminApi = {
     delete: (id: string | number) => api.delete<null>(`/admin/testimonials/${id}`),
   },
 
+  reviews: {
+    list: (params?: Record<string, unknown>) => api.get<unknown>('/admin/reviews', { params }),
+    stats: () => api.get<unknown>('/admin/reviews/stats'),
+    get: (id: string | number) => api.get<unknown>(`/admin/reviews/${id}`),
+    update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/reviews/${id}`, payload),
+    delete: (id: string | number) => api.delete<null>(`/admin/reviews/${id}`),
+    approve: (id: string | number) => api.post<unknown>(`/admin/reviews/${id}/approve`),
+    reject: (id: string | number) => api.post<unknown>(`/admin/reviews/${id}/reject`),
+    reply: (id: string | number, admin_reply: string) => api.post<unknown>(`/admin/reviews/${id}/reply`, { admin_reply }),
+    feature: (id: string | number, is_featured: boolean) => api.post<unknown>(`/admin/reviews/${id}/feature`, { is_featured }),
+    verify: (id: string | number, is_verified: boolean) => api.post<unknown>(`/admin/reviews/${id}/verify`, { is_verified }),
+    export: (params?: Record<string, unknown>) => api.get<Blob>('/admin/reviews/export', { params, responseType: 'blob' }),
+  },
+
   heroSlides: {
     list: () => api.get<HeroSlide[]>('/admin/hero-slides'),
     create: (payload: unknown) => api.post<HeroSlide>('/admin/hero-slides', payload),

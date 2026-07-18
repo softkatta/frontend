@@ -133,9 +133,12 @@ export function HrManagersSettingsPanel() {
               <Label htmlFor="hr-phone">Phone (optional)</Label>
               <Input
                 id="hr-phone"
+                digitsOnly
+                maxDigits={10}
+                maxLength={10}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+91 …"
+                placeholder="9876543210"
                 className="h-11 rounded-xl"
               />
             </div>

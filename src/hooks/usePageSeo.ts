@@ -14,5 +14,6 @@ export function usePageSeo(options: ApplyPageSeoOptions | null | undefined) {
     options?.noindex,
     options?.image,
     options?.siteName,
+    options?.jsonLd ? JSON.stringify(options.jsonLd) : '',
   ])
 }

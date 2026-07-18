@@ -5,6 +5,7 @@ import { AuthFormError } from '@/components/auth/AuthFormError'
 import { PortalAuthShell } from '@/components/auth/PortalAuthShell'
 import { TwoFactorLoginStep } from '@/components/auth/TwoFactorLoginStep'
 import { useAuth } from '@/hooks/useAuth'
+import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { isTwoFactorChallengePayload } from '@/lib/authChallenge'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { authApi } from '@/services/api'
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { isLoading } = useAuth()
+  const { getToken } = useRecaptcha('login')
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect') ?? undefined
   const [form, setForm] = useState({ email: '', password: '' })
@@ -80,7 +82,11 @@ export default function LoginPage() {
         return
       }
 
-      const result = await dispatch(loginUser({ credentials: form, redirectTo: redirect }))
+      const token = await getToken('login')
+      const result = await dispatch(loginUser({
+        credentials: { ...form, recaptcha_token: token },
+        redirectTo: redirect,
+      }))
       if (loginUser.fulfilled.match(result)) {
         finishLogin(result.payload.user.role)
         return

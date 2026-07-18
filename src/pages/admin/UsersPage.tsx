@@ -740,7 +740,7 @@ export default function UsersPage({ mode = 'admin', variant = 'staff' }: UsersPa
               </div>
               <div className="space-y-2">
                 <Label htmlFor="users-hr-phone">Phone (optional)</Label>
-                <Input id="users-hr-phone" value={hrForm.phone} onChange={(e) => setHrForm({ ...hrForm, phone: e.target.value })} className="h-11 rounded-xl" />
+                <Input id="users-hr-phone" digitsOnly maxDigits={10} maxLength={10} value={hrForm.phone} onChange={(e) => setHrForm({ ...hrForm, phone: e.target.value })} className="h-11 rounded-xl" />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" className="rounded-xl" onClick={() => setHrDialogOpen(false)}>Cancel</Button>
