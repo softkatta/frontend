@@ -359,6 +359,8 @@ export const adminApi = {
     resetDomains: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/reset-domains`),
     forceLogout: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/force-logout`),
     regenerate: (id: string | number) => api.post<unknown>(`/admin/licenses/${id}/regenerate`),
+    notifyReady: (id: string | number, payload?: { product_url?: string }) =>
+      api.post<unknown>(`/admin/licenses/${id}/notify-ready`, payload ?? {}),
     activity: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/activity`),
     history: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/history`),
     installations: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}/installations`),

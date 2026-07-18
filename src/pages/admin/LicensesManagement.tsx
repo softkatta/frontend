@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react'
 import {
-  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History, Server, RefreshCw,
+  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History, Server, RefreshCw, Megaphone,
 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { adminApi } from '@/services/api'
@@ -25,7 +26,7 @@ const statusVariant = {
 } as const
 
 type LicenseRow = ReturnType<typeof mapAdminLicense>
-type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout' | 'reset_installations' | 'regenerate'
+type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout' | 'reset_installations' | 'regenerate' | 'notify_ready'
 
 type LogRow = {
   id: string
@@ -59,6 +60,7 @@ export default function LicensesManagement() {
 
   const [detail, setDetail] = useState<LicenseRow | null>(null)
   const [actionTarget, setActionTarget] = useState<{ row: LicenseRow; action: Action } | null>(null)
+  const [productUrl, setProductUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [activity, setActivity] = useState<LogRow[] | null>(null)
   const [history, setHistory] = useState<HistoryRow[] | null>(null)
@@ -73,12 +75,23 @@ export default function LicensesManagement() {
     }
   }
 
+  const startAction = (row: LicenseRow, action: Action) => {
+    if (action === 'notify_ready') {
+      const domain = row.allowed_domains[0] ?? ''
+      setProductUrl(domain ? (domain.startsWith('http') ? domain : `https://${domain}`) : '')
+    } else {
+      setProductUrl('')
+    }
+    setActionTarget({ row, action })
+  }
+
   const handleAction = async () => {
     if (!actionTarget) return
     const { row, action } = actionTarget
     setBusy(true)
     try {
       let regeneratedKey: string | null = null
+      let notifySummary: string | null = null
       if (action === 'suspend') await adminApi.licenses.suspend(row.id)
       else if (action === 'activate') await adminApi.licenses.activate(row.id)
       else if (action === 'revoke') await adminApi.licenses.revoke(row.id)
@@ -90,6 +103,16 @@ export default function LicensesManagement() {
         const response = await adminApi.licenses.regenerate(row.id)
         const data = asRecord(asRecord(response).data ?? response)
         regeneratedKey = asString(data.license_key) || null
+      } else if (action === 'notify_ready') {
+        const response = await adminApi.licenses.notifyReady(row.id, {
+          product_url: productUrl.trim() || undefined,
+        })
+        const data = asRecord(asRecord(response).data ?? response)
+        const email = asString(data.customer_email) || row.customer_email
+        const phone = asString(data.customer_phone)
+        notifySummary = phone
+          ? `Notified ${email} (email + WhatsApp ${phone})`
+          : `Email sent to ${email}. WhatsApp skipped (no phone on customer).`
       }
 
       const messages: Record<Action, string> = {
@@ -103,9 +126,11 @@ export default function LicensesManagement() {
         regenerate: regeneratedKey
           ? `New key: ${regeneratedKey}`
           : 'License key regenerated. Customer must re-activate.',
+        notify_ready: notifySummary ?? 'Customer notified: product is ready.',
       }
       toast({ title: messages[action], variant: 'success' })
       setActionTarget(null)
+      setProductUrl('')
       if (action === 'delete') {
         setDetail(null)
       } else if (detail?.id === row.id) {
@@ -220,6 +245,10 @@ export default function LicensesManagement() {
       title: 'Regenerate License Key',
       description: 'Creates a new license key string. The old key stops working immediately, domains and install sessions are cleared, and the customer must activate the product again with the new key.',
     },
+    notify_ready: {
+      title: 'Notify: Product Ready',
+      description: 'Send email + WhatsApp to the customer that their product setup is complete. Confirm the live product URL below (optional if a domain is already registered).',
+    },
   }
 
   const columns = [
@@ -268,14 +297,15 @@ export default function LicensesManagement() {
         <TableActions
           actions={[
             actionBtn('View', Eye, () => openDetail(row)),
+            actionBtn('Product Ready', Megaphone, () => startAction(row, 'notify_ready')),
             row.status !== 'active'
-              ? actionBtn('Activate', ShieldCheck, () => setActionTarget({ row, action: 'activate' }))
-              : actionBtn('Suspend', ShieldOff, () => setActionTarget({ row, action: 'suspend' })),
-            actionBtn('Reset Domains', RotateCcw, () => setActionTarget({ row, action: 'reset_domains' })),
-            actionBtn('Regenerate Key', RefreshCw, () => setActionTarget({ row, action: 'regenerate' })),
-            actionBtn('Force Logout', LogOut, () => setActionTarget({ row, action: 'force_logout' })),
-            { ...actionBtn('Revoke', XCircle, () => setActionTarget({ row, action: 'revoke' })), variant: 'destructive' },
-            { ...actionBtn('Delete', Trash2, () => setActionTarget({ row, action: 'delete' })), variant: 'destructive' },
+              ? actionBtn('Activate', ShieldCheck, () => startAction(row, 'activate'))
+              : actionBtn('Suspend', ShieldOff, () => startAction(row, 'suspend')),
+            actionBtn('Reset Domains', RotateCcw, () => startAction(row, 'reset_domains')),
+            actionBtn('Regenerate Key', RefreshCw, () => startAction(row, 'regenerate')),
+            actionBtn('Force Logout', LogOut, () => startAction(row, 'force_logout')),
+            { ...actionBtn('Revoke', XCircle, () => startAction(row, 'revoke')), variant: 'destructive' },
+            { ...actionBtn('Delete', Trash2, () => startAction(row, 'delete')), variant: 'destructive' },
           ]}
         />
       ),
@@ -347,25 +377,28 @@ export default function LicensesManagement() {
               <Button type="button" variant="outline" size="sm" onClick={() => loadInstallations(detail)}>
                 <Server className="mr-1 h-4 w-4" /> Installations
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'notify_ready')}>
+                <Megaphone className="mr-1 h-4 w-4" /> Product Ready
+              </Button>
               {detail.status === 'active' ? (
-                <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'suspend' })}>
+                <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'suspend')}>
                   <ShieldOff className="mr-1 h-4 w-4" /> Suspend
                 </Button>
               ) : (
-                <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'activate' })}>
+                <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'activate')}>
                   <ShieldCheck className="mr-1 h-4 w-4" /> Activate
                 </Button>
               )}
-              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_domains' })}>
+              <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'reset_domains')}>
                 <RotateCcw className="mr-1 h-4 w-4" /> Reset Domains
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'regenerate' })}>
+              <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'regenerate')}>
                 <RefreshCw className="mr-1 h-4 w-4" /> Regenerate Key
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_installations' })}>
+              <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'reset_installations')}>
                 <Server className="mr-1 h-4 w-4" /> Reset Installations
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'force_logout' })}>
+              <Button type="button" variant="outline" size="sm" onClick={() => startAction(detail, 'force_logout')}>
                 <LogOut className="mr-1 h-4 w-4" /> Force Logout
               </Button>
             </div>
@@ -429,13 +462,45 @@ export default function LicensesManagement() {
 
       <ConfirmDialog
         open={!!actionTarget}
-        onOpenChange={(open) => !open && setActionTarget(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionTarget(null)
+            setProductUrl('')
+          }
+        }}
         onConfirm={handleAction}
         loading={busy}
         title={actionTarget ? confirmMessages[actionTarget.action].title : ''}
         description={actionTarget ? confirmMessages[actionTarget.action].description : ''}
-        confirmLabel={actionTarget?.action === 'delete' || actionTarget?.action === 'revoke' ? 'Confirm' : 'Proceed'}
-      />
+        confirmLabel={
+          actionTarget?.action === 'notify_ready'
+            ? 'Send email + WhatsApp'
+            : actionTarget?.action === 'delete' || actionTarget?.action === 'revoke'
+              ? 'Confirm'
+              : 'Proceed'
+        }
+        confirmVariant={
+          actionTarget?.action === 'delete' || actionTarget?.action === 'revoke' ? 'destructive' : 'default'
+        }
+      >
+        {actionTarget?.action === 'notify_ready' && (
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="product-ready-url">
+              Product URL (optional)
+            </label>
+            <Input
+              id="product-ready-url"
+              value={productUrl}
+              onChange={(e) => setProductUrl(e.target.value)}
+              placeholder="https://customer-domain.com"
+              autoComplete="off"
+            />
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Customer: {actionTarget.row.customer_name} · {actionTarget.row.customer_email}
+            </p>
+          </div>
+        )}
+      </ConfirmDialog>
     </PortalPageShell>
   )
 }
