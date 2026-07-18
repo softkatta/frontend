@@ -87,8 +87,8 @@ export default function LicensesManagement() {
       else if (action === 'reset_installations') await adminApi.licenses.resetInstallations(row.id)
 
       const messages: Record<Action, string> = {
-        suspend: 'License suspended.',
-        activate: 'License activated.',
+        suspend: 'License suspended. Product stops on next heartbeat.',
+        activate: 'License activated. Product restores on next heartbeat.',
         revoke: 'License revoked.',
         delete: 'License deleted.',
         reset_domains: 'Domain binding reset.',
@@ -180,15 +180,15 @@ export default function LicensesManagement() {
   const confirmMessages: Record<Action, { title: string; description: string }> = {
     suspend: {
       title: 'Suspend License',
-      description: 'Install tokens are revoked immediately. The product will stop on the next heartbeat (usually within a few minutes). Customer must re-activate after you Activate again.',
+      description: 'Product access stops on the next heartbeat (usually within a few minutes). Activate later to restore automatically — customer does not need to re-enter the license key.',
     },
     activate: {
       title: 'Activate License',
-      description: 'Re-enables the license. The customer must re-activate the product installation on their server.',
+      description: 'Re-enables the license. The product restores access automatically on its next heartbeat (usually within a few minutes).',
     },
     revoke: {
       title: 'Revoke License',
-      description: 'Permanently revokes the license and kills all install sessions immediately.',
+      description: 'Permanently revokes the license and kills all install sessions. Customer must re-activate with a new key.',
     },
     delete: {
       title: 'Delete License',
