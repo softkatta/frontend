@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import {
-  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History, Server,
+  Eye, ShieldOff, ShieldCheck, Trash2, XCircle, RotateCcw, LogOut, Activity, History, Server, RefreshCw,
 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
@@ -25,7 +25,7 @@ const statusVariant = {
 } as const
 
 type LicenseRow = ReturnType<typeof mapAdminLicense>
-type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout' | 'reset_installations'
+type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout' | 'reset_installations' | 'regenerate'
 
 type LogRow = {
   id: string
@@ -78,6 +78,7 @@ export default function LicensesManagement() {
     const { row, action } = actionTarget
     setBusy(true)
     try {
+      let regeneratedKey: string | null = null
       if (action === 'suspend') await adminApi.licenses.suspend(row.id)
       else if (action === 'activate') await adminApi.licenses.activate(row.id)
       else if (action === 'revoke') await adminApi.licenses.revoke(row.id)
@@ -85,23 +86,32 @@ export default function LicensesManagement() {
       else if (action === 'reset_domains') await adminApi.licenses.resetDomains(row.id)
       else if (action === 'force_logout') await adminApi.licenses.forceLogout(row.id)
       else if (action === 'reset_installations') await adminApi.licenses.resetInstallations(row.id)
+      else if (action === 'regenerate') {
+        const response = await adminApi.licenses.regenerate(row.id)
+        const data = asRecord(asRecord(response).data ?? response)
+        regeneratedKey = asString(data.license_key) || null
+      }
 
       const messages: Record<Action, string> = {
-        suspend: 'License suspended. Product stops on next heartbeat.',
-        activate: 'License activated. Product restores on next heartbeat.',
+        suspend: 'License suspended. Product stops on next API check.',
+        activate: 'License activated. Product restores on next API check.',
         revoke: 'License revoked.',
         delete: 'License deleted.',
         reset_domains: 'Domain binding reset.',
         force_logout: 'Product force logout issued.',
         reset_installations: 'All installations revoked.',
+        regenerate: regeneratedKey
+          ? `New key: ${regeneratedKey}`
+          : 'License key regenerated. Customer must re-activate.',
       }
       toast({ title: messages[action], variant: 'success' })
       setActionTarget(null)
-      if (action === 'delete') setDetail(null)
-      await reload()
-      if (action !== 'delete' && detail?.id === row.id) {
+      if (action === 'delete') {
+        setDetail(null)
+      } else if (detail?.id === row.id) {
         await openDetail(row)
       }
+      await reload()
     } catch (err) {
       toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' })
     } finally {
@@ -206,6 +216,10 @@ export default function LicensesManagement() {
       title: 'Reset Installations',
       description: 'All install tokens will be revoked. Products must activate again.',
     },
+    regenerate: {
+      title: 'Regenerate License Key',
+      description: 'Creates a new license key string. The old key stops working immediately, domains and install sessions are cleared, and the customer must activate the product again with the new key.',
+    },
   }
 
   const columns = [
@@ -258,6 +272,7 @@ export default function LicensesManagement() {
               ? actionBtn('Activate', ShieldCheck, () => setActionTarget({ row, action: 'activate' }))
               : actionBtn('Suspend', ShieldOff, () => setActionTarget({ row, action: 'suspend' })),
             actionBtn('Reset Domains', RotateCcw, () => setActionTarget({ row, action: 'reset_domains' })),
+            actionBtn('Regenerate Key', RefreshCw, () => setActionTarget({ row, action: 'regenerate' })),
             actionBtn('Force Logout', LogOut, () => setActionTarget({ row, action: 'force_logout' })),
             { ...actionBtn('Revoke', XCircle, () => setActionTarget({ row, action: 'revoke' })), variant: 'destructive' },
             { ...actionBtn('Delete', Trash2, () => setActionTarget({ row, action: 'delete' })), variant: 'destructive' },
@@ -343,6 +358,9 @@ export default function LicensesManagement() {
               )}
               <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_domains' })}>
                 <RotateCcw className="mr-1 h-4 w-4" /> Reset Domains
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'regenerate' })}>
+                <RefreshCw className="mr-1 h-4 w-4" /> Regenerate Key
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => setActionTarget({ row: detail, action: 'reset_installations' })}>
                 <Server className="mr-1 h-4 w-4" /> Reset Installations

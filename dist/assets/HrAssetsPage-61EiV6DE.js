@@ -1,0 +1,1 @@
+import{r as e}from"./motion-XFMutiCo.js";import t from"./AssetsManagement-Bk3fLjzv.js";var n=e();function r(){return(0,n.jsx)(t,{})}export{r as default};
