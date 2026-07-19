@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { actionBtn } from '@/lib/tableActions'
 import { clientApi } from '@/services/api'
 import { asBool, asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
-import { mapInvoice, mapNotification } from '@/lib/apiMappers'
+import { mapInvoice, mapNotification, mapSubscription } from '@/lib/apiMappers'
 import { toast } from '@/components/ui/toaster'
 import { SecuritySetupWizard } from '@/components/auth/SecuritySetupWizard'
 import type { Invoice, Notification } from '@/types'
@@ -37,12 +37,24 @@ export default function DashboardPage() {
   const [purchasedProducts, setPurchasedProducts] = useState<Array<{ id: string; name: string; slug: string; is_active: boolean }>>([])
   const [stats, setStats] = useState({ products: 0, subscriptions: 0, renewals: 0, expiring: 0, spend: 0 })
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null)
+  const [domainNudgeCount, setDomainNudgeCount] = useState(0)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const data = asRecord(await clientApi.dashboard())
       const subs = unwrapList(data.active_subscriptions)
+      try {
+        const subList = unwrapList(await clientApi.subscriptions.list()).map(mapSubscription)
+        setDomainNudgeCount(
+          subList.filter((item) => {
+            const status = item.domain_setup?.status ?? 'none'
+            return status === 'none' || status === 'skipped' || status === 'rejected'
+          }).length,
+        )
+      } catch {
+        setDomainNudgeCount(0)
+      }
       const products = unwrapList(data.purchased_products)
         .map((raw) => {
           const item = asRecord(raw)
@@ -88,6 +100,21 @@ export default function DashboardPage() {
   return (
     <PortalPage className="space-y-6">
       <SecuritySetupWizard />
+      {domainNudgeCount > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/30 p-4">
+          <p className="text-sm font-medium">Add install domains</p>
+          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+            {domainNudgeCount} subscription{domainNudgeCount > 1 ? 's need' : ' needs'} frontend + backend domains.
+            You can skip for now — SoftKatta admin approves before license keys are issued.
+          </p>
+          <Link
+            to="/dashboard/subscriptions"
+            className="mt-3 inline-flex text-sm font-semibold text-[var(--brand-blue)] hover:underline"
+          >
+            Open Subscriptions →
+          </Link>
+        </div>
+      )}
       <PortalWelcome
         eyebrow="Client Portal"
         title={`Welcome back, ${firstName}`}

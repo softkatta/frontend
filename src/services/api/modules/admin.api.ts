@@ -23,6 +23,11 @@ export const adminApi = {
     create: (payload: unknown) => api.post<unknown>('/admin/tenants', payload),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/tenants/${id}`, payload),
     delete: (id: string | number) => api.delete<null>(`/admin/tenants/${id}`),
+    pendingDomains: () => api.get<unknown[]>('/admin/tenants/pending-domains'),
+    approvePendingDomain: (tenantId: string | number, subscriptionId: string | number) =>
+      api.post<unknown>(`/admin/tenants/${tenantId}/pending-domains/${subscriptionId}/approve`),
+    rejectPendingDomain: (tenantId: string | number, subscriptionId: string | number, payload?: { reason?: string }) =>
+      api.post<unknown>(`/admin/tenants/${tenantId}/pending-domains/${subscriptionId}/reject`, payload ?? {}),
   },
 
   users: {

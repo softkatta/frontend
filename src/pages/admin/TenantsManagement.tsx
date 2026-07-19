@@ -42,9 +42,12 @@ type SubscriptionOption = {
   product_name: string
   plan_name: string
 }
+type ProductOption = { id: string; name: string }
+type PlanOption = { id: string; product_id: string; name: string; billing_cycle: string }
 type DomainAssignment = {
   key: string
-  subscription_id: string
+  subscription_id?: string
+  plan_id?: string
   product_id: string
   product_name: string
   plan_name: string
@@ -89,19 +92,30 @@ function TenantFormDialog({
   const [autoSlug, setAutoSlug] = useState(true)
   const [customers, setCustomers] = useState<CustomerOption[]>([])
   const [subscriptions, setSubscriptions] = useState<SubscriptionOption[]>([])
+  const [products, setProducts] = useState<ProductOption[]>([])
+  const [plans, setPlans] = useState<PlanOption[]>([])
   const [addOpen, setAddOpen] = useState(false)
+  const [addMode, setAddMode] = useState<'existing' | 'new'>('existing')
   const [addSubscriptionId, setAddSubscriptionId] = useState('')
+  const [addProductId, setAddProductId] = useState('')
+  const [addPlanId, setAddPlanId] = useState('')
   const [addFrontend, setAddFrontend] = useState('')
   const [addBackend, setAddBackend] = useState('')
   const isEdit = Boolean(initial)
+
+  const resetAddDialog = () => {
+    setAddSubscriptionId('')
+    setAddProductId('')
+    setAddPlanId('')
+    setAddFrontend('')
+    setAddBackend('')
+  }
 
   useEffect(() => {
     setForm(initial ?? EMPTY_FORM)
     setAutoSlug(!Boolean(initial?.slug))
     setAddOpen(false)
-    setAddSubscriptionId('')
-    setAddFrontend('')
-    setAddBackend('')
+    resetAddDialog()
   }, [initial, open])
 
   useEffect(() => {
@@ -116,6 +130,29 @@ function TenantFormDialog({
         }),
       )
     }).catch(() => setCustomers([]))
+
+    void Promise.all([adminApi.products.list(), adminApi.plans.list()]).then(([productRes, planRes]) => {
+      setProducts(
+        unwrapList(productRes).map((row) => {
+          const item = asRecord(row)
+          return { id: asString(item.id), name: asString(item.name, 'Product') }
+        }),
+      )
+      setPlans(
+        unwrapList(planRes).map((row) => {
+          const item = asRecord(row)
+          return {
+            id: asString(item.id),
+            product_id: asString(item.product_id),
+            name: asString(item.name, asString(item.billing_cycle, 'plan')),
+            billing_cycle: asString(item.billing_cycle, 'monthly'),
+          }
+        }),
+      )
+    }).catch(() => {
+      setProducts([])
+      setPlans([])
+    })
   }, [open])
 
   useEffect(() => {
@@ -145,9 +182,23 @@ function TenantFormDialog({
   }, [open, form.owner_id])
 
   const availableSubscriptions = useMemo(() => {
-    const used = new Set(form.domain_assignments.map((row) => row.subscription_id))
+    const used = new Set(
+      form.domain_assignments
+        .map((row) => row.subscription_id)
+        .filter((id): id is string => Boolean(id)),
+    )
     return subscriptions.filter((row) => !used.has(row.id))
   }, [subscriptions, form.domain_assignments])
+
+  const plansForProduct = useMemo(
+    () => plans.filter((plan) => plan.product_id === addProductId),
+    [plans, addProductId],
+  )
+
+  useEffect(() => {
+    if (!addOpen) return
+    setAddMode(availableSubscriptions.length > 0 ? 'existing' : 'new')
+  }, [addOpen, availableSubscriptions.length])
 
   const update = (patch: Partial<TenantFormValues>) => {
     setForm((prev) => {
@@ -170,29 +221,57 @@ function TenantFormDialog({
   }
 
   const submitAddDomain = () => {
-    const selected = subscriptions.find((row) => row.id === addSubscriptionId)
-    if (!selected || !addFrontend.trim() || !addBackend.trim()) return
-    setForm((prev) => ({
-      ...prev,
-      domain_assignments: [
-        ...prev.domain_assignments,
-        {
-          key: newAssignmentKey(),
-          subscription_id: selected.id,
-          product_id: selected.product_id,
-          product_name: selected.product_name,
-          plan_name: selected.plan_name,
-          frontend_domain: addFrontend.trim(),
-          backend_domain: addBackend.trim(),
-        },
-      ],
-    }))
+    if (!addFrontend.trim() || !addBackend.trim()) return
+
+    if (addMode === 'existing') {
+      const selected = subscriptions.find((row) => row.id === addSubscriptionId)
+      if (!selected) return
+      setForm((prev) => ({
+        ...prev,
+        domain_assignments: [
+          ...prev.domain_assignments,
+          {
+            key: newAssignmentKey(),
+            subscription_id: selected.id,
+            product_id: selected.product_id,
+            product_name: selected.product_name,
+            plan_name: selected.plan_name,
+            frontend_domain: addFrontend.trim(),
+            backend_domain: addBackend.trim(),
+          },
+        ],
+      }))
+    } else {
+      const product = products.find((row) => row.id === addProductId)
+      const plan = plans.find((row) => row.id === addPlanId)
+      if (!product || !plan) return
+      setForm((prev) => ({
+        ...prev,
+        domain_assignments: [
+          ...prev.domain_assignments,
+          {
+            key: newAssignmentKey(),
+            product_id: product.id,
+            plan_id: plan.id,
+            product_name: product.name,
+            plan_name: plan.name,
+            frontend_domain: addFrontend.trim(),
+            backend_domain: addBackend.trim(),
+          },
+        ],
+      }))
+    }
+
     setAddOpen(false)
-    setAddSubscriptionId('')
-    setAddFrontend('')
-    setAddBackend('')
+    resetAddDialog()
   }
 
+  const canAddDomains = Boolean(form.owner_id) && (availableSubscriptions.length > 0 || products.length > 0)
+  const canSubmitAdd =
+    Boolean(addFrontend.trim() && addBackend.trim()) &&
+    (addMode === 'existing'
+      ? Boolean(addSubscriptionId)
+      : Boolean(addProductId && addPlanId))
   const canSubmit = form.name.trim() && form.owner_id
 
   return (
@@ -202,7 +281,7 @@ function TenantFormDialog({
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Edit tenant' : 'Add tenant'}</DialogTitle>
             <DialogDescription>
-              Add domains per purchase with +. Each subscription gets its own license key after save.
+              Add domains per purchase with +. If the customer has no subscription yet, pick a product and plan — it is created on save.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -289,7 +368,7 @@ function TenantFormDialog({
                   type="button"
                   size="sm"
                   className="gap-1 rounded-xl"
-                  disabled={!form.owner_id || availableSubscriptions.length === 0}
+                  disabled={!canAddDomains}
                   onClick={() => setAddOpen(true)}
                 >
                   <Plus className="h-4 w-4" /> Add
@@ -300,7 +379,7 @@ function TenantFormDialog({
                 <p className="text-sm text-[var(--muted-foreground)]">
                   {form.owner_id
                     ? (subscriptions.length === 0
-                      ? 'This customer has no subscriptions yet. Create a subscription first.'
+                      ? 'No purchases yet — click + and choose a product + plan, then enter domains.'
                       : 'No domains yet. Click + to select a product purchase and add domains.')
                     : 'Select a customer first.'}
                 </p>
@@ -312,7 +391,9 @@ function TenantFormDialog({
                         <div>
                           <p className="text-sm font-medium">{row.product_name}</p>
                           <p className="text-xs text-[var(--muted-foreground)]">
-                            Subscription #{row.subscription_id} · {row.plan_name}
+                            {row.subscription_id
+                              ? `Subscription #${row.subscription_id} · ${row.plan_name}`
+                              : `New purchase · ${row.plan_name}`}
                           </p>
                         </div>
                         <Button
@@ -356,25 +437,96 @@ function TenantFormDialog({
           <DialogHeader>
             <DialogTitle>Add product domains</DialogTitle>
             <DialogDescription>
-              Select which purchase this install belongs to, then enter its frontend and backend domains.
+              Use an existing purchase, or create a new product + plan purchase with these domains.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Product / subscription *</Label>
-              <Select value={addSubscriptionId || undefined} onValueChange={setAddSubscriptionId}>
-                <SelectTrigger className="bg-[var(--input-background)]">
-                  <SelectValue placeholder="Select purchase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSubscriptions.map((row) => (
-                    <SelectItem key={row.id} value={row.id}>
-                      {row.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {(availableSubscriptions.length > 0 || products.length > 0) && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={addMode === 'existing' ? 'default' : 'outline'}
+                  className="rounded-xl"
+                  disabled={availableSubscriptions.length === 0}
+                  onClick={() => setAddMode('existing')}
+                >
+                  Existing purchase
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={addMode === 'new' ? 'default' : 'outline'}
+                  className="rounded-xl"
+                  disabled={products.length === 0}
+                  onClick={() => setAddMode('new')}
+                >
+                  New purchase
+                </Button>
+              </div>
+            )}
+
+            {addMode === 'existing' ? (
+              <div className="space-y-2">
+                <Label>Product / subscription *</Label>
+                <Select value={addSubscriptionId || undefined} onValueChange={setAddSubscriptionId}>
+                  <SelectTrigger className="bg-[var(--input-background)]">
+                    <SelectValue placeholder="Select purchase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSubscriptions.map((row) => (
+                      <SelectItem key={row.id} value={row.id}>
+                        {row.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Product *</Label>
+                  <Select
+                    value={addProductId || undefined}
+                    onValueChange={(value) => {
+                      setAddProductId(value)
+                      setAddPlanId('')
+                    }}
+                  >
+                    <SelectTrigger className="bg-[var(--input-background)]">
+                      <SelectValue placeholder="Select product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((row) => (
+                        <SelectItem key={row.id} value={row.id}>
+                          {row.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Plan *</Label>
+                  <Select
+                    value={addPlanId || undefined}
+                    onValueChange={setAddPlanId}
+                    disabled={!addProductId}
+                  >
+                    <SelectTrigger className="bg-[var(--input-background)]">
+                      <SelectValue placeholder={addProductId ? 'Select plan' : 'Select product first'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plansForProduct.map((row) => (
+                        <SelectItem key={row.id} value={row.id}>
+                          {row.name} ({row.billing_cycle})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
             <div className="space-y-2">
               <Label>Frontend domain *</Label>
               <Input
@@ -398,7 +550,7 @@ function TenantFormDialog({
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button
               type="button"
-              disabled={!addSubscriptionId || !addFrontend.trim() || !addBackend.trim()}
+              disabled={!canSubmitAdd}
               onClick={submitAddDomain}
             >
               Add domains
@@ -422,6 +574,68 @@ export default function TenantsManagement() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingTenant, setEditingTenant] = useState<TenantRow | null>(null)
   const [editInitial, setEditInitial] = useState<TenantFormValues | null>(null)
+  const [pendingDomains, setPendingDomains] = useState<Array<{
+    tenant_id: string
+    tenant_name: string
+    owner_name: string
+    owner_email: string
+    subscription_id: string
+    product_name: string
+    plan_name: string
+    frontend_domain: string
+    backend_domain: string
+    submitted_at: string
+  }>>([])
+  const [reviewingKey, setReviewingKey] = useState<string | null>(null)
+
+  const loadPendingDomains = useCallback(async () => {
+    try {
+      const res = await adminApi.tenants.pendingDomains()
+      setPendingDomains(
+        unwrapList(res).map((row) => {
+          const item = asRecord(row)
+          return {
+            tenant_id: asString(item.tenant_id),
+            tenant_name: asString(item.tenant_name, 'Tenant'),
+            owner_name: asString(item.owner_name),
+            owner_email: asString(item.owner_email),
+            subscription_id: asString(item.subscription_id),
+            product_name: asString(item.product_name, 'Product'),
+            plan_name: asString(item.plan_name, 'plan'),
+            frontend_domain: asString(item.frontend_domain),
+            backend_domain: asString(item.backend_domain),
+            submitted_at: asString(item.submitted_at),
+          }
+        }),
+      )
+    } catch {
+      setPendingDomains([])
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadPendingDomains()
+  }, [loadPendingDomains])
+
+  const reviewPending = async (row: (typeof pendingDomains)[number], action: 'approve' | 'reject') => {
+    const key = `${row.tenant_id}-${row.subscription_id}-${action}`
+    setReviewingKey(key)
+    try {
+      if (action === 'approve') {
+        await adminApi.tenants.approvePendingDomain(row.tenant_id, row.subscription_id)
+        toast({ title: 'Domains approved', description: `${row.product_name} — license will generate if eligible.`, variant: 'success' })
+      } else {
+        const reason = window.prompt('Rejection reason (optional)', 'Please update your domains and resubmit.') || undefined
+        await adminApi.tenants.rejectPendingDomain(row.tenant_id, row.subscription_id, { reason })
+        toast({ title: 'Request rejected', description: 'Customer can resubmit domains.', variant: 'success' })
+      }
+      await Promise.all([reload(), loadPendingDomains()])
+    } catch (err) {
+      toast({ title: 'Review failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setReviewingKey(null)
+    }
+  }
 
   const openCreate = () => {
     setEditingTenant(null)
@@ -486,8 +700,9 @@ export default function TenantsManagement() {
         owner_id: Number(values.owner_id) || values.owner_id,
         status: values.status,
         subscription_domains: values.domain_assignments.map((row) => ({
-          subscription_id: Number(row.subscription_id),
+          subscription_id: row.subscription_id ? Number(row.subscription_id) : undefined,
           product_id: Number(row.product_id) || undefined,
+          plan_id: row.plan_id ? Number(row.plan_id) : undefined,
           frontend_domain: row.frontend_domain,
           backend_domain: row.backend_domain,
         })),
@@ -535,7 +750,7 @@ export default function TenantsManagement() {
       <PortalPageShell
         eyebrow="Workspace"
         heroTitle="Tenants"
-        heroDescription="Assign domains per product purchase. Each purchase gets its own license key after domains are saved."
+        heroDescription="Assign domains per product purchase, or approve customer-submitted domain requests."
         title="Tenants"
         description="Create and manage platform workspaces"
         actions={
@@ -546,6 +761,60 @@ export default function TenantsManagement() {
         loading={loading}
         error={error}
       >
+        {pendingDomains.length > 0 && (
+          <div className="mb-4 space-y-3 rounded-xl border border-[var(--border)] p-4">
+            <div>
+              <p className="text-sm font-medium">Pending customer domain requests</p>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Approve to save domains and generate license keys. Reject to ask the customer to resubmit.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {pendingDomains.map((row) => {
+                const approveKey = `${row.tenant_id}-${row.subscription_id}-approve`
+                const rejectKey = `${row.tenant_id}-${row.subscription_id}-reject`
+                return (
+                  <div key={`${row.tenant_id}-${row.subscription_id}`} className="rounded-lg bg-[var(--muted)]/30 p-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{row.product_name} · {row.plan_name}</p>
+                        <p className="text-xs text-[var(--muted-foreground)]">
+                          {row.owner_name || 'Customer'}{row.owner_email ? ` (${row.owner_email})` : ''} · {row.tenant_name}
+                        </p>
+                        <div className="mt-2 grid gap-1 text-xs sm:grid-cols-2">
+                          <p><span className="text-[var(--muted-foreground)]">Frontend:</span> {row.frontend_domain}</p>
+                          <p><span className="text-[var(--muted-foreground)]">Backend:</span> {row.backend_domain}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="rounded-xl"
+                          disabled={Boolean(reviewingKey)}
+                          onClick={() => void reviewPending(row, 'approve')}
+                        >
+                          {reviewingKey === approveKey ? 'Approving…' : 'Approve'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl"
+                          disabled={Boolean(reviewingKey)}
+                          onClick={() => void reviewPending(row, 'reject')}
+                        >
+                          {reviewingKey === rejectKey ? 'Rejecting…' : 'Reject'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <DataTable
           embedded
           searchKeys={['name', 'slug', 'owner_name', 'owner_email']}

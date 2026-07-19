@@ -50,6 +50,10 @@ export const clientApi = {
     list: () => api.get<Subscription[]>('/client/subscriptions'),
     get: (id: string | number) => api.get<Subscription>(`/client/subscriptions/${id}`),
     cancel: (id: string | number) => api.post<Subscription>(`/client/subscriptions/${id}/cancel`),
+    domainStatus: (id: string | number) => api.get<unknown>(`/client/subscriptions/${id}/domains`),
+    submitDomains: (id: string | number, payload: { frontend_domain: string; backend_domain: string }) =>
+      api.post<unknown>(`/client/subscriptions/${id}/domains`, payload),
+    skipDomains: (id: string | number) => api.post<unknown>(`/client/subscriptions/${id}/domains/skip`),
   },
 
   invoices: {

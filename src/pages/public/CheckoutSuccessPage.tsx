@@ -53,6 +53,7 @@ export default function CheckoutSuccessPage() {
         ) : null}
         <p className="text-muted-foreground leading-relaxed mb-8">
           {state.productName ? `${state.productName} ${itemCount > 1 ? 'are' : 'is'} now active. ` : ''}
+          Next: add your install domains (or skip for now). SoftKatta admin approves domains before license keys are issued.
           GST invoices have been sent to your email and are available in your dashboard.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -60,7 +61,7 @@ export default function CheckoutSuccessPage() {
             to="/dashboard/subscriptions"
             className="glow-btn inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold"
           >
-            <CreditCard className="h-4 w-4" /> View Subscriptions
+            <CreditCard className="h-4 w-4" /> Add domains / Skip
           </Link>
           <Link
             to="/dashboard"

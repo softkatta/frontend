@@ -92,7 +92,20 @@ export interface Subscription {
   end_date: string
   auto_renew: boolean
   amount: number
+  domain_setup?: DomainSetupStatus
 }
+
+export type DomainSetupStatusCode = 'none' | 'skipped' | 'pending' | 'rejected' | 'approved'
+
+export interface DomainSetupStatus {
+  status: DomainSetupStatusCode
+  frontend_domain?: string | null
+  backend_domain?: string | null
+  rejection_reason?: string | null
+  submitted_at?: string | null
+  skipped_at?: string | null
+}
+
 
 export interface Invoice {
   id: string

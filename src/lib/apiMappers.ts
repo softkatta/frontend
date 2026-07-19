@@ -26,6 +26,23 @@ export function mapSubscription(raw: unknown): Subscription {
     end_date: asString(item.ends_at ?? item.end_date),
     auto_renew: asBool(item.auto_renew),
     amount: asNumber(plan.price ?? item.amount),
+    domain_setup: mapDomainSetup(item.domain_setup),
+  }
+}
+
+function mapDomainSetup(raw: unknown): Subscription['domain_setup'] {
+  const item = asRecord(raw)
+  const status = asString(item.status, 'none') as NonNullable<Subscription['domain_setup']>['status']
+  if (!['none', 'skipped', 'pending', 'rejected', 'approved'].includes(status)) {
+    return { status: 'none' }
+  }
+  return {
+    status,
+    frontend_domain: asString(item.frontend_domain) || null,
+    backend_domain: asString(item.backend_domain) || null,
+    rejection_reason: asString(item.rejection_reason) || null,
+    submitted_at: asString(item.submitted_at) || null,
+    skipped_at: asString(item.skipped_at) || null,
   }
 }
 

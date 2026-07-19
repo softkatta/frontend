@@ -1,0 +1,1 @@
+import{a as e}from"./rolldown-runtime-Cyuzqnbw.js";import{C as t}from"./charts-BAlOg75a.js";import{J as n}from"./index-CYvhrWQ1.js";var r=e(t(),1);function i(e){(0,r.useEffect)(()=>{e&&n(e)},[e?.title,e?.description,e?.keywords,e?.path,e?.ogType,e?.noindex,e?.image,e?.siteName,e?.jsonLd?JSON.stringify(e.jsonLd):``])}export{i as t};
