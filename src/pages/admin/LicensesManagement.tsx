@@ -115,10 +115,25 @@ export default function LicensesManagement() {
           : `Email sent to ${email}. WhatsApp skipped (no phone on customer).`
       }
 
+      // #region agent log
+      fetch('http://127.0.0.1:7446/ingest/a2a872f3-466f-49bd-89e4-ac5fbfa0c6ca', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '00f2f1' },
+        body: JSON.stringify({
+          sessionId: '00f2f1',
+          location: 'LicensesManagement.tsx:runAction',
+          message: 'SoftKatta Admin license action OK',
+          data: { action, licenseId: row.id, keyPrefix: String(row.license_key || '').slice(0, 12) },
+          hypothesisId: 'H3',
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
+
       const messages: Record<Action, string> = {
-        suspend: 'License suspended. Product stops on next API check.',
+        suspend: 'License suspended. Product stops on the next page load.',
         activate:
-          'License marked Active on SoftKatta. If the product still shows Invalid License, open the product Restore page and enter this license key (Admin Activate does not push tokens after wipe/new key).',
+          'License Active. Product with an existing install restores on the next page load. If still Invalid, use product Restore with this key.',
         revoke: 'License revoked.',
         delete: 'License deleted.',
         reset_domains: 'Domain binding reset.',
@@ -217,12 +232,12 @@ export default function LicensesManagement() {
     suspend: {
       title: 'Suspend License',
       description:
-        'SoftKatta will reject the product on the next verify/heartbeat. Install tokens are kept so Activate can recover without a new key when an installation already exists.',
+        'SoftKatta will reject the product on the next page load / API call (usually immediate). Install tokens are kept so Activate restores access without a new Restore key when an installation already exists.',
     },
     activate: {
       title: 'Activate License',
       description:
-        'Marks this license Active on SoftKatta. If there is no live product installation (Admin wipe, regenerate key, reset installations), open the product site → Restore access and enter this license key. Admin Activate alone does not push tokens to the product server.',
+        'Marks this license Active on SoftKatta. If the product already has a live installation, it restores on the next page load. If there is no installation (wipe / new key / reset installations), open the product → Restore access and enter this license key.',
     },
     revoke: {
       title: 'Revoke License',
