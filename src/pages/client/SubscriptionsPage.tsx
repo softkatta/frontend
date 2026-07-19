@@ -231,10 +231,16 @@ export default function SubscriptionsPage() {
             <DialogTitle>Add install domains</DialogTitle>
             <DialogDescription>
               {domainTarget
-                ? `For ${domainTarget.product_name}. Admin must approve before your license key is generated.`
+                ? `For ${domainTarget.product_name} · ${domainTarget.plan_name || domainTarget.plan}. Admin must approve before your license key is generated.`
                 : 'Enter frontend and backend domains for this purchase.'}
             </DialogDescription>
           </DialogHeader>
+          {domainTarget ? (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/30 px-3 py-2 text-sm">
+              <span className="text-[var(--muted-foreground)]">Your plan: </span>
+              <span className="font-medium capitalize">{domainTarget.plan_name || domainTarget.plan}</span>
+            </div>
+          ) : null}
           {domainTarget?.domain_setup?.status === 'rejected' && domainTarget.domain_setup.rejection_reason ? (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {domainTarget.domain_setup.rejection_reason}

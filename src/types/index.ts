@@ -87,6 +87,7 @@ export interface Subscription {
   product_id: string
   product_name: string
   plan: 'monthly' | 'yearly' | 'enterprise'
+  plan_name?: string
   status: 'active' | 'expired' | 'cancelled' | 'pending'
   start_date: string
   end_date: string

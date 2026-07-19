@@ -67,7 +67,8 @@ export const adminApi = {
   },
 
   plans: {
-    list: () => api.get<unknown[]>('/admin/plans'),
+    list: (params?: { product_id?: string | number; per_page?: number; page?: number }) =>
+      api.get<unknown[]>('/admin/plans', { params }),
     create: (payload: unknown) => api.post<unknown>('/admin/plans', payload),
     get: (id: string | number) => api.get<unknown>(`/admin/plans/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/plans/${id}`, payload),

@@ -38,6 +38,7 @@ type CustomerOption = { id: string; label: string }
 type SubscriptionOption = {
   id: string
   product_id: string
+  plan_id: string
   label: string
   product_name: string
   plan_name: string
@@ -131,24 +132,51 @@ function TenantFormDialog({
       )
     }).catch(() => setCustomers([]))
 
-    void Promise.all([adminApi.products.list(), adminApi.plans.list()]).then(([productRes, planRes]) => {
+    void Promise.all([
+      adminApi.products.list(),
+      adminApi.plans.list({ per_page: 200 }),
+    ]).then(([productRes, planRes]) => {
+      const productRows = unwrapList(productRes)
       setProducts(
-        unwrapList(productRes).map((row) => {
+        productRows.map((row) => {
           const item = asRecord(row)
           return { id: asString(item.id), name: asString(item.name, 'Product') }
         }),
       )
-      setPlans(
-        unwrapList(planRes).map((row) => {
-          const item = asRecord(row)
-          return {
-            id: asString(item.id),
-            product_id: asString(item.product_id),
-            name: asString(item.name, asString(item.billing_cycle, 'plan')),
-            billing_cycle: asString(item.billing_cycle, 'monthly'),
-          }
-        }),
-      )
+
+      const fromPlansApi = unwrapList(planRes).map((row) => {
+        const item = asRecord(row)
+        const product = asRecord(item.product)
+        return {
+          id: asString(item.id),
+          product_id: asString(item.product_id || product.id),
+          name: asString(item.name, asString(item.billing_cycle, 'plan')),
+          billing_cycle: asString(item.billing_cycle, 'monthly'),
+        }
+      })
+
+      // Prefer plans nested on products (always product-scoped, no pagination gaps).
+      const fromProducts: PlanOption[] = []
+      for (const row of productRows) {
+        const product = asRecord(row)
+        const productId = asString(product.id)
+        const nested = Array.isArray(product.plans) ? product.plans : unwrapList(product.plans)
+        for (const planRaw of nested) {
+          const plan = asRecord(planRaw)
+          fromProducts.push({
+            id: asString(plan.id),
+            product_id: asString(plan.product_id || productId),
+            name: asString(plan.name, asString(plan.billing_cycle, 'plan')),
+            billing_cycle: asString(plan.billing_cycle, 'monthly'),
+          })
+        }
+      }
+
+      const byId = new Map<string, PlanOption>()
+      for (const plan of [...fromPlansApi, ...fromProducts]) {
+        if (plan.id) byId.set(plan.id, plan)
+      }
+      setPlans(Array.from(byId.values()))
     }).catch(() => {
       setProducts([])
       setPlans([])
@@ -172,6 +200,7 @@ function TenantFormDialog({
           return {
             id,
             product_id: asString(item.product_id || product.id),
+            plan_id: asString(item.plan_id || plan.id),
             product_name: productName,
             plan_name: planName,
             label: `#${id} · ${productName} · ${planName}`,
@@ -191,14 +220,48 @@ function TenantFormDialog({
   }, [subscriptions, form.domain_assignments])
 
   const plansForProduct = useMemo(
-    () => plans.filter((plan) => plan.product_id === addProductId),
+    () => plans.filter((plan) => String(plan.product_id) === String(addProductId)),
     [plans, addProductId],
   )
 
+  const customerPlanForProduct = useMemo(() => {
+    if (!addProductId) return null
+    return (
+      availableSubscriptions.find((row) => String(row.product_id) === String(addProductId))
+      ?? subscriptions.find((row) => String(row.product_id) === String(addProductId))
+      ?? null
+    )
+  }, [addProductId, availableSubscriptions, subscriptions])
+
   useEffect(() => {
     if (!addOpen) return
-    setAddMode(availableSubscriptions.length > 0 ? 'existing' : 'new')
-  }, [addOpen, availableSubscriptions.length])
+    if (availableSubscriptions.length > 0) {
+      setAddMode('existing')
+      setAddSubscriptionId((prev) =>
+        prev && availableSubscriptions.some((row) => row.id === prev)
+          ? prev
+          : availableSubscriptions[0].id,
+      )
+      return
+    }
+    setAddMode('new')
+  }, [addOpen, availableSubscriptions])
+
+  // New purchase: auto-select the plan the customer already bought for this product.
+  useEffect(() => {
+    if (!addOpen || addMode !== 'new' || !addProductId) {
+      return
+    }
+
+    const purchasedPlanId = customerPlanForProduct?.plan_id
+    if (purchasedPlanId && plansForProduct.some((plan) => plan.id === purchasedPlanId)) {
+      setAddPlanId(purchasedPlanId)
+      return
+    }
+
+    if (addPlanId && plansForProduct.some((plan) => plan.id === addPlanId)) return
+    setAddPlanId(plansForProduct[0]?.id ?? '')
+  }, [addOpen, addMode, addProductId, addPlanId, customerPlanForProduct, plansForProduct])
 
   const update = (patch: Partial<TenantFormValues>) => {
     setForm((prev) => {
@@ -437,7 +500,7 @@ function TenantFormDialog({
           <DialogHeader>
             <DialogTitle>Add product domains</DialogTitle>
             <DialogDescription>
-              Use an existing purchase, or create a new product + plan purchase with these domains.
+              Prefer the customer&apos;s existing purchase — their selected plan is used automatically.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -481,6 +544,15 @@ function TenantFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                {addSubscriptionId ? (
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Plan auto-filled from customer purchase:{' '}
+                    <span className="font-medium text-foreground">
+                      {availableSubscriptions.find((row) => row.id === addSubscriptionId)?.plan_name
+                        ?? '—'}
+                    </span>
+                  </p>
+                ) : null}
               </div>
             ) : (
               <>
@@ -489,8 +561,21 @@ function TenantFormDialog({
                   <Select
                     value={addProductId || undefined}
                     onValueChange={(value) => {
+                      const match = availableSubscriptions.find(
+                        (row) => String(row.product_id) === String(value),
+                      )
+                      if (match) {
+                        setAddMode('existing')
+                        setAddSubscriptionId(match.id)
+                        setAddProductId('')
+                        setAddPlanId('')
+                        return
+                      }
                       setAddProductId(value)
-                      setAddPlanId('')
+                      const purchased = subscriptions.find(
+                        (row) => String(row.product_id) === String(value),
+                      )
+                      setAddPlanId(purchased?.plan_id ?? '')
                     }}
                   >
                     <SelectTrigger className="bg-[var(--input-background)]">
@@ -507,22 +592,47 @@ function TenantFormDialog({
                 </div>
                 <div className="space-y-2">
                   <Label>Plan *</Label>
-                  <Select
-                    value={addPlanId || undefined}
-                    onValueChange={setAddPlanId}
-                    disabled={!addProductId}
-                  >
-                    <SelectTrigger className="bg-[var(--input-background)]">
-                      <SelectValue placeholder={addProductId ? 'Select plan' : 'Select product first'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plansForProduct.map((row) => (
-                        <SelectItem key={row.id} value={row.id}>
-                          {row.name} ({row.billing_cycle})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {customerPlanForProduct?.plan_id && addPlanId === customerPlanForProduct.plan_id ? (
+                    <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/30 px-3 py-2 text-sm">
+                      <span className="text-[var(--muted-foreground)]">Customer&apos;s plan: </span>
+                      <span className="font-medium">
+                        {customerPlanForProduct.plan_name}
+                        {plansForProduct.find((p) => p.id === addPlanId)?.billing_cycle
+                          ? ` (${plansForProduct.find((p) => p.id === addPlanId)?.billing_cycle})`
+                          : ''}
+                      </span>
+                    </div>
+                  ) : (
+                    <Select
+                      value={addPlanId || undefined}
+                      onValueChange={setAddPlanId}
+                      disabled={!addProductId || plansForProduct.length === 0}
+                    >
+                      <SelectTrigger className="bg-[var(--input-background)]">
+                        <SelectValue
+                          placeholder={
+                            !addProductId
+                              ? 'Select product first'
+                              : plansForProduct.length === 0
+                                ? 'No plans for this product'
+                                : 'Select plan'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {plansForProduct.map((row) => (
+                          <SelectItem key={row.id} value={row.id}>
+                            {row.name} ({row.billing_cycle})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {addProductId && plansForProduct.length === 0 ? (
+                    <p className="text-xs text-destructive">
+                      No plans found for this product. Create a plan under Admin → Plans first.
+                    </p>
+                  ) : null}
                 </div>
               </>
             )}

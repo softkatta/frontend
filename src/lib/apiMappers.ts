@@ -21,6 +21,7 @@ export function mapSubscription(raw: unknown): Subscription {
     product_id: asString(item.product_id ?? product.id),
     product_name: asString(product.name, 'Product'),
     plan: (asString(plan.billing_cycle, 'monthly') as Subscription['plan']),
+    plan_name: asString(plan.name, asString(plan.billing_cycle, 'plan')),
     status: uiStatus,
     start_date: asString(item.starts_at ?? item.start_date),
     end_date: asString(item.ends_at ?? item.end_date),
