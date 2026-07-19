@@ -324,7 +324,7 @@ export default function SubscriptionsManagement() {
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Delete subscription?"
-        description={deleteTarget ? `Permanently remove ${deleteTarget.customer}'s ${deleteTarget.product} subscription? Linked invoices are kept.` : ''}
+        description={deleteTarget ? `Permanently remove ${deleteTarget.customer}'s ${deleteTarget.product} subscription? Related order, invoice, payment, and license will also be permanently deleted.` : ''}
         confirmLabel="Delete subscription"
         loading={deleting}
         onConfirm={handleDelete}
