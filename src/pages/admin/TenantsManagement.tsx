@@ -17,20 +17,29 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatDate } from '@/lib/utils'
-import { getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapAdminTenant } from '@/lib/apiMappers'
 import { slugify } from '@/lib/slug'
 import { toast } from '@/components/ui/toaster'
 import { useListData } from '@/hooks/useListData'
 
 type TenantRow = ReturnType<typeof mapAdminTenant>
+type CustomerOption = { id: string; label: string }
 
 type TenantFormValues = {
   name: string
   slug: string
+  owner_id: string
   backend_domain: string
   frontend_domain: string
   status: 'active' | 'suspended' | 'inactive'
@@ -39,6 +48,7 @@ type TenantFormValues = {
 const EMPTY_FORM: TenantFormValues = {
   name: '',
   slug: '',
+  owner_id: '',
   backend_domain: '',
   frontend_domain: '',
   status: 'active',
@@ -59,13 +69,27 @@ function TenantFormDialog({
 }) {
   const [form, setForm] = useState<TenantFormValues>(initial ?? EMPTY_FORM)
   const [autoSlug, setAutoSlug] = useState(true)
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
   const isEdit = Boolean(initial)
 
-  // Keep form in sync when toggling between create/edit.
   useEffect(() => {
     setForm(initial ?? EMPTY_FORM)
     setAutoSlug(!Boolean(initial?.slug))
   }, [initial, open])
+
+  useEffect(() => {
+    if (!open) return
+    void adminApi.users.list({ role: 'client', per_page: 200 }).then((res) => {
+      setCustomers(
+        unwrapList(res).map((row) => {
+          const user = asRecord(row)
+          const name = asString(user.name, 'Customer')
+          const email = asString(user.email)
+          return { id: asString(user.id), label: email ? `${name} (${email})` : name }
+        }),
+      )
+    }).catch(() => setCustomers([]))
+  }, [open])
 
   const update = (patch: Partial<TenantFormValues>) => {
     setForm((prev) => {
@@ -77,18 +101,22 @@ function TenantFormDialog({
     })
   }
 
+  const canSubmit = form.name.trim() && form.owner_id
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-md">
+      <DialogContent className="border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit tenant' : 'Add tenant'}</DialogTitle>
-          <DialogDescription>Manage workspace details and status.</DialogDescription>
+          <DialogDescription>
+            Link a customer and assign frontend/backend domains. License generation and project install only work on these domains.
+          </DialogDescription>
         </DialogHeader>
         <form
           className="space-y-4"
           onSubmit={(event) => {
             event.preventDefault()
-            if (!form.name.trim()) return
+            if (!canSubmit) return
             void onSubmit({
               ...form,
               name: form.name.trim(),
@@ -98,6 +126,25 @@ function TenantFormDialog({
             })
           }}
         >
+          <div className="space-y-2">
+            <Label htmlFor="tenant-customer">Customer *</Label>
+            <Select
+              value={form.owner_id || undefined}
+              onValueChange={(value) => update({ owner_id: value })}
+            >
+              <SelectTrigger id="tenant-customer" className="bg-[var(--input-background)]">
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="tenant-name">Name *</Label>
             <Input
@@ -125,7 +172,23 @@ function TenantFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tenant-backend-domain">Backend Domain</Label>
+              <Label htmlFor="tenant-status">Status</Label>
+              <select
+                id="tenant-status"
+                value={form.status}
+                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as TenantFormValues['status'] }))}
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="tenant-backend-domain">Backend Domain *</Label>
               <Input
                 id="tenant-backend-domain"
                 value={form.backend_domain}
@@ -134,36 +197,24 @@ function TenantFormDialog({
                 className="bg-[var(--input-background)]"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tenant-frontend-domain">Frontend Domain</Label>
-            <Input
+            <div className="space-y-2">
+              <Label htmlFor="tenant-frontend-domain">Frontend Domain *</Label>
+              <Input
                 id="tenant-frontend-domain"
                 value={form.frontend_domain}
                 onChange={(event) => setForm((prev) => ({ ...prev, frontend_domain: event.target.value }))}
                 placeholder="app.acme.softkatta.in"
                 className="bg-[var(--input-background)]"
-            />
+              />
+            </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tenant-status">Status</Label>
-            <select
-              id="tenant-status"
-              value={form.status}
-              onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as TenantFormValues['status'] }))}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
-            >
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Install wizard will only complete if the detected domain matches one of these SoftKatta Admin domains.
+          </p>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button type="submit" disabled={saving || !form.name.trim()}>
+            <Button type="submit" disabled={saving || !canSubmit}>
               {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add tenant'}
             </Button>
           </DialogFooter>
@@ -201,8 +252,9 @@ export default function TenantsManagement() {
       const payload = {
         name: values.name,
         slug: values.slug || undefined,
-        backend_domain: values.backend_domain || undefined,
-        frontend_domain: values.frontend_domain || undefined,
+        owner_id: Number(values.owner_id) || values.owner_id,
+        backend_domain: values.backend_domain || null,
+        frontend_domain: values.frontend_domain || null,
         status: values.status,
       }
 
@@ -247,7 +299,7 @@ export default function TenantsManagement() {
       <PortalPageShell
         eyebrow="Workspace"
         heroTitle="Tenants"
-        heroDescription="Manage tenant workspaces and their availability status."
+        heroDescription="Assign customers and domains. Licenses and installs only work on the domains saved here."
         title="Tenants"
         description="Create and manage platform workspaces"
         actions={
@@ -278,13 +330,13 @@ export default function TenantsManagement() {
           columns={[
             { key: 'name', header: 'Tenant', className: 'font-medium' },
             { key: 'slug', header: 'Slug' },
-            { key: 'backend_domain', header: 'Backend Domain', render: (tenant) => tenant.backend_domain || '—' },
-            { key: 'frontend_domain', header: 'Frontend Domain', render: (tenant) => tenant.frontend_domain || '—' },
             {
               key: 'owner_name',
-              header: 'Owner',
+              header: 'Customer',
               render: (tenant) => tenant.owner_name || tenant.owner_email || '—',
             },
+            { key: 'backend_domain', header: 'Backend Domain', render: (tenant) => tenant.backend_domain || '—' },
+            { key: 'frontend_domain', header: 'Frontend Domain', render: (tenant) => tenant.frontend_domain || '—' },
             {
               key: 'status',
               header: 'Status',
@@ -320,11 +372,11 @@ export default function TenantsManagement() {
           <>
             <DetailRow label="Tenant" value={detail.name} />
             <DetailRow label="Slug" value={detail.slug || '—'} />
+            <DetailRow label="Customer" value={detail.owner_name || detail.owner_email || '—'} />
+            <DetailRow label="Customer Email" value={detail.owner_email || '—'} />
             <DetailRow label="Backend Domain" value={detail.backend_domain || '—'} />
             <DetailRow label="Frontend Domain" value={detail.frontend_domain || '—'} />
             <DetailRow label="Status" value={detail.status} />
-            <DetailRow label="Owner" value={detail.owner_name || detail.owner_email || '—'} />
-            <DetailRow label="Owner Email" value={detail.owner_email || '—'} />
             <DetailRow label="Created" value={formatDate(detail.created_at)} />
           </>
         )}
@@ -341,6 +393,7 @@ export default function TenantsManagement() {
         initial={editingTenant ? {
           name: editingTenant.name,
           slug: editingTenant.slug,
+          owner_id: editingTenant.owner_id,
           backend_domain: editingTenant.backend_domain,
           frontend_domain: editingTenant.frontend_domain,
           status: editingTenant.status as TenantFormValues['status'],

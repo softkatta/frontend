@@ -262,6 +262,7 @@ export function mapAdminTenant(raw: unknown) {
     frontend_domain: frontendDomain,
     domain: frontendDomain,
     status: asString(item.status, 'active'),
+    owner_id: asString(owner.id || item.owner_id),
     owner_name: asString(owner.name),
     owner_email: asString(owner.email),
     created_at: asString(item.created_at),
