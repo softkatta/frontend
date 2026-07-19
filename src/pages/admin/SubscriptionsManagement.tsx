@@ -9,7 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
-import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
+import {
+  RecordPaymentDialog,
+  type RecordPaymentPayload,
+  type RecordPaymentTarget,
+} from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -25,6 +29,13 @@ const statusVariant = {
   pending: 'warning',
   expiring_soon: 'warning',
   suspend: 'warning',
+} as const
+
+const paymentStatusVariant = {
+  paid: 'success',
+  partial: 'warning',
+  pending: 'warning',
+  none: 'secondary',
 } as const
 
 type SubRow = ReturnType<typeof mapAdminSubscription>
@@ -45,16 +56,13 @@ export default function SubscriptionsManagement() {
   const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
   const [recordingPayment, setRecordingPayment] = useState(false)
 
-  const handleRecordPayment = async (payload: {
-    payment_method: 'cash' | 'cheque'
-    reference?: string
-    notes?: string
-  }) => {
+  const handleRecordPayment = async (payload: RecordPaymentPayload) => {
     if (!paymentTarget?.subscriptionId) return
     setRecordingPayment(true)
     try {
       await adminApi.payments.record({
         subscription_id: paymentTarget.subscriptionId,
+        ...(paymentTarget.invoiceId ? { invoice_id: paymentTarget.invoiceId } : {}),
         ...payload,
       })
       toast({
@@ -85,12 +93,11 @@ export default function SubscriptionsManagement() {
         apply_trial: values.apply_trial,
         starts_at: values.starts_at || null,
         ends_at: values.ends_at || null,
-        payment_method: values.payment_method || 'cash',
         create_billing: true,
       })
       toast({
         title: 'Subscription created',
-        description: 'Order, invoice, and payment were also created.',
+        description: 'Billing is pending — record cash, cheque, or online when payment is received.',
         variant: 'success',
       })
       setCreateOpen(false)
@@ -155,10 +162,10 @@ export default function SubscriptionsManagement() {
 
   const handleCreateBilling = async (subscriptionId: string, productLabel: string) => {
     try {
-      await adminApi.subscriptions.createBilling(subscriptionId, { payment_method: 'cash' })
+      await adminApi.subscriptions.createBilling(subscriptionId)
       toast({
         title: 'Billing created',
-        description: `Order, invoice, and payment created for ${productLabel}.`,
+        description: `Pending order, invoice, and payment created for ${productLabel}.`,
         variant: 'success',
       })
       await reload()
@@ -204,19 +211,35 @@ export default function SubscriptionsManagement() {
             { key: 'product', header: 'Product' },
             { key: 'plan', header: 'Plan', render: (s) => <span className="capitalize">{s.plan}</span> },
             { key: 'status', header: 'Status', render: (s) => <Badge variant={statusVariant[s.status as keyof typeof statusVariant] ?? 'secondary'}>{s.status.replace('_', ' ')}</Badge> },
+            {
+              key: 'payment_status',
+              header: 'Payment',
+              render: (s) => (
+                <Badge variant={paymentStatusVariant[s.payment_status as keyof typeof paymentStatusVariant] ?? 'secondary'}>
+                  {s.payment_status === 'none' ? '—' : s.payment_status}
+                  {s.payment_status === 'partial' || s.payment_status === 'pending'
+                    ? ` · ${formatCurrency(s.amount_due)}`
+                    : ''}
+                </Badge>
+              ),
+            },
             { key: 'amount', header: 'Amount', render: (s) => formatCurrency(s.amount) },
             { key: 'end_date', header: 'Expires', render: (s) => formatDate(s.end_date) },
             { key: 'actions', header: 'Actions', className: 'w-[180px] text-right', render: (s) => (
               <TableActions actions={[
                 actionBtn('View subscription', Eye, () => setDetail(s)),
-                actionBtn('Create billing', FileText, () => void handleCreateBilling(s.id, s.product)),
+                {
+                  ...actionBtn('Create billing', FileText, () => void handleCreateBilling(s.id, s.product)),
+                  hidden: s.payment_status !== 'none',
+                },
                 {
                   ...actionBtn('Record', IndianRupee, () => setPaymentTarget({
                     subscriptionId: s.id,
+                    invoiceId: s.invoice_id,
                     label: `${s.customer} · ${s.product}`,
-                    amount: s.amount,
+                    amount: s.amount_due > 0 ? s.amount_due : s.amount,
                   })),
-                  hidden: s.status !== 'pending',
+                  hidden: s.payment_status !== 'pending' && s.payment_status !== 'partial',
                 },
                 actionBtn('Edit subscription', Pencil, () => setEditing(s)),
                 {
@@ -239,7 +262,14 @@ export default function SubscriptionsManagement() {
             <DetailRow label="Product" value={detail.product} />
             <DetailRow label="Plan" value={<span className="capitalize">{detail.plan}</span>} />
             <DetailRow label="Status" value={detail.status.replace('_', ' ')} />
+            <DetailRow label="Payment" value={detail.payment_status === 'none' ? '—' : detail.payment_status} />
             <DetailRow label="Amount" value={formatCurrency(detail.amount)} />
+            {detail.payment_status === 'pending' || detail.payment_status === 'partial' ? (
+              <DetailRow label="Amount due" value={formatCurrency(detail.amount_due)} />
+            ) : null}
+            {detail.amount_paid > 0 ? (
+              <DetailRow label="Amount paid" value={formatCurrency(detail.amount_paid)} />
+            ) : null}
             <DetailRow label="Auto renew" value={detail.auto_renew ? 'Yes' : 'No'} />
             <DetailRow label="Started" value={detail.start_date ? formatDate(detail.start_date) : '—'} />
             <DetailRow label="Expires" value={detail.end_date ? formatDate(detail.end_date) : '—'} />

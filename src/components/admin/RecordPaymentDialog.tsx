@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Banknote, FileText } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Banknote, FileText, Globe } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
+export type PaymentMethodOption = 'cash' | 'cheque' | 'online'
+
 export type RecordPaymentTarget = {
   paymentId?: string
   invoiceId?: string
@@ -22,16 +24,19 @@ export type RecordPaymentTarget = {
   amount: number
 }
 
+export type RecordPaymentPayload = {
+  payment_method: PaymentMethodOption
+  amount?: number
+  reference?: string
+  notes?: string
+}
+
 type RecordPaymentDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   target: RecordPaymentTarget | null
   loading?: boolean
-  onSubmit: (payload: {
-    payment_method: 'cash' | 'cheque'
-    reference?: string
-    notes?: string
-  }) => Promise<void>
+  onSubmit: (payload: RecordPaymentPayload) => Promise<void>
 }
 
 export function RecordPaymentDialog({
@@ -41,12 +46,23 @@ export function RecordPaymentDialog({
   loading = false,
   onSubmit,
 }: RecordPaymentDialogProps) {
-  const [method, setMethod] = useState<'cash' | 'cheque'>('cash')
+  const [method, setMethod] = useState<PaymentMethodOption>('cash')
+  const [amount, setAmount] = useState('')
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
 
+  useEffect(() => {
+    if (open && target) {
+      setAmount(String(target.amount || ''))
+      setMethod('cash')
+      setReference('')
+      setNotes('')
+    }
+  }, [open, target])
+
   const reset = () => {
     setMethod('cash')
+    setAmount('')
     setReference('')
     setNotes('')
   }
@@ -56,10 +72,18 @@ export function RecordPaymentDialog({
     onOpenChange(next)
   }
 
+  const parsedAmount = Number(amount)
+  const amountInvalid =
+    !amount.trim() ||
+    Number.isNaN(parsedAmount) ||
+    parsedAmount <= 0 ||
+    (target ? parsedAmount > target.amount + 0.001 : false)
+
   const handleSubmit = async () => {
-    if (!target) return
+    if (!target || amountInvalid) return
     await onSubmit({
       payment_method: method,
+      amount: Math.round(parsedAmount * 100) / 100,
       reference: reference.trim() || undefined,
       notes: notes.trim() || undefined,
     })
@@ -68,6 +92,22 @@ export function RecordPaymentDialog({
   }
 
   const chequeMissing = method === 'cheque' && reference.trim() === ''
+
+  const methodBtn = (value: PaymentMethodOption, label: string, Icon: typeof Banknote) => (
+    <button
+      type="button"
+      onClick={() => setMethod(value)}
+      className={cn(
+        'flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors',
+        method === value
+          ? 'border-[var(--brand-blue)] bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]'
+          : 'border-[var(--border)] hover:bg-[var(--input)]/50',
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  )
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -80,50 +120,56 @@ export function RecordPaymentDialog({
           <div className="space-y-4">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--input)]/30 px-3 py-2.5 text-sm">
               <p className="font-medium text-foreground">{target.label}</p>
-              <p className="mt-1 text-[var(--muted-foreground)]">Amount: {formatCurrency(target.amount)}</p>
+              <p className="mt-1 text-[var(--muted-foreground)]">
+                Remaining due: {formatCurrency(target.amount)}
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label>Payment method</Label>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setMethod('cash')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors',
-                    method === 'cash'
-                      ? 'border-[var(--brand-blue)] bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]'
-                      : 'border-[var(--border)] hover:bg-[var(--input)]/50',
-                  )}
-                >
-                  <Banknote className="h-4 w-4" />
-                  Cash
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMethod('cheque')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors',
-                    method === 'cheque'
-                      ? 'border-[var(--brand-blue)] bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]'
-                      : 'border-[var(--border)] hover:bg-[var(--input)]/50',
-                  )}
-                >
-                  <FileText className="h-4 w-4" />
-                  Cheque
-                </button>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {methodBtn('cash', 'Cash', Banknote)}
+                {methodBtn('cheque', 'Cheque', FileText)}
+                {methodBtn('online', 'Online', Globe)}
               </div>
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="payment-amount">Amount received</Label>
+              <Input
+                id="payment-amount"
+                type="number"
+                min={0.01}
+                step="0.01"
+                max={target.amount}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-10 rounded-xl"
+              />
+              <p className="text-xs text-[var(--muted-foreground)]">
+                You can enter a partial amount. Any balance stays pending.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="payment-reference">
-                {method === 'cheque' ? 'Cheque number' : 'Receipt / reference (optional)'}
+                {method === 'cheque'
+                  ? 'Cheque number'
+                  : method === 'online'
+                    ? 'Transaction / UTR (optional)'
+                    : 'Receipt / reference (optional)'}
               </Label>
               <Input
                 id="payment-reference"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder={method === 'cheque' ? 'e.g. 123456' : 'Cash receipt number'}
+                placeholder={
+                  method === 'cheque'
+                    ? 'e.g. 123456'
+                    : method === 'online'
+                      ? 'UPI / bank reference'
+                      : 'Cash receipt number'
+                }
                 className="h-10 rounded-xl"
               />
             </div>
@@ -146,7 +192,10 @@ export function RecordPaymentDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={() => void handleSubmit()} disabled={loading || !target || chequeMissing}>
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={loading || !target || chequeMissing || amountInvalid}
+          >
             {loading ? 'Saving…' : 'Record payment'}
           </Button>
         </DialogFooter>

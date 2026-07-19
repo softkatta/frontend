@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { InvoiceDocument } from '@/components/invoice/InvoiceDocument'
 import { PortalPage } from '@/components/common/PortalPage'
-import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
+import { RecordPaymentDialog, type RecordPaymentPayload, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { getApiErrorMessage } from '@/lib/apiHelpers'
 import { mapInvoiceDetail } from '@/lib/apiMappers'
 import { getInvoiceDueMeta } from '@/lib/invoiceDue'
@@ -18,11 +18,7 @@ type InvoiceViewShellProps = {
   backLabel?: string
   fetchInvoice: (id: string) => Promise<unknown>
   onMarkPaid?: () => Promise<void>
-  onRecordPayment?: (payload: {
-    payment_method: 'cash' | 'cheque'
-    reference?: string
-    notes?: string
-  }) => Promise<void>
+  onRecordPayment?: (payload: RecordPaymentPayload) => Promise<void>
 }
 
 export function InvoiceViewShell({
@@ -68,11 +64,7 @@ export function InvoiceViewShell({
     }
   }
 
-  const handleRecordPayment = async (payload: {
-    payment_method: 'cash' | 'cheque'
-    reference?: string
-    notes?: string
-  }) => {
+  const handleRecordPayment = async (payload: RecordPaymentPayload) => {
     if (!onRecordPayment) return
     setRecordingPayment(true)
     try {
@@ -88,13 +80,14 @@ export function InvoiceViewShell({
     }
   }
 
-  const canRecordPayment = Boolean(onRecordPayment && invoice && getInvoiceDueMeta(invoice).hasDue)
-  const canMarkPaid = Boolean(onMarkPaid && !onRecordPayment && invoice && getInvoiceDueMeta(invoice).hasDue)
-  const paymentTarget: RecordPaymentTarget | null = invoice && canRecordPayment
+  const dueMeta = invoice ? getInvoiceDueMeta(invoice) : null
+  const canRecordPayment = Boolean(onRecordPayment && dueMeta?.hasDue)
+  const canMarkPaid = Boolean(onMarkPaid && !onRecordPayment && dueMeta?.hasDue)
+  const paymentTarget: RecordPaymentTarget | null = invoice && canRecordPayment && dueMeta
     ? {
         invoiceId,
         label: invoice.invoice_number,
-        amount: invoice.amount,
+        amount: dueMeta.dueBalance > 0 ? dueMeta.dueBalance : invoice.amount,
       }
     : null
 

@@ -124,7 +124,8 @@ export const adminApi = {
       order_id?: string
       subscription_id?: string
       payment_id?: string
-      payment_method: 'cash' | 'cheque'
+      payment_method: 'cash' | 'cheque' | 'online' | 'bank_transfer' | 'manual'
+      amount?: number
       reference?: string
       notes?: string
       paid_at?: string

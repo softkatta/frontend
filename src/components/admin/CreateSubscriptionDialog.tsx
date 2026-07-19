@@ -30,7 +30,6 @@ export type CreateSubscriptionValues = {
   apply_trial: boolean
   starts_at: string
   ends_at: string
-  payment_method: 'cash' | 'cheque' | 'manual' | 'bank_transfer'
 }
 
 type CustomerOption = { id: string; label: string }
@@ -53,7 +52,6 @@ const EMPTY: CreateSubscriptionValues = {
   apply_trial: false,
   starts_at: new Date().toISOString().slice(0, 10),
   ends_at: '',
-  payment_method: 'cash',
 }
 
 function defaultEndDate(startsAt: string, billingCycle: string) {
@@ -156,7 +154,7 @@ export function CreateSubscriptionDialog({
         <DialogHeader>
           <DialogTitle>Add subscription</DialogTitle>
           <DialogDescription>
-            Assign a product plan to a customer. This also creates a paid order, invoice, and payment record.
+            Assign a product plan to a customer. Order, invoice, and payment are created as pending until you record receipt.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -273,31 +271,9 @@ export function CreateSubscriptionDialog({
               />
             </div>
           ) : null}
-          <div className="space-y-2">
-            <Label>Payment method</Label>
-            <Select
-              value={form.payment_method}
-              onValueChange={(payment_method) =>
-                setForm((f) => ({
-                  ...f,
-                  payment_method: payment_method as CreateSubscriptionValues['payment_method'],
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="cheque">Cheque</SelectItem>
-                <SelectItem value="bank_transfer">Bank transfer</SelectItem>
-                <SelectItem value="manual">Manual</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-[var(--muted-foreground)]">
-              Used for the auto-created order, GST invoice, and payment entry.
-            </p>
-          </div>
+          <p className="rounded-lg border border-[var(--border)] bg-[var(--input)]/30 px-3 py-2 text-xs text-[var(--muted-foreground)]">
+            Billing starts as pending. After create, use Record payment to mark cash, cheque, or online receipt (full or partial).
+          </p>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel

@@ -6,7 +6,7 @@ import { TableActions } from '@/components/common/TableActions'
 import { Badge } from '@/components/ui/badge'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
+import { RecordPaymentDialog, type RecordPaymentPayload, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -37,11 +37,7 @@ export default function PaymentsManagement() {
   const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
   const [recordingPayment, setRecordingPayment] = useState(false)
 
-  const handleRecordPayment = async (payload: {
-    payment_method: 'cash' | 'cheque'
-    reference?: string
-    notes?: string
-  }) => {
+  const handleRecordPayment = async (payload: RecordPaymentPayload) => {
     if (!paymentTarget) return
     setRecordingPayment(true)
     try {

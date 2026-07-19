@@ -6,7 +6,7 @@ import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { RecordPaymentDialog, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
+import { RecordPaymentDialog, type RecordPaymentPayload, type RecordPaymentTarget } from '@/components/admin/RecordPaymentDialog'
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -31,11 +31,7 @@ export default function InvoicesManagement() {
 
   const unpaidStatuses = new Set(['draft', 'sent', 'pending', 'overdue'])
 
-  const handleRecordPayment = async (payload: {
-    payment_method: 'cash' | 'cheque'
-    reference?: string
-    notes?: string
-  }) => {
+  const handleRecordPayment = async (payload: RecordPaymentPayload) => {
     if (!paymentTarget?.invoiceId) return
     setRecordingPayment(true)
     try {

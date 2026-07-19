@@ -371,6 +371,10 @@ export function mapAdminSubscription(raw: unknown) {
   const user = asRecord(item.user)
   const product = asRecord(item.product)
   const plan = asRecord(item.plan)
+  const invoiceTotal = asNumber(item.invoice_total)
+  const amountDue = asNumber(item.amount_due)
+  const amountPaid = asNumber(item.amount_paid)
+  const planAmount = asNumber(plan.price ?? item.amount)
   return {
     id: asString(item.id),
     customer: asString(user.name ?? user.email, 'Customer'),
@@ -378,7 +382,12 @@ export function mapAdminSubscription(raw: unknown) {
     product: asString(product.name, 'Product'),
     plan: asString(plan.billing_cycle ?? plan.name, 'monthly'),
     status: asString(item.status, 'pending'),
-    amount: asNumber(plan.price ?? item.amount),
+    amount: invoiceTotal > 0 ? invoiceTotal : planAmount,
+    invoice_id: asString(item.invoice_id) || undefined,
+    invoice_total: invoiceTotal,
+    amount_paid: amountPaid,
+    amount_due: amountDue,
+    payment_status: asString(item.payment_status, 'none'),
     auto_renew: asBool(item.auto_renew),
     start_date: asString(item.starts_at ?? item.start_date),
     end_date: asString(item.ends_at ?? item.end_date),
