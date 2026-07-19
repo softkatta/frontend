@@ -115,21 +115,6 @@ export default function LicensesManagement() {
           : `Email sent to ${email}. WhatsApp skipped (no phone on customer).`
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7446/ingest/a2a872f3-466f-49bd-89e4-ac5fbfa0c6ca', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '00f2f1' },
-        body: JSON.stringify({
-          sessionId: '00f2f1',
-          location: 'LicensesManagement.tsx:runAction',
-          message: 'SoftKatta Admin license action OK',
-          data: { action, licenseId: row.id, keyPrefix: String(row.license_key || '').slice(0, 12) },
-          hypothesisId: 'H3',
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {})
-      // #endregion
-
       const messages: Record<Action, string> = {
         suspend: 'License suspended. Product stops on the next page load.',
         activate:
