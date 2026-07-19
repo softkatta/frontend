@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
@@ -27,7 +27,7 @@ import {
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatDate } from '@/lib/utils'
-import { asBool, asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapAdminTenant } from '@/lib/apiMappers'
 import { slugify } from '@/lib/slug'
 import { toast } from '@/components/ui/toaster'
@@ -35,9 +35,19 @@ import { useListData } from '@/hooks/useListData'
 
 type TenantRow = ReturnType<typeof mapAdminTenant>
 type CustomerOption = { id: string; label: string }
-type ProductDomainOption = {
-  slug: string
-  name: string
+type SubscriptionOption = {
+  id: string
+  product_id: string
+  label: string
+  product_name: string
+  plan_name: string
+}
+type DomainAssignment = {
+  key: string
+  subscription_id: string
+  product_id: string
+  product_name: string
+  plan_name: string
   frontend_domain: string
   backend_domain: string
 }
@@ -46,10 +56,7 @@ type TenantFormValues = {
   name: string
   slug: string
   owner_id: string
-  backend_domain: string
-  frontend_domain: string
-  extra_domains: string
-  product_domains: ProductDomainOption[]
+  domain_assignments: DomainAssignment[]
   status: 'active' | 'suspended' | 'inactive'
 }
 
@@ -57,21 +64,12 @@ const EMPTY_FORM: TenantFormValues = {
   name: '',
   slug: '',
   owner_id: '',
-  backend_domain: '',
-  frontend_domain: '',
-  extra_domains: '',
-  product_domains: [],
+  domain_assignments: [],
   status: 'active',
 }
 
-function installerSlugFromProduct(product: Record<string, unknown>): string {
-  const meta = asRecord(product.meta)
-  const fromMeta = asString(meta.installer_slug)
-  if (fromMeta) return fromMeta
-  const slug = asString(product.slug)
-  if (slug.includes('study') || slug.includes('coach')) return 'study-point-management-software'
-  if (slug.includes('kinder') || slug.includes('nursery')) return 'nursery-school-management-software'
-  return slug
+function newAssignmentKey() {
+  return `a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function TenantFormDialog({
@@ -90,52 +88,66 @@ function TenantFormDialog({
   const [form, setForm] = useState<TenantFormValues>(initial ?? EMPTY_FORM)
   const [autoSlug, setAutoSlug] = useState(true)
   const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [subscriptions, setSubscriptions] = useState<SubscriptionOption[]>([])
+  const [addOpen, setAddOpen] = useState(false)
+  const [addSubscriptionId, setAddSubscriptionId] = useState('')
+  const [addFrontend, setAddFrontend] = useState('')
+  const [addBackend, setAddBackend] = useState('')
   const isEdit = Boolean(initial)
 
   useEffect(() => {
     setForm(initial ?? EMPTY_FORM)
     setAutoSlug(!Boolean(initial?.slug))
+    setAddOpen(false)
+    setAddSubscriptionId('')
+    setAddFrontend('')
+    setAddBackend('')
   }, [initial, open])
 
   useEffect(() => {
     if (!open) return
-    void Promise.all([
-      adminApi.users.list({ role: 'client', per_page: 200 }),
-      adminApi.products.list(),
-    ]).then(([usersRes, productsRes]) => {
+    void adminApi.users.list({ role: 'client', per_page: 200 }).then((res) => {
       setCustomers(
-        unwrapList(usersRes).map((row) => {
+        unwrapList(res).map((row) => {
           const user = asRecord(row)
           const name = asString(user.name, 'Customer')
           const email = asString(user.email)
           return { id: asString(user.id), label: email ? `${name} (${email})` : name }
         }),
       )
-
-      const existing = initial?.product_domains ?? []
-      const bySlug = new Map(existing.map((row) => [row.slug, row]))
-      const products = unwrapList(productsRes)
-        .map((row) => asRecord(row))
-        .filter((product) => product.is_active == null || asBool(product.is_active))
-        .map((product) => {
-          const slug = installerSlugFromProduct(product)
-          const prev = bySlug.get(slug)
-          return {
-            slug,
-            name: asString(product.name, slug),
-            frontend_domain: prev?.frontend_domain ?? '',
-            backend_domain: prev?.backend_domain ?? '',
-          }
-        })
-        // Prefer Study Point + Kindergarten first, keep unique by installer slug.
-        .filter((row, index, all) => all.findIndex((item) => item.slug === row.slug) === index)
-
-      setForm((prev) => ({
-        ...prev,
-        product_domains: products.length > 0 ? products : prev.product_domains,
-      }))
     }).catch(() => setCustomers([]))
-  }, [open, initial])
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !form.owner_id) {
+      setSubscriptions([])
+      return
+    }
+    void adminApi.subscriptions.list({ user_id: form.owner_id, per_page: 100 }).then((res) => {
+      setSubscriptions(
+        unwrapList(res).map((row) => {
+          const item = asRecord(row)
+          const product = asRecord(item.product)
+          const plan = asRecord(item.plan)
+          const productName = asString(product.name, 'Product')
+          const planName = asString(plan.name, asString(plan.billing_cycle, 'plan'))
+          const id = asString(item.id)
+          return {
+            id,
+            product_id: asString(item.product_id || product.id),
+            product_name: productName,
+            plan_name: planName,
+            label: `#${id} · ${productName} · ${planName}`,
+          }
+        }),
+      )
+    }).catch(() => setSubscriptions([]))
+  }, [open, form.owner_id])
+
+  const availableSubscriptions = useMemo(() => {
+    const used = new Set(form.domain_assignments.map((row) => row.subscription_id))
+    return subscriptions.filter((row) => !used.has(row.id))
+  }, [subscriptions, form.domain_assignments])
 
   const update = (patch: Partial<TenantFormValues>) => {
     setForm((prev) => {
@@ -143,184 +155,258 @@ function TenantFormDialog({
       if (autoSlug && patch.name !== undefined) {
         next.slug = slugify(patch.name)
       }
+      if (patch.owner_id !== undefined && patch.owner_id !== prev.owner_id) {
+        next.domain_assignments = []
+      }
       return next
     })
   }
 
-  const updateProductDomain = (slug: string, patch: Partial<ProductDomainOption>) => {
+  const removeAssignment = (key: string) => {
     setForm((prev) => ({
       ...prev,
-      product_domains: prev.product_domains.map((row) => (
-        row.slug === slug ? { ...row, ...patch } : row
-      )),
+      domain_assignments: prev.domain_assignments.filter((row) => row.key !== key),
     }))
+  }
+
+  const submitAddDomain = () => {
+    const selected = subscriptions.find((row) => row.id === addSubscriptionId)
+    if (!selected || !addFrontend.trim() || !addBackend.trim()) return
+    setForm((prev) => ({
+      ...prev,
+      domain_assignments: [
+        ...prev.domain_assignments,
+        {
+          key: newAssignmentKey(),
+          subscription_id: selected.id,
+          product_id: selected.product_id,
+          product_name: selected.product_name,
+          plan_name: selected.plan_name,
+          frontend_domain: addFrontend.trim(),
+          backend_domain: addBackend.trim(),
+        },
+      ],
+    }))
+    setAddOpen(false)
+    setAddSubscriptionId('')
+    setAddFrontend('')
+    setAddBackend('')
   }
 
   const canSubmit = form.name.trim() && form.owner_id
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit tenant' : 'Add tenant'}</DialogTitle>
-          <DialogDescription>
-            Set domains per product. Study Point and Kindergarten must use their own hosts — install only works when the detected domain matches that product.
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!canSubmit) return
-            void onSubmit({
-              ...form,
-              name: form.name.trim(),
-              slug: form.slug.trim(),
-              backend_domain: form.backend_domain.trim(),
-              frontend_domain: form.frontend_domain.trim(),
-              extra_domains: form.extra_domains.trim(),
-            })
-          }}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="tenant-customer">Customer *</Label>
-            <Select
-              value={form.owner_id || undefined}
-              onValueChange={(value) => update({ owner_id: value })}
-            >
-              <SelectTrigger id="tenant-customer" className="bg-[var(--input-background)]">
-                <SelectValue placeholder="Select customer" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tenant-name">Name *</Label>
-            <Input
-              id="tenant-name"
-              value={form.name}
-              onChange={(event) => update({ name: event.target.value })}
-              placeholder="Acme Workspace"
-              required
-              className="bg-[var(--input-background)]"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Edit tenant' : 'Add tenant'}</DialogTitle>
+            <DialogDescription>
+              Add domains per purchase with +. Each subscription gets its own license key after save.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (!canSubmit) return
+              void onSubmit({
+                ...form,
+                name: form.name.trim(),
+                slug: form.slug.trim(),
+              })
+            }}
+          >
             <div className="space-y-2">
-              <Label htmlFor="tenant-slug">Slug</Label>
-              <Input
-                id="tenant-slug"
-                value={form.slug}
-                onChange={(event) => {
-                  setAutoSlug(false)
-                  update({ slug: event.target.value })
-                }}
-                placeholder="acme-workspace"
-                className="bg-[var(--input-background)]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tenant-status">Status</Label>
-              <select
-                id="tenant-status"
-                value={form.status}
-                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as TenantFormValues['status'] }))}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+              <Label htmlFor="tenant-customer">Customer *</Label>
+              <Select
+                value={form.owner_id || undefined}
+                onValueChange={(value) => update({ owner_id: value })}
               >
-                <option value="active">Active</option>
-                <option value="suspended">Suspended</option>
-                <option value="inactive">Inactive</option>
-              </select>
+                <SelectTrigger id="tenant-customer" className="bg-[var(--input-background)]">
+                  <SelectValue placeholder="Select customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          <div className="space-y-3 rounded-xl border border-[var(--border)] p-3">
-            <div>
-              <p className="text-sm font-medium">Product domains</p>
-              <p className="text-xs text-[var(--muted-foreground)]">
-                Kindergarten install on kinder.softkatta.in must use Kindergarten domains here — not Study Point domains.
-              </p>
+            <div className="space-y-2">
+              <Label htmlFor="tenant-name">Name *</Label>
+              <Input
+                id="tenant-name"
+                value={form.name}
+                onChange={(event) => update({ name: event.target.value })}
+                placeholder="Acme Workspace"
+                required
+                className="bg-[var(--input-background)]"
+              />
             </div>
-            {form.product_domains.map((product) => (
-              <div key={product.slug} className="space-y-2 rounded-lg bg-[var(--muted)]/30 p-3">
-                <p className="text-sm font-medium">{product.name}</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label>Frontend domain</Label>
-                    <Input
-                      value={product.frontend_domain}
-                      onChange={(event) => updateProductDomain(product.slug, { frontend_domain: event.target.value })}
-                      placeholder={product.slug.includes('nursery') ? 'kinder.softkatta.in' : 'study-point.softkatta.in'}
-                      className="bg-[var(--input-background)]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Backend domain</Label>
-                    <Input
-                      value={product.backend_domain}
-                      onChange={(event) => updateProductDomain(product.slug, { backend_domain: event.target.value })}
-                      placeholder={product.slug.includes('nursery') ? 'kinder-api.softkatta.in' : 'study-api.softkatta.in'}
-                      className="bg-[var(--input-background)]"
-                    />
-                  </div>
-                </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="tenant-slug">Slug</Label>
+                <Input
+                  id="tenant-slug"
+                  value={form.slug}
+                  onChange={(event) => {
+                    setAutoSlug(false)
+                    update({ slug: event.target.value })
+                  }}
+                  placeholder="acme-workspace"
+                  className="bg-[var(--input-background)]"
+                />
               </div>
-            ))}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="tenant-status">Status</Label>
+                <select
+                  id="tenant-status"
+                  value={form.status}
+                  onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as TenantFormValues['status'] }))}
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3 rounded-xl border border-[var(--border)] p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Product domains</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    One entry per purchase. Same product bought twice → add twice → two license keys.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-1 rounded-xl"
+                  disabled={!form.owner_id || availableSubscriptions.length === 0}
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus className="h-4 w-4" /> Add
+                </Button>
+              </div>
+
+              {form.domain_assignments.length === 0 ? (
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  {form.owner_id
+                    ? (subscriptions.length === 0
+                      ? 'This customer has no subscriptions yet. Create a subscription first.'
+                      : 'No domains yet. Click + to select a product purchase and add domains.')
+                    : 'Select a customer first.'}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {form.domain_assignments.map((row) => (
+                    <div key={row.key} className="rounded-lg bg-[var(--muted)]/30 p-3">
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium">{row.product_name}</p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            Subscription #{row.subscription_id} · {row.plan_name}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => removeAssignment(row.key)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-2 text-xs sm:grid-cols-2">
+                        <div>
+                          <span className="text-[var(--muted-foreground)]">Frontend</span>
+                          <p className="font-medium">{row.frontend_domain}</p>
+                        </div>
+                        <div>
+                          <span className="text-[var(--muted-foreground)]">Backend</span>
+                          <p className="font-medium">{row.backend_domain}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+              <Button type="submit" disabled={saving || !canSubmit}>
+                {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add tenant'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add product domains</DialogTitle>
+            <DialogDescription>
+              Select which purchase this install belongs to, then enter its frontend and backend domains.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="tenant-backend-domain">Default backend domain</Label>
+              <Label>Product / subscription *</Label>
+              <Select value={addSubscriptionId || undefined} onValueChange={setAddSubscriptionId}>
+                <SelectTrigger className="bg-[var(--input-background)]">
+                  <SelectValue placeholder="Select purchase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubscriptions.map((row) => (
+                    <SelectItem key={row.id} value={row.id}>
+                      {row.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Frontend domain *</Label>
               <Input
-                id="tenant-backend-domain"
-                value={form.backend_domain}
-                onChange={(event) => setForm((prev) => ({ ...prev, backend_domain: event.target.value }))}
-                placeholder="Fallback if product domains empty"
+                value={addFrontend}
+                onChange={(event) => setAddFrontend(event.target.value)}
+                placeholder="kinder.softkatta.in"
                 className="bg-[var(--input-background)]"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tenant-frontend-domain">Default frontend domain</Label>
+              <Label>Backend domain *</Label>
               <Input
-                id="tenant-frontend-domain"
-                value={form.frontend_domain}
-                onChange={(event) => setForm((prev) => ({ ...prev, frontend_domain: event.target.value }))}
-                placeholder="Fallback if product domains empty"
+                value={addBackend}
+                onChange={(event) => setAddBackend(event.target.value)}
+                placeholder="kinder-api.softkatta.in"
                 className="bg-[var(--input-background)]"
               />
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tenant-extra-domains">Additional allowed domains</Label>
-            <textarea
-              id="tenant-extra-domains"
-              value={form.extra_domains}
-              onChange={(event) => setForm((prev) => ({ ...prev, extra_domains: event.target.value }))}
-              placeholder={'www.kinder.softkatta.in\napi.kinder.softkatta.in'}
-              rows={3}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
-            />
-            <p className="text-xs text-[var(--muted-foreground)]">One domain per line. Added to every product allowlist on this tenant.</p>
-          </div>
-
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button type="submit" disabled={saving || !canSubmit}>
-              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add tenant'}
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button
+              type="button"
+              disabled={!addSubscriptionId || !addFrontend.trim() || !addBackend.trim()}
+              onClick={submitAddDomain}
+            >
+              Add domains
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -335,53 +421,89 @@ export default function TenantsManagement() {
   const [saving, setSaving] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editingTenant, setEditingTenant] = useState<TenantRow | null>(null)
+  const [editInitial, setEditInitial] = useState<TenantFormValues | null>(null)
 
   const openCreate = () => {
     setEditingTenant(null)
+    setEditInitial(null)
     setFormOpen(true)
   }
 
-  const openEdit = (tenant: TenantRow) => {
+  const openEdit = async (tenant: TenantRow) => {
     setEditingTenant(tenant)
     setFormOpen(true)
+
+    let labelBySubscription = new Map<string, { product_name: string; plan_name: string; product_id: string }>()
+    if (tenant.owner_id) {
+      try {
+        const res = await adminApi.subscriptions.list({ user_id: tenant.owner_id, per_page: 100 })
+        labelBySubscription = new Map(
+          unwrapList(res).map((row) => {
+            const item = asRecord(row)
+            const product = asRecord(item.product)
+            const plan = asRecord(item.plan)
+            return [
+              asString(item.id),
+              {
+                product_id: asString(item.product_id || product.id),
+                product_name: asString(product.name, 'Product'),
+                plan_name: asString(plan.name, 'plan'),
+              },
+            ] as const
+          }),
+        )
+      } catch {
+        // keep empty labels
+      }
+    }
+
+    setEditInitial({
+      name: tenant.name,
+      slug: tenant.slug,
+      owner_id: tenant.owner_id,
+      status: tenant.status as TenantFormValues['status'],
+      domain_assignments: tenant.subscription_domains.map((row) => {
+        const meta = labelBySubscription.get(row.subscription_id)
+        return {
+          key: newAssignmentKey(),
+          subscription_id: row.subscription_id,
+          product_id: row.product_id || meta?.product_id || '',
+          product_name: meta?.product_name || 'Product',
+          plan_name: meta?.plan_name || 'plan',
+          frontend_domain: row.frontend_domain,
+          backend_domain: row.backend_domain,
+        }
+      }),
+    })
   }
 
   const handleSave = async (values: TenantFormValues) => {
     setSaving(true)
     try {
-      const product_domains: Record<string, { frontend_domain: string; backend_domain: string }> = {}
-      for (const row of values.product_domains) {
-        if (!row.frontend_domain.trim() && !row.backend_domain.trim()) continue
-        product_domains[row.slug] = {
-          frontend_domain: row.frontend_domain.trim(),
-          backend_domain: row.backend_domain.trim(),
-        }
-      }
-
       const payload = {
         name: values.name,
         slug: values.slug || undefined,
         owner_id: Number(values.owner_id) || values.owner_id,
-        backend_domain: values.backend_domain || null,
-        frontend_domain: values.frontend_domain || null,
-        extra_domains: values.extra_domains
-          .split(/[\r\n,]+/)
-          .map((line) => line.trim())
-          .filter(Boolean),
-        product_domains,
         status: values.status,
+        subscription_domains: values.domain_assignments.map((row) => ({
+          subscription_id: Number(row.subscription_id),
+          product_id: Number(row.product_id) || undefined,
+          frontend_domain: row.frontend_domain,
+          backend_domain: row.backend_domain,
+        })),
       }
 
       if (editingTenant) {
         await adminApi.tenants.update(editingTenant.id, payload)
-        toast({ title: 'Tenant updated', description: values.name, variant: 'success' })
+        toast({ title: 'Tenant updated', description: 'Domains saved — license keys generated/synced per purchase.', variant: 'success' })
       } else {
         await adminApi.tenants.create(payload)
-        toast({ title: 'Tenant created', description: values.name, variant: 'success' })
+        toast({ title: 'Tenant created', description: 'Domains saved — license keys generated per purchase.', variant: 'success' })
       }
 
       setFormOpen(false)
       setEditingTenant(null)
+      setEditInitial(null)
       await reload()
     } catch (err) {
       toast({ title: 'Save failed', description: getApiErrorMessage(err), variant: 'destructive' })
@@ -413,7 +535,7 @@ export default function TenantsManagement() {
       <PortalPageShell
         eyebrow="Workspace"
         heroTitle="Tenants"
-        heroDescription="Assign customers and per-product domains. Study Point and Kindergarten installs each match their own hosts."
+        heroDescription="Assign domains per product purchase. Each purchase gets its own license key after domains are saved."
         title="Tenants"
         description="Create and manage platform workspaces"
         actions={
@@ -426,7 +548,7 @@ export default function TenantsManagement() {
       >
         <DataTable
           embedded
-          searchKeys={['name', 'slug', 'backend_domain', 'frontend_domain', 'owner_name', 'owner_email']}
+          searchKeys={['name', 'slug', 'owner_name', 'owner_email']}
           searchPlaceholder="Search tenants..."
           filters={[
             {
@@ -449,8 +571,11 @@ export default function TenantsManagement() {
               header: 'Customer',
               render: (tenant) => tenant.owner_name || tenant.owner_email || '—',
             },
-            { key: 'backend_domain', header: 'Backend Domain', render: (tenant) => tenant.backend_domain || '—' },
-            { key: 'frontend_domain', header: 'Frontend Domain', render: (tenant) => tenant.frontend_domain || '—' },
+            {
+              key: 'subscription_domains',
+              header: 'Domain sets',
+              render: (tenant) => String(tenant.subscription_domains.length || 0),
+            },
             {
               key: 'status',
               header: 'Status',
@@ -472,7 +597,7 @@ export default function TenantsManagement() {
               render: (tenant) => (
                 <TableActions actions={[
                   actionBtn('View tenant', Eye, () => setDetail(tenant)),
-                  actionBtn('Edit tenant', Pencil, () => openEdit(tenant)),
+                  actionBtn('Edit tenant', Pencil, () => { void openEdit(tenant) }),
                   { ...actionBtn('Delete tenant', Trash2, () => setDeleteTarget(tenant)), variant: 'destructive' },
                 ]} />
               ),
@@ -488,18 +613,12 @@ export default function TenantsManagement() {
             <DetailRow label="Slug" value={detail.slug || '—'} />
             <DetailRow label="Customer" value={detail.owner_name || detail.owner_email || '—'} />
             <DetailRow label="Customer Email" value={detail.owner_email || '—'} />
-            <DetailRow label="Backend Domain" value={detail.backend_domain || '—'} />
-            <DetailRow label="Frontend Domain" value={detail.frontend_domain || '—'} />
             <DetailRow
-              label="Extra domains"
-              value={detail.extra_domains.length ? detail.extra_domains.join(', ') : '—'}
-            />
-            <DetailRow
-              label="Product domains"
+              label="Subscription domains"
               value={
-                Object.keys(detail.product_domains).length
-                  ? Object.entries(detail.product_domains)
-                    .map(([slug, pair]) => `${slug}: ${pair.frontend_domain || '—'} / ${pair.backend_domain || '—'}`)
+                detail.subscription_domains.length
+                  ? detail.subscription_domains
+                    .map((row) => `#${row.subscription_id}: ${row.frontend_domain} / ${row.backend_domain}`)
                     .join(' · ')
                   : '—'
               }
@@ -516,23 +635,10 @@ export default function TenantsManagement() {
           setFormOpen(open)
           if (!open) {
             setEditingTenant(null)
+            setEditInitial(null)
           }
         }}
-        initial={editingTenant ? {
-          name: editingTenant.name,
-          slug: editingTenant.slug,
-          owner_id: editingTenant.owner_id,
-          backend_domain: editingTenant.backend_domain,
-          frontend_domain: editingTenant.frontend_domain,
-          extra_domains: editingTenant.extra_domains.join('\n'),
-          product_domains: Object.entries(editingTenant.product_domains).map(([slug, pair]) => ({
-            slug,
-            name: slug,
-            frontend_domain: pair.frontend_domain,
-            backend_domain: pair.backend_domain,
-          })),
-          status: editingTenant.status as TenantFormValues['status'],
-        } : null}
+        initial={editInitial}
         saving={saving}
         onSubmit={handleSave}
       />

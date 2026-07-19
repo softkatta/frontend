@@ -85,7 +85,8 @@ export const adminApi = {
   },
 
   subscriptions: {
-    list: () => api.get<unknown[]>('/admin/subscriptions'),
+    list: (params?: { user_id?: string | number; per_page?: number; page?: number }) =>
+      api.get<unknown[]>('/admin/subscriptions', { params }),
     create: (payload: unknown) => api.post<unknown>('/admin/subscriptions', payload),
     get: (id: string | number) => api.get<unknown>(`/admin/subscriptions/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/subscriptions/${id}`, payload),

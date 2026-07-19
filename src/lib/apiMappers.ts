@@ -252,8 +252,19 @@ export function mapAdminCustomer(raw: unknown) {
 export function mapAdminTenant(raw: unknown) {
   const item = asRecord(raw)
   const owner = asRecord(item.owner)
-  const frontendDomain = asString(item.frontend_domain || item.domain)
   const settings = asRecord(item.settings)
+  const subscriptionDomainsRaw = asRecord(settings.subscription_domains)
+  const subscription_domains = Object.values(subscriptionDomainsRaw).map((rowRaw) => {
+    const row = asRecord(rowRaw)
+    return {
+      subscription_id: asString(row.subscription_id),
+      product_id: asString(row.product_id),
+      frontend_domain: asString(row.frontend_domain),
+      backend_domain: asString(row.backend_domain),
+    }
+  }).filter((row) => row.subscription_id && row.frontend_domain && row.backend_domain)
+
+  // Legacy product_domains → shown only if no subscription_domains yet
   const productDomainsRaw = asRecord(settings.product_domains)
   const product_domains: Record<string, { frontend_domain: string; backend_domain: string }> = {}
   for (const [slug, pairRaw] of Object.entries(productDomainsRaw)) {
@@ -263,19 +274,15 @@ export function mapAdminTenant(raw: unknown) {
       backend_domain: asString(pair.backend_domain),
     }
   }
-  const extraRaw = item.extra_domains
-  const extra_domains = Array.isArray(extraRaw)
-    ? extraRaw.map((d) => asString(d)).filter(Boolean)
-    : []
 
   return {
     id: asString(item.id),
     name: asString(item.name),
     slug: asString(item.slug),
     backend_domain: asString(item.backend_domain),
-    frontend_domain: frontendDomain,
-    domain: frontendDomain,
-    extra_domains,
+    frontend_domain: asString(item.frontend_domain || item.domain),
+    domain: asString(item.frontend_domain || item.domain),
+    subscription_domains,
     product_domains,
     status: asString(item.status, 'active'),
     owner_id: asString(owner.id || item.owner_id),
