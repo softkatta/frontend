@@ -210,6 +210,28 @@ function TenantFormDialog({
     }).catch(() => setSubscriptions([]))
   }, [open, form.owner_id])
 
+  // Fill product/plan labels from loaded subscriptions without resetting the form.
+  useEffect(() => {
+    if (!subscriptions.length) return
+    setForm((prev) => {
+      let changed = false
+      const domain_assignments = prev.domain_assignments.map((row) => {
+        if (!row.subscription_id) return row
+        const match = subscriptions.find((sub) => sub.id === row.subscription_id)
+        if (!match) return row
+        if (row.product_name === match.product_name && row.plan_name === match.plan_name) return row
+        changed = true
+        return {
+          ...row,
+          product_id: row.product_id || match.product_id,
+          product_name: match.product_name,
+          plan_name: match.plan_name,
+        }
+      })
+      return changed ? { ...prev, domain_assignments } : prev
+    })
+  }, [subscriptions])
+
   const availableSubscriptions = useMemo(() => {
     const used = new Set(
       form.domain_assignments
@@ -286,47 +308,58 @@ function TenantFormDialog({
   const submitAddDomain = () => {
     if (!addFrontend.trim() || !addBackend.trim()) return
 
+    let assignment: DomainAssignment | null = null
+
     if (addMode === 'existing') {
       const selected = subscriptions.find((row) => row.id === addSubscriptionId)
       if (!selected) return
-      setForm((prev) => ({
-        ...prev,
-        domain_assignments: [
-          ...prev.domain_assignments,
-          {
-            key: newAssignmentKey(),
-            subscription_id: selected.id,
-            product_id: selected.product_id,
-            product_name: selected.product_name,
-            plan_name: selected.plan_name,
-            frontend_domain: addFrontend.trim(),
-            backend_domain: addBackend.trim(),
-          },
-        ],
-      }))
+      assignment = {
+        key: newAssignmentKey(),
+        subscription_id: selected.id,
+        product_id: selected.product_id,
+        product_name: selected.product_name,
+        plan_name: selected.plan_name,
+        frontend_domain: addFrontend.trim(),
+        backend_domain: addBackend.trim(),
+      }
     } else {
       const product = products.find((row) => row.id === addProductId)
       const plan = plans.find((row) => row.id === addPlanId)
       if (!product || !plan) return
-      setForm((prev) => ({
-        ...prev,
-        domain_assignments: [
-          ...prev.domain_assignments,
-          {
-            key: newAssignmentKey(),
-            product_id: product.id,
-            plan_id: plan.id,
-            product_name: product.name,
-            plan_name: plan.name,
-            frontend_domain: addFrontend.trim(),
-            backend_domain: addBackend.trim(),
-          },
-        ],
-      }))
+      assignment = {
+        key: newAssignmentKey(),
+        product_id: product.id,
+        plan_id: plan.id,
+        product_name: product.name,
+        plan_name: plan.name,
+        frontend_domain: addFrontend.trim(),
+        backend_domain: addBackend.trim(),
+      }
     }
 
+    const nextForm: TenantFormValues = {
+      ...form,
+      domain_assignments: [...form.domain_assignments, assignment],
+    }
+    setForm(nextForm)
     setAddOpen(false)
     resetAddDialog()
+
+    // Edit: persist immediately — "Add domains" alone used to only update local state.
+    if (isEdit) {
+      void onSubmit({
+        ...nextForm,
+        name: nextForm.name.trim(),
+        slug: nextForm.slug.trim(),
+      })
+      return
+    }
+
+    toast({
+      title: 'Domain added to list',
+      description: 'Click “Add tenant” at the bottom to save domains permanently.',
+      variant: 'success',
+    })
   }
 
   const canAddDomains = Boolean(form.owner_id) && (availableSubscriptions.length > 0 || products.length > 0)
@@ -344,7 +377,7 @@ function TenantFormDialog({
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Edit tenant' : 'Add tenant'}</DialogTitle>
             <DialogDescription>
-              Add domains per purchase with +. If the customer has no subscription yet, pick a product and plan — it is created on save.
+              Add domains per purchase with +. On edit, domains save as soon as you click Add & save.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -660,10 +693,10 @@ function TenantFormDialog({
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button
               type="button"
-              disabled={!canSubmitAdd}
+              disabled={!canSubmitAdd || saving}
               onClick={submitAddDomain}
             >
-              Add domains
+              {isEdit ? (saving ? 'Saving…' : 'Add & save domains') : 'Add domains'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -753,52 +786,25 @@ export default function TenantsManagement() {
     setFormOpen(true)
   }
 
-  const openEdit = async (tenant: TenantRow) => {
+  const openEdit = (tenant: TenantRow) => {
     setEditingTenant(tenant)
-    setFormOpen(true)
-
-    let labelBySubscription = new Map<string, { product_name: string; plan_name: string; product_id: string }>()
-    if (tenant.owner_id) {
-      try {
-        const res = await adminApi.subscriptions.list({ user_id: tenant.owner_id, per_page: 100 })
-        labelBySubscription = new Map(
-          unwrapList(res).map((row) => {
-            const item = asRecord(row)
-            const product = asRecord(item.product)
-            const plan = asRecord(item.plan)
-            return [
-              asString(item.id),
-              {
-                product_id: asString(item.product_id || product.id),
-                product_name: asString(product.name, 'Product'),
-                plan_name: asString(plan.name, 'plan'),
-              },
-            ] as const
-          }),
-        )
-      } catch {
-        // keep empty labels
-      }
-    }
-
+    // Sync open — async label fetch used to reset the form and wipe unsaved domains.
     setEditInitial({
       name: tenant.name,
       slug: tenant.slug,
       owner_id: tenant.owner_id,
       status: tenant.status as TenantFormValues['status'],
-      domain_assignments: tenant.subscription_domains.map((row) => {
-        const meta = labelBySubscription.get(row.subscription_id)
-        return {
-          key: newAssignmentKey(),
-          subscription_id: row.subscription_id,
-          product_id: row.product_id || meta?.product_id || '',
-          product_name: meta?.product_name || 'Product',
-          plan_name: meta?.plan_name || 'plan',
-          frontend_domain: row.frontend_domain,
-          backend_domain: row.backend_domain,
-        }
-      }),
+      domain_assignments: tenant.subscription_domains.map((row) => ({
+        key: newAssignmentKey(),
+        subscription_id: row.subscription_id,
+        product_id: row.product_id,
+        product_name: 'Product',
+        plan_name: 'plan',
+        frontend_domain: row.frontend_domain,
+        backend_domain: row.backend_domain,
+      })),
     })
+    setFormOpen(true)
   }
 
   const handleSave = async (values: TenantFormValues) => {

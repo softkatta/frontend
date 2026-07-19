@@ -1,0 +1,1 @@
+import{Vt as e}from"./index-CK_4FApJ.js";var t=e(`chevron-down`,[[`path`,{d:`m6 9 6 6 6-6`,key:`qrunsl`}]]);export{t};
