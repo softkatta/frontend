@@ -117,15 +117,16 @@ export default function LicensesManagement() {
 
       const messages: Record<Action, string> = {
         suspend: 'License suspended. Product stops on next API check.',
-        activate: 'License activated. Product restores on next API check.',
+        activate:
+          'License marked Active on SoftKatta. If the product still shows Invalid License, open the product Restore page and enter this license key (Admin Activate does not push tokens after wipe/new key).',
         revoke: 'License revoked.',
         delete: 'License deleted.',
         reset_domains: 'Domain binding reset.',
         force_logout: 'Product force logout issued.',
-        reset_installations: 'All installations revoked.',
+        reset_installations: 'All installations revoked. Product must Restore with the license key.',
         regenerate: regeneratedKey
-          ? `New key: ${regeneratedKey}`
-          : 'License key regenerated. Customer must re-activate.',
+          ? `New key: ${regeneratedKey}. Product must Restore with this key.`
+          : 'License key regenerated. Customer must re-activate on the product.',
         notify_ready: notifySummary ?? 'Customer notified: product is ready.',
       }
       toast({ title: messages[action], variant: 'success' })
@@ -215,11 +216,13 @@ export default function LicensesManagement() {
   const confirmMessages: Record<Action, { title: string; description: string }> = {
     suspend: {
       title: 'Suspend License',
-      description: 'Install tokens are revoked and SoftKatta will reject the product. Access stops on the next API/heartbeat check (usually under a minute). Activate later to restore automatically.',
+      description:
+        'SoftKatta will reject the product on the next verify/heartbeat. Install tokens are kept so Activate can recover without a new key when an installation already exists.',
     },
     activate: {
       title: 'Activate License',
-      description: 'Re-enables the license. The product restores automatically on the next heartbeat (usually within a few minutes).',
+      description:
+        'Marks this license Active on SoftKatta. If there is no live product installation (Admin wipe, regenerate key, reset installations), open the product site → Restore access and enter this license key. Admin Activate alone does not push tokens to the product server.',
     },
     revoke: {
       title: 'Revoke License',
@@ -231,7 +234,7 @@ export default function LicensesManagement() {
     },
     reset_domains: {
       title: 'Reset Domain Binding',
-      description: 'All registered domains and install tokens will be cleared. Customer must re-activate.',
+      description: 'All registered domains and install tokens will be cleared. Customer must re-activate on the product Restore page.',
     },
     force_logout: {
       title: 'Force Logout Product',
