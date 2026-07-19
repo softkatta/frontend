@@ -253,6 +253,20 @@ export function mapAdminTenant(raw: unknown) {
   const item = asRecord(raw)
   const owner = asRecord(item.owner)
   const frontendDomain = asString(item.frontend_domain || item.domain)
+  const settings = asRecord(item.settings)
+  const productDomainsRaw = asRecord(settings.product_domains)
+  const product_domains: Record<string, { frontend_domain: string; backend_domain: string }> = {}
+  for (const [slug, pairRaw] of Object.entries(productDomainsRaw)) {
+    const pair = asRecord(pairRaw)
+    product_domains[slug] = {
+      frontend_domain: asString(pair.frontend_domain),
+      backend_domain: asString(pair.backend_domain),
+    }
+  }
+  const extraRaw = item.extra_domains
+  const extra_domains = Array.isArray(extraRaw)
+    ? extraRaw.map((d) => asString(d)).filter(Boolean)
+    : []
 
   return {
     id: asString(item.id),
@@ -261,6 +275,8 @@ export function mapAdminTenant(raw: unknown) {
     backend_domain: asString(item.backend_domain),
     frontend_domain: frontendDomain,
     domain: frontendDomain,
+    extra_domains,
+    product_domains,
     status: asString(item.status, 'active'),
     owner_id: asString(owner.id || item.owner_id),
     owner_name: asString(owner.name),

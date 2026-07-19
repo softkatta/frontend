@@ -1,0 +1,1 @@
+import{r as e}from"./motion-XFMutiCo.js";import t from"./AnnouncementsManagement-DL99K_A7.js";var n=e();function r(){return(0,n.jsx)(t,{})}export{r as default};

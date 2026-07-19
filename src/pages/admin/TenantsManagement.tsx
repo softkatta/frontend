@@ -27,7 +27,7 @@ import {
 import { adminApi } from '@/services/api'
 import { actionBtn } from '@/lib/tableActions'
 import { formatDate } from '@/lib/utils'
-import { asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { asBool, asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapAdminTenant } from '@/lib/apiMappers'
 import { slugify } from '@/lib/slug'
 import { toast } from '@/components/ui/toaster'
@@ -35,6 +35,12 @@ import { useListData } from '@/hooks/useListData'
 
 type TenantRow = ReturnType<typeof mapAdminTenant>
 type CustomerOption = { id: string; label: string }
+type ProductDomainOption = {
+  slug: string
+  name: string
+  frontend_domain: string
+  backend_domain: string
+}
 
 type TenantFormValues = {
   name: string
@@ -42,6 +48,8 @@ type TenantFormValues = {
   owner_id: string
   backend_domain: string
   frontend_domain: string
+  extra_domains: string
+  product_domains: ProductDomainOption[]
   status: 'active' | 'suspended' | 'inactive'
 }
 
@@ -51,7 +59,19 @@ const EMPTY_FORM: TenantFormValues = {
   owner_id: '',
   backend_domain: '',
   frontend_domain: '',
+  extra_domains: '',
+  product_domains: [],
   status: 'active',
+}
+
+function installerSlugFromProduct(product: Record<string, unknown>): string {
+  const meta = asRecord(product.meta)
+  const fromMeta = asString(meta.installer_slug)
+  if (fromMeta) return fromMeta
+  const slug = asString(product.slug)
+  if (slug.includes('study') || slug.includes('coach')) return 'study-point-management-software'
+  if (slug.includes('kinder') || slug.includes('nursery')) return 'nursery-school-management-software'
+  return slug
 }
 
 function TenantFormDialog({
@@ -79,17 +99,43 @@ function TenantFormDialog({
 
   useEffect(() => {
     if (!open) return
-    void adminApi.users.list({ role: 'client', per_page: 200 }).then((res) => {
+    void Promise.all([
+      adminApi.users.list({ role: 'client', per_page: 200 }),
+      adminApi.products.list(),
+    ]).then(([usersRes, productsRes]) => {
       setCustomers(
-        unwrapList(res).map((row) => {
+        unwrapList(usersRes).map((row) => {
           const user = asRecord(row)
           const name = asString(user.name, 'Customer')
           const email = asString(user.email)
           return { id: asString(user.id), label: email ? `${name} (${email})` : name }
         }),
       )
+
+      const existing = initial?.product_domains ?? []
+      const bySlug = new Map(existing.map((row) => [row.slug, row]))
+      const products = unwrapList(productsRes)
+        .map((row) => asRecord(row))
+        .filter((product) => product.is_active == null || asBool(product.is_active))
+        .map((product) => {
+          const slug = installerSlugFromProduct(product)
+          const prev = bySlug.get(slug)
+          return {
+            slug,
+            name: asString(product.name, slug),
+            frontend_domain: prev?.frontend_domain ?? '',
+            backend_domain: prev?.backend_domain ?? '',
+          }
+        })
+        // Prefer Study Point + Kindergarten first, keep unique by installer slug.
+        .filter((row, index, all) => all.findIndex((item) => item.slug === row.slug) === index)
+
+      setForm((prev) => ({
+        ...prev,
+        product_domains: products.length > 0 ? products : prev.product_domains,
+      }))
     }).catch(() => setCustomers([]))
-  }, [open])
+  }, [open, initial])
 
   const update = (patch: Partial<TenantFormValues>) => {
     setForm((prev) => {
@@ -101,15 +147,24 @@ function TenantFormDialog({
     })
   }
 
+  const updateProductDomain = (slug: string, patch: Partial<ProductDomainOption>) => {
+    setForm((prev) => ({
+      ...prev,
+      product_domains: prev.product_domains.map((row) => (
+        row.slug === slug ? { ...row, ...patch } : row
+      )),
+    }))
+  }
+
   const canSubmit = form.name.trim() && form.owner_id
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit tenant' : 'Add tenant'}</DialogTitle>
           <DialogDescription>
-            Link a customer and assign frontend/backend domains. License generation and project install only work on these domains.
+            Set domains per product. Study Point and Kindergarten must use their own hosts — install only works when the detected domain matches that product.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -123,6 +178,7 @@ function TenantFormDialog({
               slug: form.slug.trim(),
               backend_domain: form.backend_domain.trim(),
               frontend_domain: form.frontend_domain.trim(),
+              extra_domains: form.extra_domains.trim(),
             })
           }}
         >
@@ -186,31 +242,75 @@ function TenantFormDialog({
             </div>
           </div>
 
+          <div className="space-y-3 rounded-xl border border-[var(--border)] p-3">
+            <div>
+              <p className="text-sm font-medium">Product domains</p>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Kindergarten install on kinder.softkatta.in must use Kindergarten domains here — not Study Point domains.
+              </p>
+            </div>
+            {form.product_domains.map((product) => (
+              <div key={product.slug} className="space-y-2 rounded-lg bg-[var(--muted)]/30 p-3">
+                <p className="text-sm font-medium">{product.name}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>Frontend domain</Label>
+                    <Input
+                      value={product.frontend_domain}
+                      onChange={(event) => updateProductDomain(product.slug, { frontend_domain: event.target.value })}
+                      placeholder={product.slug.includes('nursery') ? 'kinder.softkatta.in' : 'study-point.softkatta.in'}
+                      className="bg-[var(--input-background)]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Backend domain</Label>
+                    <Input
+                      value={product.backend_domain}
+                      onChange={(event) => updateProductDomain(product.slug, { backend_domain: event.target.value })}
+                      placeholder={product.slug.includes('nursery') ? 'kinder-api.softkatta.in' : 'study-api.softkatta.in'}
+                      className="bg-[var(--input-background)]"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="tenant-backend-domain">Backend Domain *</Label>
+              <Label htmlFor="tenant-backend-domain">Default backend domain</Label>
               <Input
                 id="tenant-backend-domain"
                 value={form.backend_domain}
                 onChange={(event) => setForm((prev) => ({ ...prev, backend_domain: event.target.value }))}
-                placeholder="api.acme.softkatta.in"
+                placeholder="Fallback if product domains empty"
                 className="bg-[var(--input-background)]"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tenant-frontend-domain">Frontend Domain *</Label>
+              <Label htmlFor="tenant-frontend-domain">Default frontend domain</Label>
               <Input
                 id="tenant-frontend-domain"
                 value={form.frontend_domain}
                 onChange={(event) => setForm((prev) => ({ ...prev, frontend_domain: event.target.value }))}
-                placeholder="app.acme.softkatta.in"
+                placeholder="Fallback if product domains empty"
                 className="bg-[var(--input-background)]"
               />
             </div>
           </div>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Install wizard will only complete if the detected domain matches one of these SoftKatta Admin domains.
-          </p>
+
+          <div className="space-y-2">
+            <Label htmlFor="tenant-extra-domains">Additional allowed domains</Label>
+            <textarea
+              id="tenant-extra-domains"
+              value={form.extra_domains}
+              onChange={(event) => setForm((prev) => ({ ...prev, extra_domains: event.target.value }))}
+              placeholder={'www.kinder.softkatta.in\napi.kinder.softkatta.in'}
+              rows={3}
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--input-background)] px-3 py-2 text-sm"
+            />
+            <p className="text-xs text-[var(--muted-foreground)]">One domain per line. Added to every product allowlist on this tenant.</p>
+          </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
@@ -249,12 +349,26 @@ export default function TenantsManagement() {
   const handleSave = async (values: TenantFormValues) => {
     setSaving(true)
     try {
+      const product_domains: Record<string, { frontend_domain: string; backend_domain: string }> = {}
+      for (const row of values.product_domains) {
+        if (!row.frontend_domain.trim() && !row.backend_domain.trim()) continue
+        product_domains[row.slug] = {
+          frontend_domain: row.frontend_domain.trim(),
+          backend_domain: row.backend_domain.trim(),
+        }
+      }
+
       const payload = {
         name: values.name,
         slug: values.slug || undefined,
         owner_id: Number(values.owner_id) || values.owner_id,
         backend_domain: values.backend_domain || null,
         frontend_domain: values.frontend_domain || null,
+        extra_domains: values.extra_domains
+          .split(/[\r\n,]+/)
+          .map((line) => line.trim())
+          .filter(Boolean),
+        product_domains,
         status: values.status,
       }
 
@@ -299,7 +413,7 @@ export default function TenantsManagement() {
       <PortalPageShell
         eyebrow="Workspace"
         heroTitle="Tenants"
-        heroDescription="Assign customers and domains. Licenses and installs only work on the domains saved here."
+        heroDescription="Assign customers and per-product domains. Study Point and Kindergarten installs each match their own hosts."
         title="Tenants"
         description="Create and manage platform workspaces"
         actions={
@@ -376,6 +490,20 @@ export default function TenantsManagement() {
             <DetailRow label="Customer Email" value={detail.owner_email || '—'} />
             <DetailRow label="Backend Domain" value={detail.backend_domain || '—'} />
             <DetailRow label="Frontend Domain" value={detail.frontend_domain || '—'} />
+            <DetailRow
+              label="Extra domains"
+              value={detail.extra_domains.length ? detail.extra_domains.join(', ') : '—'}
+            />
+            <DetailRow
+              label="Product domains"
+              value={
+                Object.keys(detail.product_domains).length
+                  ? Object.entries(detail.product_domains)
+                    .map(([slug, pair]) => `${slug}: ${pair.frontend_domain || '—'} / ${pair.backend_domain || '—'}`)
+                    .join(' · ')
+                  : '—'
+              }
+            />
             <DetailRow label="Status" value={detail.status} />
             <DetailRow label="Created" value={formatDate(detail.created_at)} />
           </>
@@ -396,6 +524,13 @@ export default function TenantsManagement() {
           owner_id: editingTenant.owner_id,
           backend_domain: editingTenant.backend_domain,
           frontend_domain: editingTenant.frontend_domain,
+          extra_domains: editingTenant.extra_domains.join('\n'),
+          product_domains: Object.entries(editingTenant.product_domains).map(([slug, pair]) => ({
+            slug,
+            name: slug,
+            frontend_domain: pair.frontend_domain,
+            backend_domain: pair.backend_domain,
+          })),
           status: editingTenant.status as TenantFormValues['status'],
         } : null}
         saving={saving}
