@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Ban, Eye, IndianRupee, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Ban, Eye, FileText, IndianRupee, Pencil, Plus, Trash2 } from 'lucide-react'
 import { CreateSubscriptionDialog, type CreateSubscriptionValues } from '@/components/admin/CreateSubscriptionDialog'
 import { SubscriptionFormDialog, type SubscriptionFormValues } from '@/components/admin/SubscriptionFormDialog'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
@@ -85,8 +85,14 @@ export default function SubscriptionsManagement() {
         apply_trial: values.apply_trial,
         starts_at: values.starts_at || null,
         ends_at: values.ends_at || null,
+        payment_method: values.payment_method || 'cash',
+        create_billing: true,
       })
-      toast({ title: 'Subscription created', variant: 'success' })
+      toast({
+        title: 'Subscription created',
+        description: 'Order, invoice, and payment were also created.',
+        variant: 'success',
+      })
       setCreateOpen(false)
       await reload()
     } catch (err) {
@@ -147,6 +153,20 @@ export default function SubscriptionsManagement() {
     }
   }
 
+  const handleCreateBilling = async (subscriptionId: string, productLabel: string) => {
+    try {
+      await adminApi.subscriptions.createBilling(subscriptionId, { payment_method: 'cash' })
+      toast({
+        title: 'Billing created',
+        description: `Order, invoice, and payment created for ${productLabel}.`,
+        variant: 'success',
+      })
+      await reload()
+    } catch (err) {
+      toast({ title: 'Billing failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
   return (
     <>
       <PortalPageShell
@@ -189,6 +209,7 @@ export default function SubscriptionsManagement() {
             { key: 'actions', header: 'Actions', className: 'w-[180px] text-right', render: (s) => (
               <TableActions actions={[
                 actionBtn('View subscription', Eye, () => setDetail(s)),
+                actionBtn('Create billing', FileText, () => void handleCreateBilling(s.id, s.product)),
                 {
                   ...actionBtn('Record', IndianRupee, () => setPaymentTarget({
                     subscriptionId: s.id,

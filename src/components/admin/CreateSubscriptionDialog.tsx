@@ -30,6 +30,7 @@ export type CreateSubscriptionValues = {
   apply_trial: boolean
   starts_at: string
   ends_at: string
+  payment_method: 'cash' | 'cheque' | 'manual' | 'bank_transfer'
 }
 
 type CustomerOption = { id: string; label: string }
@@ -52,6 +53,7 @@ const EMPTY: CreateSubscriptionValues = {
   apply_trial: false,
   starts_at: new Date().toISOString().slice(0, 10),
   ends_at: '',
+  payment_method: 'cash',
 }
 
 function defaultEndDate(startsAt: string, billingCycle: string) {
@@ -153,7 +155,9 @@ export function CreateSubscriptionDialog({
       <DialogContent className="border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add subscription</DialogTitle>
-          <DialogDescription>Assign a product plan to a customer manually.</DialogDescription>
+          <DialogDescription>
+            Assign a product plan to a customer. This also creates a paid order, invoice, and payment record.
+          </DialogDescription>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -269,6 +273,31 @@ export function CreateSubscriptionDialog({
               />
             </div>
           ) : null}
+          <div className="space-y-2">
+            <Label>Payment method</Label>
+            <Select
+              value={form.payment_method}
+              onValueChange={(payment_method) =>
+                setForm((f) => ({
+                  ...f,
+                  payment_method: payment_method as CreateSubscriptionValues['payment_method'],
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="cheque">Cheque</SelectItem>
+                <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Used for the auto-created order, GST invoice, and payment entry.
+            </p>
+          </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel

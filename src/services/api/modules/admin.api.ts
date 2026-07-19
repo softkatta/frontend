@@ -97,6 +97,8 @@ export const adminApi = {
     get: (id: string | number) => api.get<unknown>(`/admin/subscriptions/${id}`),
     update: (id: string | number, payload: unknown) => api.put<unknown>(`/admin/subscriptions/${id}`, payload),
     cancel: (id: string | number) => api.post<unknown>(`/admin/subscriptions/${id}/cancel`),
+    createBilling: (id: string | number, payload?: { payment_method?: string; payment_reference?: string }) =>
+      api.post<unknown>(`/admin/subscriptions/${id}/create-billing`, payload ?? {}),
     delete: (id: string | number) => api.delete<null>(`/admin/subscriptions/${id}`),
   },
 
