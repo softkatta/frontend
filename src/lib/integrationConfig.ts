@@ -182,5 +182,5 @@ export const INTEGRATION_DESCRIPTIONS: Record<string, string> = {
   email_smtp: 'Send invoice, welcome, and notification emails via SMTP.',
   whatsapp: 'Send WhatsApp alerts using Meta Cloud API credentials.',
   pusher: 'Deliver real-time in-app notifications to clients and admins.',
-  stripe: 'Optional card payments via Stripe (coming soon).',
+  stripe: 'Stripe is not available for SoftKatta checkout. Configure Razorpay instead.',
 }
