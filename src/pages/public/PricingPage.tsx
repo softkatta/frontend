@@ -7,6 +7,8 @@ import {
   Package,
   Sparkles,
   ShieldCheck,
+  Users,
+  GraduationCap,
   Zap,
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -14,27 +16,30 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { usePublicProducts } from '@/hooks/usePublicProducts'
 import { usePublicPageContent } from '@/hooks/usePublicPageContent'
 import { productHasFreeTrial } from '@/lib/productTrial'
-import { yearlySavingsPercent } from '@/lib/purchasePlan'
+import { getDefaultPlan, yearlySavingsPercent } from '@/lib/purchasePlan'
 
 type Billing = 'monthly' | 'yearly'
 
 export default function PricingPage() {
   const { page } = usePublicPageContent('pricing')
   const trustItems = page.trust_items ?? []
-  const { products, loading, error } = usePublicProducts()
+  const { products, rawProducts, loading, error } = usePublicProducts()
   const [billing, setBilling] = useState<Billing>('monthly')
 
   const activeProducts = useMemo(
-    () => products.filter((p) => p.is_active),
-    [products],
+    () => products
+      .map((product, index) => ({ product, raw: rawProducts[index] }))
+      .filter(({ product }) => product.is_active),
+    [products, rawProducts],
   )
 
   const plans = useMemo(() => {
-    return activeProducts.map((product, index) => {
+    return activeProducts.map(({ product, raw }, index) => {
       const price = billing === 'yearly' ? product.price_yearly : product.price_monthly
       const savings = yearlySavingsPercent(product.price_monthly, product.price_yearly)
       return {
         product,
+        selectedPlan: getDefaultPlan(raw, billing),
         price,
         savings,
         popular: index === 0,
@@ -42,7 +47,7 @@ export default function PricingPage() {
     })
   }, [activeProducts, billing])
 
-  const hasYearlyPricing = activeProducts.some((p) => p.price_yearly > 0)
+  const hasYearlyPricing = activeProducts.some(({ product }) => product.price_yearly > 0)
 
   return (
     <div className="pricing-page">
@@ -120,7 +125,7 @@ export default function PricingPage() {
             </div>
           ) : (
             <div className="pricing-page__grid">
-              {plans.map(({ product, price, savings, popular }, i) => (
+              {plans.map(({ product, selectedPlan, price, savings, popular }, i) => (
                 <motion.article
                   key={product.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -158,6 +163,17 @@ export default function PricingPage() {
                     <span className="pricing-page__trial">
                       <Zap className="h-3.5 w-3.5" /> Free trial available
                     </span>
+                  )}
+
+                  {(selectedPlan?.maxUsers !== undefined || selectedPlan?.maxStudents !== undefined) && (
+                    <div className="pricing-page__limits" aria-label={`${product.name} plan limits`}>
+                      {selectedPlan?.maxUsers !== undefined && (
+                        <span><Users className="h-3.5 w-3.5" />{selectedPlan.maxUsers} users</span>
+                      )}
+                      {selectedPlan?.maxStudents !== undefined && (
+                        <span><GraduationCap className="h-3.5 w-3.5" />{selectedPlan.maxStudents} students</span>
+                      )}
+                    </div>
                   )}
 
                   {product.features.length > 0 && (

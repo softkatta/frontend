@@ -6411,6 +6411,26 @@ html:not(.dark) .public-site .offer-strip__close:hover {
   margin-bottom: 0.75rem;
 }
 
+.pricing-page__limits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.pricing-page__limits span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--brand-blue) 16%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--brand-blue) 6%, transparent);
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .pricing-page__features {
   list-style: none;
   margin: 0 0 1.25rem;

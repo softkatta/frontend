@@ -18,6 +18,8 @@ export type PlanOption = {
   billing: BillingCycle
   isPopular: boolean
   sortOrder: number
+  maxUsers?: number
+  maxStudents?: number
 }
 
 function normalizeBillingCycle(value: unknown): BillingCycle | null {
@@ -43,6 +45,14 @@ export function activePlansForBilling(raw: unknown, billing: BillingCycle): Plan
       billing,
       isPopular: asBool(p.is_popular),
       sortOrder: asNumber(p.sort_order),
+      maxUsers: typeof asRecord(p.limits).max_users === 'number'
+        ? asNumber(asRecord(p.limits).max_users)
+        : typeof asRecord(p.limits).max_staff === 'number'
+          ? asNumber(asRecord(p.limits).max_staff)
+          : undefined,
+      maxStudents: typeof asRecord(p.limits).max_students === 'number'
+        ? asNumber(asRecord(p.limits).max_students)
+        : undefined,
     }))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.price - b.price)
 }
