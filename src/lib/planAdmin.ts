@@ -37,6 +37,11 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
         is_active: values.is_active,
         is_popular: values.is_popular && cycle.billing_cycle === 'monthly',
         sort_order: cycle.sort_order,
+        limits: {
+          max_users: values.max_users,
+          max_staff: values.max_users,
+          max_students: values.max_students,
+        },
       }
       if (existing) {
         await adminApi.plans.update(existing.id, payload)
@@ -60,7 +65,17 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
 
 export function buildPlanFormFromProduct(
   productId: string,
-  plans: Array<{ id: string; product_id: string; billing_cycle: string; price: number; description?: string; is_active?: boolean; is_popular?: boolean; slug?: string }>,
+  plans: Array<{
+    id: string
+    product_id: string
+    billing_cycle: string
+    price: number
+    description?: string
+    is_active?: boolean
+    is_popular?: boolean
+    slug?: string
+    limits?: { max_users?: number; max_staff?: number; max_students?: number }
+  }>,
 ): PlanFormValues {
   const forProduct = plans.filter((p) => sameProductId(p.product_id, productId))
   const pick = (cycle: string) =>
@@ -71,6 +86,7 @@ export function buildPlanFormFromProduct(
   const yearly = pick('yearly')
   const enterprise = pick('enterprise')
   const sample = monthly ?? yearly ?? enterprise
+  const limits = sample?.limits ?? {}
 
   return {
     product_id: productId,
@@ -80,5 +96,7 @@ export function buildPlanFormFromProduct(
     price_monthly: monthly?.price ?? 0,
     price_yearly: yearly?.price ?? 0,
     price_enterprise: enterprise?.price ?? 0,
+    max_users: Number(limits.max_users ?? limits.max_staff ?? 10),
+    max_students: Number(limits.max_students ?? 500),
   }
 }

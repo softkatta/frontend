@@ -62,6 +62,9 @@ export default function LicensesManagement() {
   const [actionTarget, setActionTarget] = useState<{ row: LicenseRow; action: Action } | null>(null)
   const [productUrl, setProductUrl] = useState('')
   const [busy, setBusy] = useState(false)
+  const [extraUsers, setExtraUsers] = useState('0')
+  const [extraStudents, setExtraStudents] = useState('0')
+  const [limitsBusy, setLimitsBusy] = useState(false)
   const [activity, setActivity] = useState<LogRow[] | null>(null)
   const [history, setHistory] = useState<HistoryRow[] | null>(null)
   const [installations, setInstallations] = useState<InstallationRow[] | null>(null)
@@ -69,9 +72,35 @@ export default function LicensesManagement() {
   const openDetail = async (row: LicenseRow) => {
     try {
       const response = await adminApi.licenses.get(row.id)
-      setDetail(mapAdminLicense(asRecord(response).data ?? response))
+      const mapped = mapAdminLicense(asRecord(response).data ?? response)
+      setDetail(mapped)
+      setExtraUsers(String(mapped.extra_max_users ?? 0))
+      setExtraStudents(String(mapped.extra_max_students ?? 0))
     } catch {
       setDetail(row)
+      setExtraUsers(String(row.extra_max_users ?? 0))
+      setExtraStudents(String(row.extra_max_students ?? 0))
+    }
+  }
+
+  const saveLimitExtras = async () => {
+    if (!detail) return
+    setLimitsBusy(true)
+    try {
+      const response = await adminApi.licenses.update(detail.id, {
+        extra_max_users: Math.max(0, Number(extraUsers) || 0),
+        extra_max_students: Math.max(0, Number(extraStudents) || 0),
+      })
+      const mapped = mapAdminLicense(asRecord(response).data ?? response)
+      setDetail(mapped)
+      setExtraUsers(String(mapped.extra_max_users ?? 0))
+      setExtraStudents(String(mapped.extra_max_students ?? 0))
+      toast({ title: 'Limits updated', description: 'Product picks up new totals on the next license check.' })
+      await reload()
+    } catch (err) {
+      toast({ title: 'Could not update limits', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setLimitsBusy(false)
     }
   }
 
@@ -350,6 +379,41 @@ export default function LicensesManagement() {
             <DetailRow label="Customer Email" value={detail.customer_email} />
             <DetailRow label="Product" value={detail.product_name} />
             <DetailRow label="Plan" value={detail.plan_name} />
+            <DetailRow label="Plan max users" value={String(detail.plan_max_users ?? '—')} />
+            <DetailRow label="Plan max students" value={String(detail.plan_max_students ?? '—')} />
+            <DetailRow
+              label="Extra users (SoftKatta)"
+              value={
+                <Input
+                  type="number"
+                  min={0}
+                  value={extraUsers}
+                  onChange={(e) => setExtraUsers(e.target.value)}
+                  className="h-8 w-28 bg-[var(--input-background)]"
+                />
+              }
+            />
+            <DetailRow
+              label="Extra students (SoftKatta)"
+              value={
+                <Input
+                  type="number"
+                  min={0}
+                  value={extraStudents}
+                  onChange={(e) => setExtraStudents(e.target.value)}
+                  className="h-8 w-28 bg-[var(--input-background)]"
+                />
+              }
+            />
+            <DetailRow
+              label="Effective totals"
+              value={`Users ${detail.effective_max_users ?? '—'} · Students ${detail.effective_max_students ?? '—'}`}
+            />
+            <div className="pt-1">
+              <Button type="button" size="sm" onClick={() => void saveLimitExtras()} disabled={limitsBusy}>
+                {limitsBusy ? 'Saving…' : 'Save limit extras'}
+              </Button>
+            </div>
             <DetailRow label="API URL" value={<span className="font-mono text-xs break-all select-all">{detail.api_url || '—'}</span>} />
             <DetailRow label="API Key" value={<span className="font-mono text-xs break-all select-all">{detail.api_key || '—'}</span>} />
             <DetailRow label="Product Slug" value={<span className="font-mono text-xs select-all">{detail.product_slug || '—'}</span>} />

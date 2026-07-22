@@ -29,6 +29,8 @@ export type PlanFormValues = {
   price_monthly: number
   price_yearly: number
   price_enterprise: number
+  max_users: number
+  max_students: number
 }
 
 const EMPTY: PlanFormValues = {
@@ -39,6 +41,8 @@ const EMPTY: PlanFormValues = {
   price_monthly: 0,
   price_yearly: 0,
   price_enterprise: 0,
+  max_users: 10,
+  max_students: 500,
 }
 
 type ProductOption = { id: string; name: string }
@@ -92,7 +96,7 @@ export function PlanFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit product plans' : 'Add product plans'}</DialogTitle>
           <DialogDescription>
-            Set monthly, yearly, and enterprise prices for one product. Leave a field empty to skip that plan.
+            Set pricing and user/student limits for one product. Limits apply on the licensed product install.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -165,6 +169,39 @@ export function PlanFormDialog({
               </div>
             </div>
             <p className="text-xs text-muted-foreground">At least one price is required. Clearing a price removes that plan.</p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Plan limits</p>
+            <p className="text-xs text-muted-foreground">
+              Applied on the product: customers can add up to these counts. SoftKatta can grant extras per license later.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="plan-max-users">Max users (staff)</Label>
+                <Input
+                  id="plan-max-users"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={form.max_users}
+                  onChange={(e) => setForm((f) => ({ ...f, max_users: Math.max(0, Number(e.target.value) || 0) }))}
+                  className="bg-[var(--input-background)]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-max-students">Max students</Label>
+                <Input
+                  id="plan-max-students"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={form.max_students}
+                  onChange={(e) => setForm((f) => ({ ...f, max_students: Math.max(0, Number(e.target.value) || 0) }))}
+                  className="bg-[var(--input-background)]"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -351,6 +351,7 @@ export function mapAdminService(raw: unknown) {
 export function mapAdminPlan(raw: unknown) {
   const item = asRecord(raw)
   const product = asRecord(item.product)
+  const limits = asRecord(item.limits)
   return {
     id: asString(item.id),
     name: asString(item.name),
@@ -363,6 +364,13 @@ export function mapAdminPlan(raw: unknown) {
     is_active: asBool(item.is_active),
     is_popular: asBool(item.is_popular),
     sort_order: asNumber(item.sort_order),
+    max_users: asNumber(limits.max_users ?? limits.max_staff, 10),
+    max_students: asNumber(limits.max_students, 500),
+    limits: {
+      max_users: asNumber(limits.max_users ?? limits.max_staff, 10),
+      max_staff: asNumber(limits.max_staff ?? limits.max_users, 10),
+      max_students: asNumber(limits.max_students, 500),
+    },
   }
 }
 
@@ -818,6 +826,12 @@ export function mapAdminLicense(raw: unknown) {
     domains_text: Array.isArray(item.allowed_domains) ? (item.allowed_domains as string[]).join(', ') : '',
     max_devices: asNumber(item.max_devices, 1),
     max_domains: asNumber(item.max_domains, 1),
+    plan_max_users: asNumber(asRecord(item.plan_limits).max_users, asNumber(asRecord(item.effective_limits).max_users, 10)),
+    plan_max_students: asNumber(asRecord(item.plan_limits).max_students, asNumber(asRecord(item.effective_limits).max_students, 500)),
+    extra_max_users: asNumber(item.extra_max_users),
+    extra_max_students: asNumber(item.extra_max_students),
+    effective_max_users: asNumber(asRecord(item.effective_limits).max_users, 10),
+    effective_max_students: asNumber(asRecord(item.effective_limits).max_students, 500),
     activation_count: asNumber(item.activation_count),
     activated_at: asString(item.activated_at),
     expires_at: asString(item.expires_at),

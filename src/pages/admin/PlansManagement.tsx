@@ -116,6 +116,8 @@ export default function PlansManagement() {
             { key: 'product_name', header: 'Product' },
             { key: 'billing_cycle', header: 'Cycle', render: (p) => <Badge variant="outline" className="capitalize">{p.billing_cycle}</Badge> },
             { key: 'price', header: 'Price', render: (p) => formatCurrency(p.price) },
+            { key: 'max_users', header: 'Users', render: (p) => String(p.max_users) },
+            { key: 'max_students', header: 'Students', render: (p) => String(p.max_students) },
             { key: 'is_active', header: 'Status', render: (p) => <Badge variant={p.is_active ? 'success' : 'secondary'}>{p.is_active ? 'Active' : 'Inactive'}</Badge> },
             { key: 'actions', header: 'Actions', className: 'w-[120px] text-right', render: (p) => (
               <TableActions actions={[
@@ -135,6 +137,8 @@ export default function PlansManagement() {
             <DetailRow label="Product" value={detail.product_name} />
             <DetailRow label="Billing" value={<span className="capitalize">{detail.billing_cycle}</span>} />
             <DetailRow label="Price" value={formatCurrency(detail.price)} />
+            <DetailRow label="Max users" value={String(detail.max_users)} />
+            <DetailRow label="Max students" value={String(detail.max_students)} />
             <DetailRow label="Status" value={detail.is_active ? 'Active' : 'Inactive'} />
             <DetailRow label="Popular" value={detail.is_popular ? 'Yes' : 'No'} />
             {detail.description ? <DetailRow label="Description" value={detail.description} /> : null}

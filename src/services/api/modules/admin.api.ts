@@ -360,7 +360,13 @@ export const adminApi = {
     get: (id: string | number) => api.get<unknown>(`/admin/licenses/${id}`),
     create: (payload: { subscription_id: number; allowed_domains?: string[]; max_devices?: number }) =>
       api.post<unknown>('/admin/licenses', payload),
-    update: (id: string | number, payload: { allowed_domains?: string[]; max_devices?: number; expires_at?: string }) =>
+    update: (id: string | number, payload: {
+      allowed_domains?: string[]
+      max_devices?: number
+      expires_at?: string
+      extra_max_users?: number
+      extra_max_students?: number
+    }) =>
       api.put<unknown>(`/admin/licenses/${id}`, payload),
     suspend: (id: string | number) => api.post<null>(`/admin/licenses/${id}/suspend`),
     revoke: (id: string | number, reason?: string) =>
