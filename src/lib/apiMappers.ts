@@ -832,6 +832,8 @@ export function mapAdminLicense(raw: unknown) {
     extra_max_students: asNumber(item.extra_max_students),
     effective_max_users: asNumber(asRecord(item.effective_limits).max_users, 10),
     effective_max_students: asNumber(asRecord(item.effective_limits).max_students, 500),
+    price_per_extra_user: asNumber(asRecord(item.seat_pricing).price_per_extra_user),
+    price_per_extra_student: asNumber(asRecord(item.seat_pricing).price_per_extra_student),
     activation_count: asNumber(item.activation_count),
     activated_at: asString(item.activated_at),
     expires_at: asString(item.expires_at),

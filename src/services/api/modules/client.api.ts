@@ -97,6 +97,11 @@ export const clientApi = {
     installations: (id: string | number) => api.get<unknown>(`/client/licenses/${id}/installations`),
     deactivateInstallation: (id: string | number, installationId: string | number) =>
       api.post<unknown>(`/client/licenses/${id}/installations/${installationId}/deactivate`),
+    purchaseExtraSeats: (id: string | number, payload: {
+      extra_users?: number
+      extra_students?: number
+      payment_gateway?: string
+    }) => api.post<unknown>(`/client/licenses/${id}/extra-seats`, payload),
   },
 
   profile: {

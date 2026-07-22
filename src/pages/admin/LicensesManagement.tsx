@@ -382,7 +382,7 @@ export default function LicensesManagement() {
             <DetailRow label="Plan max users" value={String(detail.plan_max_users ?? '—')} />
             <DetailRow label="Plan max students" value={String(detail.plan_max_students ?? '—')} />
             <DetailRow
-              label="Extra users (SoftKatta)"
+              label="Complimentary extra users"
               value={
                 <Input
                   type="number"
@@ -394,7 +394,7 @@ export default function LicensesManagement() {
               }
             />
             <DetailRow
-              label="Extra students (SoftKatta)"
+              label="Complimentary extra students"
               value={
                 <Input
                   type="number"
@@ -411,8 +411,11 @@ export default function LicensesManagement() {
             />
             <div className="pt-1">
               <Button type="button" size="sm" onClick={() => void saveLimitExtras()} disabled={limitsBusy}>
-                {limitsBusy ? 'Saving…' : 'Save limit extras'}
+                {limitsBusy ? 'Saving…' : 'Save complimentary extras'}
               </Button>
+              <p className="text-xs text-muted-foreground mt-1">
+                Customers normally buy paid extras from Client → Licenses. Use this only for SoftKatta comps.
+              </p>
             </div>
             <DetailRow label="API URL" value={<span className="font-mono text-xs break-all select-all">{detail.api_url || '—'}</span>} />
             <DetailRow label="API Key" value={<span className="font-mono text-xs break-all select-all">{detail.api_key || '—'}</span>} />

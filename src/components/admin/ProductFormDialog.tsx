@@ -37,6 +37,8 @@ export type ProductFormValues = {
   trial_days: number
   is_active: boolean
   has_free_trial: boolean
+  price_per_extra_user: number
+  price_per_extra_student: number
 }
 
 const EMPTY_FORM: ProductFormValues = {
@@ -50,6 +52,8 @@ const EMPTY_FORM: ProductFormValues = {
   trial_days: 14,
   is_active: true,
   has_free_trial: true,
+  price_per_extra_user: 0,
+  price_per_extra_student: 0,
 }
 
 function parseScreenshot(productRaw: unknown): string {
@@ -135,6 +139,8 @@ export function ProductFormDialog({
         trial_days: initial.trial_days ?? 14,
         is_active: initial.is_active !== false,
         has_free_trial: Boolean(raw.has_free_trial ?? true),
+        price_per_extra_user: Number(asRecord(raw.meta).price_per_extra_user ?? 0),
+        price_per_extra_student: Number(asRecord(raw.meta).price_per_extra_student ?? 0),
       })
       setAutoSlug(false)
     } else {
@@ -380,6 +386,39 @@ export function ProductFormDialog({
               onChange={(e) => setForm({ ...form, trial_days: Number(e.target.value) || 0 })}
               className="bg-[var(--input-background)]"
             />
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Paid extra seats (₹ each)</p>
+            <p className="text-xs text-muted-foreground">
+              Customers pay these unit prices to buy seats beyond the plan. Set 0 to disable that seat type.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="price-extra-user">Price per extra user</Label>
+                <Input
+                  id="price-extra-user"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={form.price_per_extra_user || ''}
+                  onChange={(e) => setForm({ ...form, price_per_extra_user: Math.max(0, Number(e.target.value) || 0) })}
+                  className="bg-[var(--input-background)]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price-extra-student">Price per extra student</Label>
+                <Input
+                  id="price-extra-student"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={form.price_per_extra_student || ''}
+                  onChange={(e) => setForm({ ...form, price_per_extra_student: Math.max(0, Number(e.target.value) || 0) })}
+                  className="bg-[var(--input-background)]"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-6">

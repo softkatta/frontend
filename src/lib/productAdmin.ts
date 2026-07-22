@@ -18,6 +18,10 @@ function productPayload(values: ProductFormValues) {
       .map((title) => title.trim())
       .filter(Boolean)
       .map((title, index) => ({ title, sort_order: index })),
+    meta: {
+      price_per_extra_user: values.price_per_extra_user,
+      price_per_extra_student: values.price_per_extra_student,
+    },
   }
 }
 
