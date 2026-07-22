@@ -111,15 +111,6 @@ export default function CheckoutPage() {
     })
   }
 
-  const verifyStubPayment = async (paymentId: string, orderId: string) => {
-    await clientApi.payments.verify({
-      payment_id: paymentId,
-      razorpay_payment_id: `pay_stub_${Date.now()}`,
-      razorpay_order_id: orderId,
-      razorpay_signature: 'stub',
-    })
-  }
-
   const resolvePurchaseLines = async (): Promise<PurchaseLine[]> => {
     const lines: PurchaseLine[] = []
 
@@ -214,12 +205,11 @@ export default function CheckoutPage() {
       const isStub = asBool(checkout.stub)
 
       if (isStub || !razorpayKeyId) {
-        await verifyStubPayment(paymentId, razorpayOrderId)
         toast({
-          title: 'Payment completed (stub mode)',
-          description: 'Configure Razorpay in Admin → Settings → Integrations for live payments.',
+          title: 'Payment gateway not configured',
+          description: 'Ask SoftKatta Admin to configure Razorpay in Settings → Integrations before checkout.',
+          variant: 'destructive',
         })
-        finishSuccess(orderNumber, invoiceId, itemCount, productLabel)
         return
       }
 

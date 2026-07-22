@@ -13,7 +13,7 @@ export function mapSubscription(raw: unknown): Subscription {
   const status = asString(item.status, 'pending')
   const uiStatus =
     status === 'expiring_soon' ? 'active' :
-    status === 'suspend' ? 'cancelled' :
+    status === 'suspend' ? 'suspended' :
     (status as Subscription['status'])
 
   return {

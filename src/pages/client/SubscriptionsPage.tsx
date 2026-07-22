@@ -28,7 +28,7 @@ import { toast } from '@/components/ui/toaster'
 import { useListData } from '@/hooks/useListData'
 import type { DomainSetupStatusCode, Subscription } from '@/types'
 
-const statusVariant = { active: 'success', expired: 'destructive', cancelled: 'secondary', pending: 'warning' } as const
+const statusVariant = { active: 'success', expired: 'destructive', cancelled: 'secondary', pending: 'warning', suspended: 'destructive' } as const
 
 const domainBadge: Record<DomainSetupStatusCode, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' | 'outline' }> = {
   none: { label: 'Domains needed', variant: 'warning' },
@@ -166,6 +166,7 @@ export default function SubscriptionsPage() {
             { key: 'status', label: 'Status', options: [
               { value: 'active', label: 'Active' },
               { value: 'expired', label: 'Expired' },
+              { value: 'suspended', label: 'Suspended' },
               { value: 'cancelled', label: 'Cancelled' },
               { value: 'pending', label: 'Pending' },
             ]},

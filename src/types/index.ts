@@ -88,7 +88,7 @@ export interface Subscription {
   product_name: string
   plan: 'monthly' | 'yearly' | 'enterprise'
   plan_name?: string
-  status: 'active' | 'expired' | 'cancelled' | 'pending'
+  status: 'active' | 'expired' | 'cancelled' | 'pending' | 'suspended'
   start_date: string
   end_date: string
   auto_renew: boolean
