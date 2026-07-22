@@ -85,7 +85,7 @@ export function AnnouncementBar({ offers }: AnnouncementBarProps) {
 
           <div className="offer-strip__body min-w-0 flex-1">
             <p key={animKey} className="offer-strip__text">
-              {formatOfferText(offer.text.replace(/^[\s🎉]+/, ''))}
+              {formatOfferText(offer.text.replace(/^\s+/, '').replace(/^\u{1F389}+/u, '').replace(/^\s+/, ''))}
             </p>
           </div>
 

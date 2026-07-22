@@ -33,7 +33,7 @@ export default function CheckoutSuccessPage() {
         : 'Your subscription is now active.',
       variant: 'success',
     })
-  }, [emptyCart, orderNumber])
+  }, [emptyCart, orderNumber, itemCount])
 
   return (
     <PageSection tone="default" className="min-h-[70vh] flex items-center">

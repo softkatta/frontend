@@ -52,6 +52,8 @@ export async function getEcho(): Promise<Echo<'pusher'> | null> {
     }
 
     window.Pusher = Pusher
+    // Keep browser console clean when realtime is misconfigured or blocked.
+    Pusher.logToConsole = false
 
     const token = await getAccessToken()
     const hostname = getApiHostname()

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ImagePlus, Loader2, Monitor, Pencil, Plus, Trash2, Upload, Users, HelpCircle, BookOpen, Megaphone, FileText } from 'lucide-react'
 import { HeroSlideCropDialog } from '@/components/admin/HeroSlideCropDialog'
 import { TestimonialFormDialog, type TestimonialFormValues } from '@/components/admin/TestimonialFormDialog'
@@ -237,14 +237,8 @@ export default function SiteContentPage() {
     }
   }
 
-  const testimonialRows = useMemo(
-    () => (Array.isArray(testimonials) ? testimonials : unwrapList<SiteTestimonial>(testimonials)),
-    [testimonials],
-  )
-  const slideRows = useMemo(
-    () => (Array.isArray(slides) ? slides : unwrapList<HeroSlide>(slides)),
-    [slides],
-  )
+  const testimonialRows = Array.isArray(testimonials) ? testimonials : unwrapList<SiteTestimonial>(testimonials)
+  const slideRows = Array.isArray(slides) ? slides : unwrapList<HeroSlide>(slides)
 
   return (
     <PortalPage className="space-y-6">

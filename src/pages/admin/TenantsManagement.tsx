@@ -308,7 +308,7 @@ function TenantFormDialog({
   const submitAddDomain = () => {
     if (!addFrontend.trim() || !addBackend.trim()) return
 
-    let assignment: DomainAssignment | null = null
+    let assignment: DomainAssignment
 
     if (addMode === 'existing') {
       const selected = subscriptions.find((row) => row.id === addSubscriptionId)

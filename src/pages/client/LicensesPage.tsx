@@ -152,10 +152,10 @@ export default function LicensesPage() {
   const loadActivity = async (row: LicenseRow) => {
     try {
       const response = await clientApi.licenses.activity(row.id)
-      setActivity(unwrapList(response).map((item) => {
+      setActivity(unwrapList(response).map((item, index) => {
         const log = asRecord(item)
         return {
-          id: asString(log.id),
+          id: asString(log.id, `activity-${index}-${asString(log.created_at)}`),
           endpoint: asString(log.endpoint),
           domain: asString(log.domain, '—'),
           success: Boolean(log.success),
@@ -171,10 +171,10 @@ export default function LicensesPage() {
   const loadHistory = async (row: LicenseRow) => {
     try {
       const response = await clientApi.licenses.history(row.id)
-      setHistory(unwrapList(response).map((item) => {
+      setHistory(unwrapList(response).map((item, index) => {
         const event = asRecord(item)
         return {
-          id: asString(event.id),
+          id: asString(event.id, `history-${index}-${asString(event.created_at)}`),
           event: asString(event.event),
           created_at: asString(event.created_at),
         }
@@ -187,10 +187,10 @@ export default function LicensesPage() {
   const loadInstallations = async (row: LicenseRow) => {
     try {
       const response = await clientApi.licenses.installations(row.id)
-      setInstallations(unwrapList(response).map((item) => {
+      setInstallations(unwrapList(response).map((item, index) => {
         const rowItem = asRecord(item)
         return {
-          id: asString(rowItem.id),
+          id: asString(rowItem.id, `installation-${index}-${asString(rowItem.installation_id)}`),
           installation_id: asString(rowItem.installation_id),
           domain: asString(rowItem.domain, '—'),
           product_version: asString(rowItem.product_version, '—'),

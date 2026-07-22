@@ -21,7 +21,9 @@ export function DetailDialog({ open, onOpenChange, title, description, children 
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto border-[var(--border)] bg-[var(--popover)] text-[var(--popover-foreground)]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          <DialogDescription className={description ? undefined : 'sr-only'}>
+            {description || title}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">{children}</div>
       </DialogContent>

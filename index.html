@@ -55,9 +55,12 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       window.addEventListener('load', function () {
+        var host = window.location.hostname;
+        if (host !== 'softkatta.in' && host !== 'www.softkatta.in') return;
         var s = document.createElement('script');
         s.async = true;
         s.src = 'https://www.googletagmanager.com/gtag/js?id=G-X964FZEBQP';
+        s.onerror = function () { /* blocked / offline — ignore */ };
         s.onload = function () {
           gtag('js', new Date());
           gtag('config', 'G-X964FZEBQP', { send_page_view: true });

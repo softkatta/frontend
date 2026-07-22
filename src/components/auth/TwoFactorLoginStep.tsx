@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Fingerprint, KeyRound, LifeBuoy, Mail } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -35,7 +35,10 @@ export function TwoFactorLoginStep({
   onBack,
   submitting = false,
 }: TwoFactorLoginStepProps) {
-  const available: TwoFactorMethodName[] = methods.length > 0 ? methods : ['authenticator']
+  const available = useMemo<TwoFactorMethodName[]>(
+    () => (methods.length > 0 ? methods : ['authenticator']),
+    [methods],
+  )
   const [activeMethod, setActiveMethod] = useState<TwoFactorMethodName>(available[0])
   const [emailSent, setEmailSent] = useState(false)
   const [emailCooldown, setEmailCooldown] = useState(0)

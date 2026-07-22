@@ -3,11 +3,13 @@ import { siteContentApi } from '@/services/api'
 import type { HomeSections } from '@/types/homeSections'
 
 let cached: HomeSections | null = null
-let reloadToken = 0
+let versionCounter = 0
+const listeners = new Set<() => void>()
 
 export function clearHomeSectionsCache() {
   cached = null
-  reloadToken += 1
+  versionCounter += 1
+  listeners.forEach((notify) => notify())
 }
 
 const DEFAULT: HomeSections = {
@@ -24,9 +26,17 @@ const DEFAULT: HomeSections = {
 }
 
 export function useHomeSections() {
-  const [, setToken] = useState(reloadToken)
+  const [version, setVersion] = useState(versionCounter)
   const [sections, setSections] = useState<HomeSections>(() => cached ?? DEFAULT)
   const [loading, setLoading] = useState(!cached)
+
+  useEffect(() => {
+    const notify = () => setVersion(versionCounter)
+    listeners.add(notify)
+    return () => {
+      listeners.delete(notify)
+    }
+  }, [])
 
   useEffect(() => {
     if (cached) {
@@ -36,6 +46,7 @@ export function useHomeSections() {
     }
 
     let cancelled = false
+    setLoading(true)
     void siteContentApi
       .homeSections()
       .then((data) => {
@@ -53,7 +64,13 @@ export function useHomeSections() {
     return () => {
       cancelled = true
     }
-  }, [reloadToken])
+  }, [version])
 
-  return { sections, loading, refresh: () => setToken(reloadToken) }
+  return {
+    sections,
+    loading,
+    refresh: () => {
+      clearHomeSectionsCache()
+    },
+  }
 }

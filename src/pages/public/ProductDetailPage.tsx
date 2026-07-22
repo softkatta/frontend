@@ -203,7 +203,7 @@ export default function ProductDetailPage() {
     } else if (faqs.length > 0) {
       setActiveTab('faq')
     }
-  }, [product?.id, product?.featureItems.length, faqs.length])
+  }, [product, faqs.length])
 
   if (loading) {
     return (

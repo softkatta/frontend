@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/brand'
 import { useSiteBranding } from '@/contexts/SiteBrandingContext'
@@ -28,19 +29,27 @@ export function BrandLogo({
   linkToHome = true,
 }: BrandLogoProps) {
   const { logoUrl, companyName, brandShortName } = useSiteBranding()
+  const [imgSrc, setImgSrc] = useState(logoUrl || BRAND_LOGO_SRC)
   const s = sizes[size]
   const fullName = companyName || BRAND_NAME
   const displayName = compactOnNarrow ? (brandShortName || fullName) : fullName
 
+  useEffect(() => {
+    setImgSrc(logoUrl || BRAND_LOGO_SRC)
+  }, [logoUrl])
+
   const content = (
     <>
       <img
-        src={logoUrl || BRAND_LOGO_SRC}
+        src={imgSrc}
         alt={`${fullName} logo`}
         width={s.px}
         height={s.px}
         decoding="async"
         className={cn('brand-logo__img object-contain shrink-0', s.img)}
+        onError={() => {
+          if (imgSrc !== BRAND_LOGO_SRC) setImgSrc(BRAND_LOGO_SRC)
+        }}
       />
       {showText && (
         <span

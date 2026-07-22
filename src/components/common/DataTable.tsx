@@ -93,7 +93,10 @@ export function DataTable<T extends { id: string }>({
   const [pageSize, setPageSize] = useState(pageSizeProp ?? serverPagination?.pageSize ?? 10)
 
   const effectiveSearchQuery = controlledOnSearchChange ? (controlledSearchQuery ?? '') : searchQuery
-  const effectiveFilterValues = controlledOnFilterChange ? (controlledFilterValues ?? {}) : filterValues
+  const effectiveFilterValues = useMemo(
+    () => (controlledOnFilterChange ? (controlledFilterValues ?? {}) : filterValues),
+    [controlledOnFilterChange, controlledFilterValues, filterValues],
+  )
 
   const handleSearchChange = (value: string) => {
     if (controlledOnSearchChange) {

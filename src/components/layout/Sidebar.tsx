@@ -421,7 +421,7 @@ function SidebarNavBody({ variant, items, collapsed, onNavigate, unreadCount }: 
 
 export function Sidebar({ variant, collapsed, onToggle }: SidebarProps) {
   const { user } = useAuth()
-  const { logoUrl, companyName } = useSiteBranding()
+  const { companyName } = useSiteBranding()
   const navItems = useMemo(() => navItemsForVariant(variant, user), [variant, user])
   const unreadCount = useAppSelector((s) => s.notifications.unreadCount)
 
@@ -439,11 +439,7 @@ export function Sidebar({ variant, collapsed, onToggle }: SidebarProps) {
       )}>
         {collapsed ? (
           <Link to="/" className="mx-auto shrink-0" aria-label={`${companyName} home`}>
-            {logoUrl ? (
-              <img src={logoUrl} alt={companyName} className="h-8 w-8 rounded-md object-contain" />
-            ) : (
-              <BrandLogo size="sm" className="min-w-0" />
-            )}
+            <BrandLogo size="sm" showText={false} className="min-w-0" linkToHome={false} />
           </Link>
         ) : (
           <BrandLogo size="sm" className="min-w-0" />

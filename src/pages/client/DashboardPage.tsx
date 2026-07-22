@@ -193,21 +193,23 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <ChartCard title="Spending Overview" description="Monthly subscription costs" className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="spendFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={chartTooltipStyle} labelStyle={{ color: 'var(--muted-foreground)' }} />
-              <Area type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} fill="url(#spendFill)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="h-[260px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="spendFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={chartTooltipStyle} labelStyle={{ color: 'var(--muted-foreground)' }} />
+                <Area type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} fill="url(#spendFill)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </ChartCard>
 
         <ChartCard title="Recent Notifications" className="h-full">
