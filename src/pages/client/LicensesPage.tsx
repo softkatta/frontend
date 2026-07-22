@@ -248,6 +248,28 @@ export default function LicensesPage() {
               ),
             },
             {
+              key: 'users_seats',
+              header: 'Users',
+              render: (row: LicenseRow) => (
+                <span className="text-xs whitespace-nowrap">
+                  {row.seat_usage_reported
+                    ? `${row.used_users ?? 0}/${row.effective_max_users ?? 0} · ${row.remaining_users ?? 0} left`
+                    : `Total ${row.effective_max_users ?? 0}`}
+                </span>
+              ),
+            },
+            {
+              key: 'students_seats',
+              header: 'Students',
+              render: (row: LicenseRow) => (
+                <span className="text-xs whitespace-nowrap">
+                  {row.seat_usage_reported
+                    ? `${row.used_students ?? 0}/${row.effective_max_students ?? 0} · ${row.remaining_students ?? 0} left`
+                    : `Total ${row.effective_max_students ?? 0}`}
+                </span>
+              ),
+            },
+            {
               key: 'actions',
               header: '',
               render: (row: LicenseRow) => (
@@ -277,6 +299,22 @@ export default function LicensesPage() {
             />
             <DetailRow label="Product" value={detail.product_name} />
             <DetailRow label="Plan" value={detail.plan_name} />
+            <DetailRow
+              label="Users seats"
+              value={
+                detail.seat_usage_reported
+                  ? `Total ${detail.effective_max_users ?? 0} · Used ${detail.used_users ?? 0} · Remaining ${detail.remaining_users ?? 0}`
+                  : `Total ${detail.effective_max_users ?? 0} (used/remaining after product sync)`
+              }
+            />
+            <DetailRow
+              label="Students seats"
+              value={
+                detail.seat_usage_reported
+                  ? `Total ${detail.effective_max_students ?? 0} · Used ${detail.used_students ?? 0} · Remaining ${detail.remaining_students ?? 0}`
+                  : `Total ${detail.effective_max_students ?? 0} (used/remaining after product sync)`
+              }
+            />
             <DetailRow
               label="Seat limits"
               value={`Plan users ${detail.plan_max_users ?? '—'} + extras ${detail.extra_max_users ?? 0} = ${detail.effective_max_users ?? '—'} · Plan students ${detail.plan_max_students ?? '—'} + extras ${detail.extra_max_students ?? 0} = ${detail.effective_max_students ?? '—'}`}

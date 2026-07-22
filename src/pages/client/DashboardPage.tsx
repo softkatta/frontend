@@ -16,17 +16,25 @@ import { useAuth } from '@/hooks/useAuth'
 import { actionBtn } from '@/lib/tableActions'
 import { clientApi } from '@/services/api'
 import { asBool, asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
-import { mapInvoice, mapNotification, mapSubscription } from '@/lib/apiMappers'
+import { mapAdminLicense, mapInvoice, mapNotification, mapSubscription } from '@/lib/apiMappers'
 import { toast } from '@/components/ui/toaster'
 import { SecuritySetupWizard } from '@/components/auth/SecuritySetupWizard'
 import type { Invoice, Notification } from '@/types'
 
 const statusVariant = { paid: 'success', pending: 'warning', overdue: 'destructive', cancelled: 'secondary', sent: 'warning', draft: 'secondary' } as const
+const licenseStatusVariant = {
+  active: 'success',
+  suspended: 'warning',
+  expired: 'destructive',
+  revoked: 'secondary',
+} as const
 
 const chartData = [
   { name: 'Jan', value: 4000 }, { name: 'Feb', value: 3000 }, { name: 'Mar', value: 5000 },
   { name: 'Apr', value: 4500 }, { name: 'May', value: 6000 }, { name: 'Jun', value: 5500 },
 ]
+
+type SeatLicenseRow = ReturnType<typeof mapAdminLicense>
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -35,6 +43,7 @@ export default function DashboardPage() {
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([])
   const [recentNotifications, setRecentNotifications] = useState<Notification[]>([])
   const [purchasedProducts, setPurchasedProducts] = useState<Array<{ id: string; name: string; slug: string; is_active: boolean }>>([])
+  const [seatLicenses, setSeatLicenses] = useState<SeatLicenseRow[]>([])
   const [stats, setStats] = useState({ products: 0, subscriptions: 0, renewals: 0, expiring: 0, spend: 0 })
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null)
   const [domainNudgeCount, setDomainNudgeCount] = useState(0)
@@ -54,6 +63,11 @@ export default function DashboardPage() {
         )
       } catch {
         setDomainNudgeCount(0)
+      }
+      try {
+        setSeatLicenses(unwrapList(await clientApi.licenses.list()).map(mapAdminLicense))
+      } catch {
+        setSeatLicenses([])
       }
       const products = unwrapList(data.purchased_products)
         .map((raw) => {
@@ -136,6 +150,46 @@ export default function DashboardPage() {
         <StatCard title="Pending Renewals" value={stats.renewals} icon={RefreshCw} gradient="teal" />
         <StatCard title="Expiring Soon" value={stats.expiring} icon={AlertTriangle} gradient="purple" description="Within 30 days" />
       </div>
+
+      {seatLicenses.length > 0 && (
+        <ChartCard title="Seat usage" description="Total and remaining seats per licensed product">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {seatLicenses.map((license) => (
+              <div
+                key={license.id}
+                className="rounded-xl border border-[var(--border)] bg-[var(--input)] px-4 py-3 text-sm"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-medium text-foreground truncate">{license.product_name}</p>
+                  <Badge variant={licenseStatusVariant[license.status as keyof typeof licenseStatusVariant] ?? 'secondary'}>
+                    {license.status}
+                  </Badge>
+                </div>
+                <div className="mt-3 grid gap-2 text-xs text-[var(--muted-foreground)]">
+                  <p>
+                    <span className="font-medium text-foreground">Users:</span>{' '}
+                    {license.seat_usage_reported
+                      ? `Total ${license.effective_max_users ?? 0} · Remaining ${license.remaining_users ?? 0}`
+                      : `Total ${license.effective_max_users ?? 0} · Remaining after product sync`}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Students:</span>{' '}
+                    {license.seat_usage_reported
+                      ? `Total ${license.effective_max_students ?? 0} · Remaining ${license.remaining_students ?? 0}`
+                      : `Total ${license.effective_max_students ?? 0} · Remaining after product sync`}
+                  </p>
+                </div>
+                <Link
+                  to="/dashboard/licenses"
+                  className="mt-3 inline-flex text-xs font-semibold text-[var(--brand-blue)] hover:underline"
+                >
+                  Manage seats →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <ChartCard title="Spending Overview" description="Monthly subscription costs" className="lg:col-span-2">
