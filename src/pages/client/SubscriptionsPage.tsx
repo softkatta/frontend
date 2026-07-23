@@ -46,6 +46,8 @@ export default function SubscriptionsPage() {
   const [detail, setDetail] = useState<Subscription | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Subscription | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [renewTarget, setRenewTarget] = useState<Subscription | null>(null)
+  const [renewing, setRenewing] = useState(false)
   const [domainTarget, setDomainTarget] = useState<Subscription | null>(null)
   const [frontendDomain, setFrontendDomain] = useState('')
   const [backendDomain, setBackendDomain] = useState('')
@@ -69,6 +71,26 @@ export default function SubscriptionsPage() {
       toast({ title: 'Cancellation failed', description: getApiErrorMessage(err), variant: 'destructive' })
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handleRenew = async () => {
+    if (!renewTarget) return
+    setRenewing(true)
+    try {
+      await clientApi.subscriptions.renew(renewTarget.id)
+      toast({
+        title: 'Renewal invoice created',
+        description: 'Complete payment from Invoices to extend your subscription.',
+        variant: 'success',
+      })
+      setRenewTarget(null)
+      await reload()
+      navigate('/dashboard/invoices')
+    } catch (err) {
+      toast({ title: 'Renewal failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setRenewing(false)
     }
   }
 
@@ -194,7 +216,7 @@ export default function SubscriptionsPage() {
                 <TableActions actions={[
                   actionBtn('View details', Eye, () => setDetail(s)),
                   actionBtn('Domains', Globe, () => openDomainDialog(s)),
-                  { ...actionBtn('Renew', RefreshCw, () => navigate('/products')), hidden: s.status !== 'expired' },
+                  { ...actionBtn('Renew', RefreshCw, () => setRenewTarget(s)), hidden: s.status === 'pending' },
                   { ...actionBtn('Cancel', Ban, () => setCancelTarget(s)), variant: 'destructive', hidden: s.status !== 'active' },
                 ]} />
               )
@@ -303,6 +325,16 @@ export default function SubscriptionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(renewTarget)}
+        onOpenChange={(open) => !open && setRenewTarget(null)}
+        title="Create renewal invoice?"
+        description={renewTarget ? `We'll create a renewal invoice for ${renewTarget.product_name}. Your access will extend once it is paid.` : ''}
+        confirmLabel="Create renewal invoice"
+        loading={renewing}
+        onConfirm={handleRenew}
+      />
 
       <ConfirmDialog
         open={Boolean(cancelTarget)}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -11,6 +11,9 @@ import {
   ShoppingBag,
   ShoppingCart,
   Sparkles,
+  RefreshCw,
+  GraduationCap,
+  Users,
   Zap,
 } from 'lucide-react'
 import { PageSection } from '@/components/common/SectionLabel'
@@ -30,6 +33,12 @@ import { RatingSummary } from '@/components/reviews/RatingSummary'
 import { ReviewList } from '@/components/reviews/ReviewList'
 import { StarRating } from '@/components/reviews/StarRating'
 import { reviewsApi } from '@/services/api/modules/reviews.api'
+import { clientApi } from '@/services/api'
+import { unwrapList, getApiErrorMessage } from '@/lib/apiHelpers'
+import { mapSubscription } from '@/lib/apiMappers'
+import { useAuth } from '@/hooks/useAuth'
+import { toast } from '@/components/ui/toaster'
+import type { Subscription } from '@/types'
 import type { PublicReview, ReviewStats } from '@/types/reviews'
 
 type ShopBilling = 'monthly' | 'yearly'
@@ -48,6 +57,9 @@ function PurchasePanel({
   onBillingChange,
   onBuy,
   onAddToCart,
+  renewalSubscription,
+  onRenew,
+  renewing,
 }: {
   product: NonNullable<ReturnType<typeof usePublicProduct>['product']>
   raw: unknown
@@ -55,6 +67,9 @@ function PurchasePanel({
   onBillingChange: (b: ShopBilling) => void
   onBuy: () => void
   onAddToCart: () => void
+  renewalSubscription?: Subscription
+  onRenew: () => void
+  renewing: boolean
 }) {
   const showTrial = productHasFreeTrial(product)
   const summary = getProductPlanSummary(raw)
@@ -92,7 +107,39 @@ function PurchasePanel({
         </div>
       )}
 
+      {(plan?.maxUsers !== undefined || plan?.maxStudents !== undefined) && (
+        <div
+          className={cn('grid gap-2', plan?.maxUsers !== undefined && plan?.maxStudents !== undefined ? 'grid-cols-2' : 'grid-cols-1')}
+          aria-label={`${plan?.name || billing} plan limits`}
+        >
+          {plan?.maxUsers !== undefined && (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/35 px-3 py-2.5 text-center">
+              <Users className="mx-auto h-4 w-4 text-[var(--brand-blue)]" />
+              <p className="mt-1 text-sm font-semibold">{plan.maxUsers}</p>
+              <p className="text-xs text-muted-foreground">Users</p>
+            </div>
+          )}
+          {plan?.maxStudents !== undefined && (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/35 px-3 py-2.5 text-center">
+              <GraduationCap className="mx-auto h-4 w-4 text-[var(--brand-teal)]" />
+              <p className="mt-1 text-sm font-semibold">{plan.maxStudents}</p>
+              <p className="text-xs text-muted-foreground">Students</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2.5">
+        {renewalSubscription && (
+          <button
+            type="button"
+            onClick={onRenew}
+            disabled={renewing}
+            className="hero-cta-ghost flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold"
+          >
+            <RefreshCw className="h-4 w-4" /> {renewing ? 'Creating renewal invoice…' : 'Renew your current subscription'}
+          </button>
+        )}
         <button type="button" onClick={onBuy} className="glow-btn flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold">
           <ShoppingBag className="h-4 w-4" /> Buy now
         </button>
@@ -130,6 +177,8 @@ function PurchasePanel({
 
 export default function ProductDetailPage() {
   const { slug } = useParams()
+  const navigate = useNavigate()
+  const { isAuthenticated, hasRole } = useAuth()
   const [searchParams] = useSearchParams()
   const { product, raw, loading } = usePublicProduct(slug)
   const [openFaq, setOpenFaq] = useState<string | null>(null)
@@ -142,6 +191,8 @@ export default function ProductDetailPage() {
   const [productReviews, setProductReviews] = useState<PublicReview[]>([])
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [renewalSubscription, setRenewalSubscription] = useState<Subscription | undefined>()
+  const [renewing, setRenewing] = useState(false)
   const screenshot = product
     ? (product.images[0] ? mediaSrc(product.images[0]) : getProductScreenshot(product.slug))
     : (slug ? getProductScreenshot(slug) : undefined)
@@ -181,6 +232,28 @@ export default function ProductDetailPage() {
       })
       .finally(() => setReviewsLoading(false))
   }, [slug])
+
+  useEffect(() => {
+    if (!product || !isAuthenticated || !hasRole('client')) {
+      setRenewalSubscription(undefined)
+      return
+    }
+
+    let active = true
+    void clientApi.subscriptions.list()
+      .then((response) => {
+        if (!active) return
+        const match = unwrapList(response)
+          .map(mapSubscription)
+          .find((subscription) => subscription.product_id === product.id && subscription.status !== 'pending')
+        setRenewalSubscription(match)
+      })
+      .catch(() => {
+        if (active) setRenewalSubscription(undefined)
+      })
+
+    return () => { active = false }
+  }, [hasRole, isAuthenticated, product])
 
   useEffect(() => {
     if (searchParams.get('buy') === 'yearly') setBilling('yearly')
@@ -233,6 +306,23 @@ export default function ProductDetailPage() {
     onBillingChange: setBilling,
     onBuy: () => buyNow(product.slug, billing, selectedPlanId || undefined),
     onAddToCart: () => void addProduct(product.slug, billing, { planId: selectedPlanId || undefined }),
+    renewalSubscription,
+    renewing,
+    onRenew: () => {
+      if (!renewalSubscription) return
+      setRenewing(true)
+      void clientApi.subscriptions.renew(renewalSubscription.id)
+        .then(() => {
+          toast({
+            title: 'Renewal invoice created',
+            description: 'Complete payment from Invoices to extend your subscription.',
+            variant: 'success',
+          })
+          navigate('/dashboard/invoices')
+        })
+        .catch((error) => toast({ title: 'Renewal failed', description: getApiErrorMessage(error), variant: 'destructive' }))
+        .finally(() => setRenewing(false))
+    },
   }
 
   const tabs = [

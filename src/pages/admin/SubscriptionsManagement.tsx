@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Ban, Eye, FileText, IndianRupee, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Ban, Eye, FileText, IndianRupee, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { CreateSubscriptionDialog, type CreateSubscriptionValues } from '@/components/admin/CreateSubscriptionDialog'
 import { SubscriptionFormDialog, type SubscriptionFormValues } from '@/components/admin/SubscriptionFormDialog'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
@@ -52,6 +52,8 @@ export default function SubscriptionsManagement() {
   const [saving, setSaving] = useState(false)
   const [creating, setCreating] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [renewTarget, setRenewTarget] = useState<SubRow | null>(null)
+  const [renewing, setRenewing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [paymentTarget, setPaymentTarget] = useState<RecordPaymentTarget | null>(null)
   const [recordingPayment, setRecordingPayment] = useState(false)
@@ -141,6 +143,25 @@ export default function SubscriptionsManagement() {
       toast({ title: 'Cancel failed', description: getApiErrorMessage(err), variant: 'destructive' })
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handleRenew = async () => {
+    if (!renewTarget) return
+    setRenewing(true)
+    try {
+      await adminApi.subscriptions.renew(renewTarget.id)
+      toast({
+        title: 'Renewal invoice created',
+        description: `Record payment for ${renewTarget.customer}'s ${renewTarget.product} subscription to complete renewal.`,
+        variant: 'success',
+      })
+      setRenewTarget(null)
+      await reload()
+    } catch (err) {
+      toast({ title: 'Renewal failed', description: getApiErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setRenewing(false)
     }
   }
 
@@ -241,6 +262,10 @@ export default function SubscriptionsManagement() {
                   })),
                   hidden: s.payment_status !== 'pending' && s.payment_status !== 'partial',
                 },
+                {
+                  ...actionBtn('Renew subscription', RefreshCw, () => setRenewTarget(s)),
+                  hidden: s.status === 'pending' || s.payment_status === 'pending' || s.payment_status === 'partial',
+                },
                 actionBtn('Edit subscription', Pencil, () => setEditing(s)),
                 {
                   ...actionBtn('Cancel subscription', Ban, () => setCancelTarget(s)),
@@ -276,6 +301,22 @@ export default function SubscriptionsManagement() {
             {detail.cancelled_at ? (
               <DetailRow label="Cancelled" value={formatDate(detail.cancelled_at)} />
             ) : null}
+            {detail.status !== 'pending' && detail.payment_status !== 'pending' && detail.payment_status !== 'partial' ? (
+              <div className="mt-5 flex justify-end border-t border-[var(--border)] pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => {
+                    setRenewTarget(detail)
+                    setDetail(null)
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Renew subscription
+                </Button>
+              </div>
+            ) : null}
           </>
         )}
       </DetailDialog>
@@ -308,6 +349,16 @@ export default function SubscriptionsManagement() {
         target={paymentTarget}
         loading={recordingPayment}
         onSubmit={handleRecordPayment}
+      />
+
+      <ConfirmDialog
+        open={Boolean(renewTarget)}
+        onOpenChange={(open) => !open && setRenewTarget(null)}
+        title="Create renewal invoice?"
+        description={renewTarget ? `A new renewal invoice will be created for ${renewTarget.customer}'s ${renewTarget.product} subscription. Access will extend only after payment is recorded.` : ''}
+        confirmLabel="Create renewal invoice"
+        loading={renewing}
+        onConfirm={handleRenew}
       />
 
       <ConfirmDialog

@@ -1,1 +1,0 @@
-import{r as e}from"./motion-XFMutiCo.js";import t from"./UsersPage-CI-B_x2a.js";var n=e();function r(){return(0,n.jsx)(t,{variant:`customers`})}export{r as default};
