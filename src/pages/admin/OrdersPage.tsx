@@ -87,6 +87,12 @@ export default function OrdersPage() {
               { value: 'pending', label: 'Pending' },
               { value: 'cancelled', label: 'Cancelled' },
             ]},
+            { key: 'purpose', label: 'Purpose', options: [
+              { value: 'Renewal', label: 'Renewal' },
+              { value: 'New Subscription', label: 'New Subscription' },
+              { value: 'Extra Seats', label: 'Extra Seats' },
+              { value: 'Other', label: 'Other' },
+            ]},
           ]}
           pageSize={5}
           data={items}
@@ -94,6 +100,7 @@ export default function OrdersPage() {
             { key: 'order_number', header: 'Order #', className: 'font-medium' },
             { key: 'customer_name', header: 'Customer' },
             { key: 'product_name', header: 'Product' },
+            { key: 'purpose', header: 'Purpose', render: (o) => <Badge variant="secondary">{o.purpose}</Badge> },
             { key: 'amount', header: 'Amount', render: (o) => formatCurrency(o.amount) },
             { key: 'status', header: 'Status', render: (o) => <Badge variant={statusVariant[o.status as keyof typeof statusVariant] ?? 'secondary'}>{o.status}</Badge> },
             { key: 'created_at', header: 'Date', render: (o) => formatDate(o.created_at) },
@@ -121,6 +128,7 @@ export default function OrdersPage() {
             <DetailRow label="Order #" value={detail.order_number} />
             <DetailRow label="Customer" value={detail.customer_name} />
             <DetailRow label="Product" value={detail.product_name} />
+            <DetailRow label="Purpose" value={detail.purpose} />
             <DetailRow label="Amount" value={formatCurrency(detail.amount)} />
             <DetailRow label="Status" value={detail.status} />
             <DetailRow label="Date" value={formatDate(detail.created_at)} />

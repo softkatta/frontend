@@ -87,12 +87,19 @@ export default function InvoicesManagement() {
               { value: 'overdue', label: 'Overdue' },
               { value: 'sent', label: 'Sent' },
             ]},
+            { key: 'purpose', label: 'Purpose', options: [
+              { value: 'Renewal', label: 'Renewal' },
+              { value: 'New Subscription', label: 'New Subscription' },
+              { value: 'Extra Seats', label: 'Extra Seats' },
+              { value: 'Other', label: 'Other' },
+            ]},
           ]}
           pageSize={5}
           data={items}
           columns={[
             { key: 'invoice_number', header: 'Invoice #', className: 'font-medium' },
             { key: 'customer', header: 'Customer' },
+            { key: 'purpose', header: 'Purpose', render: (i) => <Badge variant="secondary">{i.purpose}</Badge> },
             { key: 'amount', header: 'Amount', render: (i) => formatCurrency(i.amount) },
             { key: 'status', header: 'Status', render: (i) => <Badge variant={statusVariant[i.status as keyof typeof statusVariant] ?? 'secondary'}>{i.status}</Badge> },
             { key: 'due_date', header: 'Due Date', render: (i) => formatDate(i.due_date) },

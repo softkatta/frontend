@@ -406,12 +406,19 @@ export function mapAdminSubscription(raw: unknown) {
 export function mapAdminInvoice(raw: unknown) {
   const item = asRecord(raw)
   const user = asRecord(item.user)
+  const billingDetails = asRecord(item.billing_details)
+  const order = asRecord(item.order)
+  const purpose = resolveBillingPurpose(
+    asString(billingDetails.purpose),
+    asString(order.order_number),
+  )
   return {
     id: asString(item.id),
     invoice_number: asString(item.invoice_number),
     customer: asString(user.name ?? user.email, 'Customer'),
     amount: asNumber(item.total_amount ?? item.amount),
     status: asString(item.status, 'pending'),
+    purpose,
     due_date: asString(item.due_date),
     created_at: asString(item.created_at),
   }
@@ -440,6 +447,7 @@ export function mapAdminOrder(raw: unknown) {
   const item = asRecord(raw)
   const user = asRecord(item.user)
   const product = asRecord(item.product)
+  const purpose = resolveBillingPurpose(undefined, asString(item.order_number))
   return {
     id: asString(item.id),
     order_number: asString(item.order_number),
@@ -447,6 +455,7 @@ export function mapAdminOrder(raw: unknown) {
     product_name: asString(product.name, 'Product'),
     amount: asNumber(item.total_amount ?? item.amount),
     status: asString(item.status, 'pending'),
+    purpose,
     created_at: asString(item.created_at),
   }
 }
@@ -456,9 +465,14 @@ export function mapAdminPayment(raw: unknown) {
   const user = asRecord(item.user)
   const order = asRecord(item.order)
   const invoice = asRecord(item.invoice)
+  const invoiceBilling = asRecord(invoice.billing_details)
   const gatewayResponse = asRecord(item.gateway_response)
   const transactionId = resolvePaymentTransactionId(item, gatewayResponse)
   const paymentMode = resolvePaymentMode(item, gatewayResponse)
+  const purpose = resolveBillingPurpose(
+    asString(invoiceBilling.purpose),
+    asString(order.order_number),
+  )
 
   return {
     id: asString(item.id),
@@ -472,8 +486,22 @@ export function mapAdminPayment(raw: unknown) {
     invoice_id: asString(item.invoice_id ?? invoice.id) || undefined,
     order_number: asString(order.order_number) || undefined,
     invoice_number: asString(invoice.invoice_number) || undefined,
+    purpose,
     created_at: asString(item.created_at),
   }
+}
+
+function resolveBillingPurpose(explicitPurpose?: string, orderNumber?: string): string {
+  const purpose = (explicitPurpose ?? '').trim().toLowerCase()
+  if (purpose === 'renewal') return 'Renewal'
+  if (purpose === 'extra_seats') return 'Extra Seats'
+
+  const order = (orderNumber ?? '').trim().toUpperCase()
+  if (order.startsWith('SK-REN-')) return 'Renewal'
+  if (order.startsWith('SK-SEAT-')) return 'Extra Seats'
+  if (order.startsWith('SK-ORD-')) return 'New Subscription'
+
+  return 'Other'
 }
 
 function resolvePaymentTransactionId(

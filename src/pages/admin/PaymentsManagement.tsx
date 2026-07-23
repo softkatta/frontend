@@ -121,6 +121,16 @@ export default function PaymentsManagement() {
                 { value: 'Cashfree', label: 'Cashfree' },
               ],
             },
+            {
+              key: 'purpose',
+              label: 'Purpose',
+              options: [
+                { value: 'Renewal', label: 'Renewal' },
+                { value: 'New Subscription', label: 'New Subscription' },
+                { value: 'Extra Seats', label: 'Extra Seats' },
+                { value: 'Other', label: 'Other' },
+              ],
+            },
           ]}
           pageSize={8}
           data={items}
@@ -132,6 +142,7 @@ export default function PaymentsManagement() {
               render: (p) => p.transaction_id ?? '—',
             },
             { key: 'customer_name', header: 'Customer' },
+            { key: 'purpose', header: 'Purpose', render: (p) => <Badge variant="secondary">{p.purpose}</Badge> },
             { key: 'payment_mode', header: 'Payment Mode', render: (p) => p.payment_mode },
             { key: 'amount', header: 'Amount', render: (p) => formatCurrency(p.amount) },
             {
@@ -175,6 +186,7 @@ export default function PaymentsManagement() {
             <DetailRow label="Payment ID" value={`#${detail.id}`} />
             <DetailRow label="Transaction ID" value={detail.transaction_id ?? '—'} />
             <DetailRow label="Customer" value={detail.customer_name} />
+            <DetailRow label="Purpose" value={detail.purpose} />
             <DetailRow label="Payment Mode" value={detail.payment_mode} />
             <DetailRow label="Amount" value={formatCurrency(detail.amount)} />
             <DetailRow label="Status" value={detail.status} />
