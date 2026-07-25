@@ -82,6 +82,9 @@ function PurchasePanel({
       <div className="product-buy-panel__glow" aria-hidden />
       <div className="product-buy-panel__header">
         <p className="product-buy-panel__label">Subscribe to {product.name}</p>
+        {plan?.name ? (
+          <p className="product-buy-panel__plan-name">{plan.name}</p>
+        ) : null}
         {price > 0 ? (
           <div className="product-buy-panel__price">
             <span className="product-buy-panel__amount">{formatCurrency(price)}</span>

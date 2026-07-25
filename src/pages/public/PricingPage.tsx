@@ -142,7 +142,10 @@ export default function PricingPage() {
                   <div className="pricing-page__card-head">
                     <p className="pricing-page__category">{product.category}</p>
                     <h3 className="font-display font-bold text-xl">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{product.short_description}</p>
+                    {selectedPlan?.name ? (
+                      <p className="pricing-page__plan-name">{selectedPlan.name}</p>
+                    ) : null}
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{product.short_description}</p>
                   </div>
 
                   <div className="pricing-page__price-block">

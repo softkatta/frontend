@@ -6382,6 +6382,20 @@ html:not(.dark) .public-site .offer-strip__close:hover {
   margin: 1rem 0 0.75rem;
 }
 
+.pricing-page__plan-name {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--brand-blue);
+}
+
+.product-buy-panel__plan-name {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
 .pricing-page__price {
   font-family: var(--font-display, inherit);
   font-size: 2rem;
