@@ -30,7 +30,7 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
     if (price > 0) {
       const payload = {
         product_id: Number(values.product_id),
-        name: values[`name_${cycle.billing_cycle}` as keyof typeof values] || cycle.name,
+        name: values.name || cycle.name,
         slug: cycle.billing_cycle,
         description: values.description || undefined,
         price,
@@ -98,9 +98,7 @@ export function buildPlanFormFromProduct(
     price_monthly: monthly?.price ?? 0,
     price_yearly: yearly?.price ?? 0,
     price_enterprise: enterprise?.price ?? 0,
-    name_monthly: monthly?.name ?? '',
-    name_yearly: yearly?.name ?? '',
-    name_enterprise: enterprise?.name ?? '',
+    name: sample?.name ?? '',
     max_users: Number(limits.max_users ?? limits.max_staff ?? 10),
     max_students: Number(limits.max_students ?? 500),
   }

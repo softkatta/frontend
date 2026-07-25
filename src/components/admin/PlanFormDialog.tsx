@@ -29,9 +29,7 @@ export type PlanFormValues = {
   price_monthly: number
   price_yearly: number
   price_enterprise: number
-  name_monthly?: string
-  name_yearly?: string
-  name_enterprise?: string
+  name?: string
   max_users: number
   max_students: number
 }
@@ -44,9 +42,7 @@ const EMPTY: PlanFormValues = {
   price_monthly: 0,
   price_yearly: 0,
   price_enterprise: 0,
-  name_monthly: '',
-  name_yearly: '',
-  name_enterprise: '',
+  name: '',
   max_users: 10,
   max_students: 500,
 }
@@ -133,71 +129,60 @@ export function PlanFormDialog({
 
           <div className="rounded-xl border border-[var(--border)] p-4 space-y-3">
             <p className="text-sm font-medium text-foreground">Pricing (₹)</p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="plan-name-monthly">Plan name (monthly)</Label>
+                <Label htmlFor="plan-name">Plan name</Label>
                 <Input
-                  id="plan-name-monthly"
-                  value={form.name_monthly || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, name_monthly: e.target.value }))}
+                  id="plan-name"
+                  value={form.name || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Basic"
                   className="bg-[var(--input-background)]"
                 />
-                <Label htmlFor="plan-monthly">Monthly price</Label>
-                <Input
-                  id="plan-monthly"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={form.price_monthly || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, price_monthly: Number(e.target.value) || 0 }))}
-                  placeholder="4999"
-                  className="bg-[var(--input-background)]"
-                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="plan-name-yearly">Plan name (yearly)</Label>
-                <Input
-                  id="plan-name-yearly"
-                  value={form.name_yearly || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, name_yearly: e.target.value }))}
-                  placeholder="Basic Annual"
-                  className="bg-[var(--input-background)]"
-                />
-                <Label htmlFor="plan-yearly">Yearly price</Label>
-                <Input
-                  id="plan-yearly"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={form.price_yearly || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, price_yearly: Number(e.target.value) || 0 }))}
-                  placeholder="49990"
-                  className="bg-[var(--input-background)]"
-                />
-              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="plan-monthly">Monthly price</Label>
+                  <Input
+                    id="plan-monthly"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.price_monthly || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, price_monthly: Number(e.target.value) || 0 }))}
+                    placeholder="4999"
+                    className="bg-[var(--input-background)]"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="plan-name-enterprise">Plan name (enterprise)</Label>
-                <Input
-                  id="plan-name-enterprise"
-                  value={form.name_enterprise || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, name_enterprise: e.target.value }))}
-                  placeholder="Enterprise"
-                  className="bg-[var(--input-background)]"
-                />
-                <Label htmlFor="plan-enterprise">Enterprise price</Label>
-                <Input
-                  id="plan-enterprise"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={form.price_enterprise || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, price_enterprise: Number(e.target.value) || 0 }))}
-                  placeholder="99999"
-                  className="bg-[var(--input-background)]"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="plan-yearly">Yearly price</Label>
+                  <Input
+                    id="plan-yearly"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.price_yearly || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, price_yearly: Number(e.target.value) || 0 }))}
+                    placeholder="49990"
+                    className="bg-[var(--input-background)]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="plan-enterprise">Enterprise price</Label>
+                  <Input
+                    id="plan-enterprise"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.price_enterprise || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, price_enterprise: Number(e.target.value) || 0 }))}
+                    placeholder="99999"
+                    className="bg-[var(--input-background)]"
+                  />
+                </div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">At least one price is required. Clearing a price removes that plan.</p>
