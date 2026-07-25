@@ -29,6 +29,9 @@ export type PlanFormValues = {
   price_monthly: number
   price_yearly: number
   price_enterprise: number
+  name_monthly?: string
+  name_yearly?: string
+  name_enterprise?: string
   max_users: number
   max_students: number
 }
@@ -41,6 +44,9 @@ const EMPTY: PlanFormValues = {
   price_monthly: 0,
   price_yearly: 0,
   price_enterprise: 0,
+  name_monthly: '',
+  name_yearly: '',
+  name_enterprise: '',
   max_users: 10,
   max_students: 500,
 }
@@ -129,7 +135,15 @@ export function PlanFormDialog({
             <p className="text-sm font-medium text-foreground">Pricing (₹)</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="plan-monthly">Monthly</Label>
+                <Label htmlFor="plan-name-monthly">Plan name (monthly)</Label>
+                <Input
+                  id="plan-name-monthly"
+                  value={form.name_monthly || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name_monthly: e.target.value }))}
+                  placeholder="Basic"
+                  className="bg-[var(--input-background)]"
+                />
+                <Label htmlFor="plan-monthly">Monthly price</Label>
                 <Input
                   id="plan-monthly"
                   type="number"
@@ -141,8 +155,17 @@ export function PlanFormDialog({
                   className="bg-[var(--input-background)]"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="plan-yearly">Yearly</Label>
+                <Label htmlFor="plan-name-yearly">Plan name (yearly)</Label>
+                <Input
+                  id="plan-name-yearly"
+                  value={form.name_yearly || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name_yearly: e.target.value }))}
+                  placeholder="Basic Annual"
+                  className="bg-[var(--input-background)]"
+                />
+                <Label htmlFor="plan-yearly">Yearly price</Label>
                 <Input
                   id="plan-yearly"
                   type="number"
@@ -154,8 +177,17 @@ export function PlanFormDialog({
                   className="bg-[var(--input-background)]"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="plan-enterprise">Enterprise</Label>
+                <Label htmlFor="plan-name-enterprise">Plan name (enterprise)</Label>
+                <Input
+                  id="plan-name-enterprise"
+                  value={form.name_enterprise || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name_enterprise: e.target.value }))}
+                  placeholder="Enterprise"
+                  className="bg-[var(--input-background)]"
+                />
+                <Label htmlFor="plan-enterprise">Enterprise price</Label>
                 <Input
                   id="plan-enterprise"
                   type="number"
