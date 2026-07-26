@@ -14,11 +14,16 @@ export function formatCurrency(amount: number, currency = 'INR') {
 }
 
 export function formatDate(date: string | Date) {
+  const d = date instanceof Date ? date : (date ? new Date(date) : null)
+  if (!d) return '—'
+  const t = d.getTime()
+  if (Number.isNaN(t)) return '—'
+
   return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 export function formatTimeAgo(date: string | Date) {

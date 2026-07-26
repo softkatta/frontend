@@ -181,14 +181,14 @@ export default function SubscriptionsPage() {
         )}
 
         {/** Banner: trials that have ended and need plan selection */}
-        {items.some((s) => s.trial_ends_at && new Date(s.trial_ends_at) < new Date() && s.status !== 'expired') && (
+        {items.some((s) => s.trial_ends_at && (() => { const d = new Date(s.trial_ends_at); return !Number.isNaN(d.getTime()) && d < new Date() })() && s.status !== 'expired') && (
           <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--muted)]/30 p-4">
             <p className="text-sm font-medium">Your free trial has ended</p>
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
               Your free trial period for one or more products has ended. Choose a plan to continue using the product without interruption.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {items.filter((s) => s.trial_ends_at && new Date(s.trial_ends_at) < new Date() && s.status !== 'expired').slice(0, 4).map((item) => (
+              {items.filter((s) => s.trial_ends_at && (() => { const d = new Date(s.trial_ends_at); return !Number.isNaN(d.getTime()) && d < new Date() })() && s.status !== 'expired').slice(0, 4).map((item) => (
                 <Button key={item.id} type="button" size="sm" className="rounded-xl glow-btn" onClick={() => navigate(item.product_slug ? `/products/${item.product_slug}` : '/products')}>
                   Continue: {item.product_name}
                 </Button>

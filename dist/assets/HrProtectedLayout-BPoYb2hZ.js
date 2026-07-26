@@ -1,0 +1,1 @@
+import{r as e}from"./motion-XFMutiCo.js";import{t}from"./HrLayout-DdBX73u8.js";import{ProtectedRoute as n}from"./ProtectedRoute-Z1aqULWO.js";var r=e();function i(){return(0,r.jsx)(n,{loginPath:`/hr`,allowedRoles:[`hr`],children:(0,r.jsx)(t,{})})}export{i as HrProtectedLayout};
