@@ -82,6 +82,7 @@ function PurchasePanel({
   planOptions: PlanOption[]
 }) {
   const showTrial = productHasFreeTrial(product)
+  const { isAuthenticated } = useAuth()
   const summary = getProductPlanSummary(raw)
   const plan = planForBilling(summary, billing)
   const savings = yearlySavingsPercent(summary.monthly?.price ?? 0, summary.yearly?.price ?? 0)
@@ -176,7 +177,10 @@ function PurchasePanel({
       )}
 
       {showTrial && (
-        <Link to={productTrialRegisterUrl(product.slug)} className="product-buy-panel__trial">
+        <Link
+          to={isAuthenticated ? `/products/${product.slug}?trial=1` : productTrialRegisterUrl(product.slug)}
+          className="product-buy-panel__trial"
+        >
           <Sparkles className="h-4 w-4" />
           Try free for {product.trial_days || 14} days
         </Link>
