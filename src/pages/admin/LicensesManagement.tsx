@@ -57,6 +57,7 @@ export default function LicensesManagement() {
   const fetcher = useCallback(() => adminApi.licenses.list(), [])
   const mapper = useCallback((raw: unknown) => unwrapList(raw).map(mapAdminLicense), [])
   const { items, loading, error, reload } = useListData(fetcher, mapper)
+  const [filterType, setFilterType] = useState<'all'|'temporary'|'permanent'>('all')
 
   const [detail, setDetail] = useState<LicenseRow | null>(null)
   const [actionTarget, setActionTarget] = useState<{ row: LicenseRow; action: Action } | null>(null)
@@ -288,7 +289,12 @@ export default function LicensesManagement() {
       key: 'license_key',
       header: 'License Key',
       render: (row: LicenseRow) => (
-        <span className="font-mono text-xs text-[var(--brand-blue)]">{row.license_key}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-[var(--brand-blue)]">{row.license_key}</span>
+          {row.is_temporary && (
+            <Badge variant="outline" className="text-xs">Temporary</Badge>
+          )}
+        </div>
       ),
     },
     { key: 'customer_name', header: 'Customer', render: (row: LicenseRow) => (
@@ -322,6 +328,13 @@ export default function LicensesManagement() {
         row.expires_at ? formatDate(row.expires_at) : <span className="text-[var(--muted-foreground)] text-xs">Lifetime</span>,
     },
     {
+      key: 'trial_ends_at',
+      header: 'Trial Ends',
+      render: (row: LicenseRow) => (
+        row.trial_ends_at ? <span className="text-xs">{formatDate(row.trial_ends_at)}</span> : <span className="text-[var(--muted-foreground)] text-xs">—</span>
+      ),
+    },
+    {
       key: 'actions',
       header: 'Actions',
       className: 'w-[180px] text-right',
@@ -344,6 +357,12 @@ export default function LicensesManagement() {
     },
   ]
 
+  const filtered = items.filter((it) => {
+    if (filterType === 'all') return true
+    if (filterType === 'temporary') return Boolean(it.is_temporary)
+    return !it.is_temporary
+  })
+
   return (
     <PortalPageShell
       eyebrow="Licenses"
@@ -354,10 +373,23 @@ export default function LicensesManagement() {
       loading={loading}
       error={error}
     >
+      <div className="mb-4 flex items-center gap-3">
+        <div className="text-sm text-[var(--muted-foreground)]">Filter:</div>
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value as any)}
+          className="border rounded px-2 py-1 bg-[var(--card-background)] text-sm"
+        >
+          <option value="all">All</option>
+          <option value="temporary">Temporary only</option>
+          <option value="permanent">Permanent only</option>
+        </select>
+      </div>
+
       <DataTable
         embedded
         columns={columns}
-        data={items}
+        data={filtered}
         pageSize={10}
         searchKeys={['license_key', 'product_name', 'customer_name', 'customer_email', 'status', 'domains_text']}
         searchPlaceholder="Search by license key, domain, or customer..."

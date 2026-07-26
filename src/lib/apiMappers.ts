@@ -877,9 +877,11 @@ export function mapAdminLicense(raw: unknown) {
     activation_count: asNumber(item.activation_count),
     activated_at: asString(item.activated_at),
     expires_at: asString(item.expires_at),
+    trial_ends_at: asString(item.trial_ends_at) || asString(subscription.trial_ends_at) || undefined,
     last_verified_at: asString(item.last_verified_at),
     revoke_reason: asString(item.revoke_reason),
     subscription_id: asString(item.subscription_id),
+    is_temporary: Boolean(asRecord(item.meta ?? {}).temporary_trial),
   }
 }
 
