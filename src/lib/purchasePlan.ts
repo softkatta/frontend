@@ -20,6 +20,7 @@ export type PlanOption = {
   sortOrder: number
   maxUsers?: number
   maxStudents?: number
+  enabledModules?: string[]
 }
 
 function normalizeBillingCycle(value: unknown): BillingCycle | null {
@@ -37,23 +38,29 @@ export function activePlansForBilling(raw: unknown, billing: BillingCycle): Plan
   return listPlans(raw)
     .filter((p) => asBool(p.is_active ?? true))
     .filter((p) => normalizeBillingCycle(p.billing_cycle) === billing)
-    .map((p) => ({
-      id: asString(p.id),
-      name: asString(p.name),
-      slug: asString(p.slug),
-      price: asNumber(p.price),
-      billing,
-      isPopular: asBool(p.is_popular),
-      sortOrder: asNumber(p.sort_order),
-      maxUsers: typeof asRecord(p.limits).max_users === 'number'
-        ? asNumber(asRecord(p.limits).max_users)
-        : typeof asRecord(p.limits).max_staff === 'number'
-          ? asNumber(asRecord(p.limits).max_staff)
+    .map((p) => {
+      const limits = asRecord(p.limits)
+      return {
+        id: asString(p.id),
+        name: asString(p.name),
+        slug: asString(p.slug),
+        price: asNumber(p.price),
+        billing,
+        isPopular: asBool(p.is_popular),
+        sortOrder: asNumber(p.sort_order),
+        maxUsers: typeof limits.max_users === 'number'
+          ? asNumber(limits.max_users)
+          : typeof limits.max_staff === 'number'
+            ? asNumber(limits.max_staff)
+            : undefined,
+        maxStudents: typeof limits.max_students === 'number'
+          ? asNumber(limits.max_students)
           : undefined,
-      maxStudents: typeof asRecord(p.limits).max_students === 'number'
-        ? asNumber(asRecord(p.limits).max_students)
-        : undefined,
-    }))
+        enabledModules: Array.isArray(limits.enabled_modules)
+          ? limits.enabled_modules.map(String)
+          : undefined,
+      }
+    })
     .sort((a, b) => a.sortOrder - b.sortOrder || a.price - b.price)
 }
 

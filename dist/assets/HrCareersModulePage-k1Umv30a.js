@@ -1,1 +1,0 @@
-import{g as e}from"./react-vendor-CU8yxtJH.js";import{r as t}from"./motion-XFMutiCo.js";import{t as n}from"./hrNavigation-Bzwte7_B.js";import r from"./CareersManagement-Csq-BNqi.js";var i=t();function a(){let{pathname:t}=e();return(0,i.jsx)(r,{initialTab:n[t]??`openings`})}export{a as default};

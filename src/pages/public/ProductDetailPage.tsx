@@ -25,6 +25,14 @@ import { getProductScreenshot } from '@/lib/productAssets'
 import { mediaSrc } from '@/lib/mediaUrl'
 import { isEmbeddableVideo, resolveDemoVideoUrl } from '@/lib/videoUrl'
 import { productHasFreeTrial, productTrialRegisterUrl } from '@/lib/productTrial'
+
+function formatModuleLabel(name: string) {
+  return name
+    .replace(/[-_]/g, ' ')
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
 import { SimpleBillingToggle } from '@/components/common/SimpleBillingToggle'
 import { getDefaultPlan, getProductPlanSummary, listAllPlans, planForBilling, yearlySavingsPercent, type PlanOption } from '@/lib/purchasePlan'
 import { useSiteContent } from '@/hooks/useSiteContent'
@@ -152,6 +160,20 @@ function PurchasePanel({
           <ShoppingCart className="h-4 w-4" /> Add to cart
         </button>
       </div>
+
+      {plan?.enabledModules && plan.enabledModules.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/40 p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Included modules</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {plan.enabledModules.map((moduleName) => (
+              <li key={moduleName} className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-xs font-medium text-foreground">
+                <Check className="h-3.5 w-3.5 text-[var(--brand-green)]" />
+                {formatModuleLabel(moduleName)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {showTrial && (
         <Link to={productTrialRegisterUrl(product.slug)} className="product-buy-panel__trial">
