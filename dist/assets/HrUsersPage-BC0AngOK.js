@@ -1,1 +1,0 @@
-import{r as e}from"./motion-XFMutiCo.js";import t from"./UsersPage-Bm3TA77P.js";var n=e();function r(){return(0,n.jsx)(t,{mode:`hr`})}export{r as default};

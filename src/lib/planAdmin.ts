@@ -30,9 +30,7 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
     if (price > 0) {
       const payload = {
         product_id: Number(values.product_id),
-        name: cycle.billing_cycle === 'monthly' ? values.name_monthly
-          : cycle.billing_cycle === 'yearly' ? values.name_yearly
-          : values.name_enterprise,
+        name: values.name,
         slug: cycle.billing_cycle,
         description: values.description || undefined,
         price,
@@ -94,9 +92,7 @@ export function buildPlanFormFromProduct(
 
   return {
     product_id: productId,
-    name_monthly: monthly?.name ?? 'Monthly',
-    name_yearly: yearly?.name ?? 'Yearly',
-    name_enterprise: enterprise?.name ?? 'Enterprise',
+    name: monthly?.name ?? yearly?.name ?? enterprise?.name ?? 'Standard',
     description: sample?.description ?? '',
     is_active: sample?.is_active !== false,
     is_popular: Boolean(sample?.is_popular),

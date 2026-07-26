@@ -23,9 +23,7 @@ import { asRecord, asString, unwrapList } from '@/lib/apiHelpers'
 
 export type PlanFormValues = {
   product_id: string
-  name_monthly: string
-  name_yearly: string
-  name_enterprise: string
+  name: string
   description: string
   is_active: boolean
   is_popular: boolean
@@ -38,9 +36,7 @@ export type PlanFormValues = {
 
 const EMPTY: PlanFormValues = {
   product_id: '',
-  name_monthly: 'Monthly',
-  name_yearly: 'Yearly',
-  name_enterprise: 'Enterprise',
+  name: 'Standard',
   description: '',
   is_active: true,
   is_popular: false,
@@ -132,38 +128,16 @@ export function PlanFormDialog({
           </div>
 
           <div className="rounded-xl border border-[var(--border)] p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground">Pricing (₹)</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="plan-name-monthly">Monthly plan name</Label>
-                <Input
-                  id="plan-name-monthly"
-                  value={form.name_monthly}
-                  onChange={(e) => setForm((f) => ({ ...f, name_monthly: e.target.value }))}
-                  placeholder="Monthly"
-                  className="bg-[var(--input-background)]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plan-name-yearly">Yearly plan name</Label>
-                <Input
-                  id="plan-name-yearly"
-                  value={form.name_yearly}
-                  onChange={(e) => setForm((f) => ({ ...f, name_yearly: e.target.value }))}
-                  placeholder="Yearly"
-                  className="bg-[var(--input-background)]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plan-name-enterprise">Enterprise plan name</Label>
-                <Input
-                  id="plan-name-enterprise"
-                  value={form.name_enterprise}
-                  onChange={(e) => setForm((f) => ({ ...f, name_enterprise: e.target.value }))}
-                  placeholder="Enterprise"
-                  className="bg-[var(--input-background)]"
-                />
-              </div>
+            <p className="text-sm font-medium text-foreground">Plan name and pricing</p>
+            <div className="space-y-2">
+              <Label htmlFor="plan-name">Plan name</Label>
+              <Input
+                id="plan-name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Standard"
+                className="bg-[var(--input-background)]"
+              />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
