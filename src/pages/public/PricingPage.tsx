@@ -35,11 +35,12 @@ export default function PricingPage() {
 
   const plans = useMemo(() => {
     return activeProducts.map(({ product, raw }, index) => {
-      const price = billing === 'yearly' ? product.price_yearly : product.price_monthly
+      const selectedPlan = getDefaultPlan(raw, billing)
+      const price = selectedPlan?.price ?? (billing === 'yearly' ? product.price_yearly : product.price_monthly)
       const savings = yearlySavingsPercent(product.price_monthly, product.price_yearly)
       return {
         product,
-        selectedPlan: getDefaultPlan(raw, billing),
+        selectedPlan,
         price,
         savings,
         popular: index === 0,
@@ -47,7 +48,7 @@ export default function PricingPage() {
     })
   }, [activeProducts, billing])
 
-  const hasYearlyPricing = activeProducts.some(({ product }) => product.price_yearly > 0)
+  const hasYearlyPricing = activeProducts.some(({ raw }) => (getDefaultPlan(raw, 'yearly')?.price ?? 0) > 0)
 
   return (
     <div className="pricing-page">
