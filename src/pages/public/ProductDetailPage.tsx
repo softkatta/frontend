@@ -24,7 +24,7 @@ import { usePublicProduct } from '@/hooks/usePublicProducts'
 import { getProductScreenshot } from '@/lib/productAssets'
 import { mediaSrc } from '@/lib/mediaUrl'
 import { isEmbeddableVideo, resolveDemoVideoUrl } from '@/lib/videoUrl'
-import { productHasFreeTrial, productTrialRegisterUrl } from '@/lib/productTrial'
+import { productHasFreeTrial } from '@/lib/productTrial'
 
 function formatModuleLabel(name: string) {
   return name
@@ -34,6 +34,7 @@ function formatModuleLabel(name: string) {
     .join(' ')
 }
 import { SimpleBillingToggle } from '@/components/common/SimpleBillingToggle'
+import TrialButton from '@/components/public/TrialButton'
 import { getDefaultPlan, getProductPlanSummary, listAllPlans, planForBilling, yearlySavingsPercent, type PlanOption } from '@/lib/purchasePlan'
 import { useSiteContent } from '@/hooks/useSiteContent'
 import { usePageSeo } from '@/hooks/usePageSeo'
@@ -177,13 +178,11 @@ function PurchasePanel({
       )}
 
       {showTrial && (
-        <Link
-          to={isAuthenticated ? `/products/${product.slug}?trial=1` : productTrialRegisterUrl(product.slug)}
-          className="product-buy-panel__trial"
-        >
-          <Sparkles className="h-4 w-4" />
-          Try free for {product.trial_days || 14} days
-        </Link>
+        <TrialButton
+          productSlug={product.slug}
+          days={product.trial_days || 14}
+          isAuthenticated={isAuthenticated}
+        />
       )}
 
       {planOptions.length > 0 && (

@@ -44,6 +44,7 @@ export const clientApi = {
   products: {
     list: () => api.get<unknown[]>('/client/products'),
     get: (slug: string) => api.get<unknown>(`/client/products/${slug}`),
+    startTrial: (slug: string) => api.post<unknown>(`/client/products/${slug}/trial`),
   },
 
   subscriptions: {

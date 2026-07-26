@@ -85,12 +85,14 @@ export interface Product {
 export interface Subscription {
   id: string
   product_id: string
+  product_slug?: string
   product_name: string
   plan: 'monthly' | 'yearly' | 'enterprise'
   plan_name?: string
-  status: 'active' | 'expired' | 'cancelled' | 'pending' | 'suspended'
+  status: 'active' | 'expired' | 'cancelled' | 'pending' | 'suspended' | 'trial'
   start_date: string
   end_date: string
+  trial_ends_at?: string
   auto_renew: boolean
   amount: number
   domain_setup?: DomainSetupStatus
