@@ -1,0 +1,1 @@
+import{Ht as e}from"./index-CMXhq5O9.js";var t=e(`check`,[[`path`,{d:`M20 6 9 17l-5-5`,key:`1gmf2c`}]]);export{t};

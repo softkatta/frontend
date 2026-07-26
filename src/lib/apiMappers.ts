@@ -403,6 +403,7 @@ export function mapAdminSubscription(raw: unknown) {
     auto_renew: asBool(item.auto_renew),
     start_date: asString(item.starts_at ?? item.start_date),
     end_date: asString(item.ends_at ?? item.end_date),
+    trial_ends_at: asString(item.trial_ends_at) || undefined,
     cancelled_at: asString(item.cancelled_at),
   }
 }

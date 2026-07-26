@@ -217,6 +217,11 @@ export default function SubscriptionsPage() {
             { key: 'plan', header: 'Plan', render: (s) => <span className="capitalize">{s.plan}</span> },
             { key: 'status', header: 'Status', render: (s) => <Badge variant={statusVariant[s.status]}>{s.status}</Badge> },
             {
+              key: 'trial_ends_at',
+              header: 'Trial Ends',
+              render: (s) => s.trial_ends_at ? formatDate(s.trial_ends_at) : '—'
+            },
+            {
               key: 'domain_setup',
               header: 'Domains',
               render: (s) => {
@@ -248,6 +253,12 @@ export default function SubscriptionsPage() {
             <DetailRow label="Product" value={detail.product_name} />
             <DetailRow label="Plan" value={<span className="capitalize">{detail.plan}</span>} />
             <DetailRow label="Status" value={detail.status} />
+            {detail.trial_ends_at && (
+              <DetailRow 
+                label="Trial Ends" 
+                value={formatDate(detail.trial_ends_at)} 
+              />
+            )}
             <DetailRow label="Domains" value={domainBadge[(detail.domain_setup?.status ?? 'none') as DomainSetupStatusCode].label} />
             {detail.domain_setup?.frontend_domain ? (
               <DetailRow label="Frontend" value={detail.domain_setup.frontend_domain} />

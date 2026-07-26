@@ -24,6 +24,7 @@ import { useListData } from '@/hooks/useListData'
 
 const statusVariant = {
   active: 'success',
+  trial: 'warning',
   expired: 'destructive',
   cancelled: 'secondary',
   pending: 'warning',
@@ -219,6 +220,7 @@ export default function SubscriptionsManagement() {
           filters={[
             { key: 'status', label: 'Status', options: [
               { value: 'active', label: 'Active' },
+              { value: 'trial', label: 'Trial' },
               { value: 'pending', label: 'Pending' },
               { value: 'expiring_soon', label: 'Expiring Soon' },
               { value: 'suspend', label: 'Suspended' },
@@ -297,6 +299,9 @@ export default function SubscriptionsManagement() {
             ) : null}
             <DetailRow label="Auto renew" value={detail.auto_renew ? 'Yes' : 'No'} />
             <DetailRow label="Started" value={detail.start_date ? formatDate(detail.start_date) : '—'} />
+            {detail.trial_ends_at ? (
+              <DetailRow label="Trial Ends" value={formatDate(detail.trial_ends_at)} />
+            ) : null}
             <DetailRow label="Expires" value={detail.end_date ? formatDate(detail.end_date) : '—'} />
             {detail.cancelled_at ? (
               <DetailRow label="Cancelled" value={formatDate(detail.cancelled_at)} />
