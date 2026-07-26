@@ -70,6 +70,7 @@ function PurchasePanel({
   onRenew,
   renewing,
   planOptions,
+  autoStartTrial,
 }: {
   product: NonNullable<ReturnType<typeof usePublicProduct>['product']>
   raw: unknown
@@ -81,6 +82,7 @@ function PurchasePanel({
   onRenew: () => void
   renewing: boolean
   planOptions: PlanOption[]
+  autoStartTrial: boolean
 }) {
   const showTrial = productHasFreeTrial(product)
   const { isAuthenticated } = useAuth()
@@ -152,7 +154,7 @@ function PurchasePanel({
             disabled={renewing}
             className="hero-cta-ghost flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold"
           >
-            <RefreshCw className="h-4 w-4" /> {renewing ? 'Creating renewal invoice…' : 'Renew your current subscription'}
+            <RefreshCw className="h-4 w-4" /> {renewing ? 'Creating renewal invoiceâ€¦' : 'Renew your current subscription'}
           </button>
         )}
         <button type="button" onClick={onBuy} className="glow-btn flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold">
@@ -182,6 +184,7 @@ function PurchasePanel({
           productSlug={product.slug}
           days={product.trial_days || 14}
           isAuthenticated={isAuthenticated}
+          autoStart={autoStartTrial}
         />
       )}
 
@@ -222,7 +225,7 @@ function PurchasePanel({
 
       {(product.price_enterprise ?? 0) > 0 && (
         <p className="text-center text-xs text-muted-foreground">
-          Enterprise {formatCurrency(product.price_enterprise!)} —{' '}
+          Enterprise {formatCurrency(product.price_enterprise!)} â€”{' '}
           <Link to="/contact" className="text-[var(--brand-blue)] font-medium hover:underline">Contact sales</Link>
         </p>
       )}
@@ -254,7 +257,7 @@ export default function ProductDetailPage() {
   const showTrial = product ? productHasFreeTrial(product) : false
 
   usePageSeo(product ? {
-    title: `${product.name} — Software by SoftKatta Solutions`,
+    title: `${product.name} â€” Software by SoftKatta Solutions`,
     description: product.short_description || product.description?.slice(0, 160) || `Subscribe to ${product.name} from SoftKatta Solutions. GST-ready cloud software for Indian businesses.`,
     path: `/products/${product.slug}`,
     ogType: 'product',
@@ -380,6 +383,7 @@ export default function ProductDetailPage() {
         .finally(() => setRenewing(false))
     },
     planOptions,
+    autoStartTrial: searchParams.get('trial') === '1',
   }
 
   const tabs = [
@@ -402,7 +406,7 @@ export default function ProductDetailPage() {
           </motion.nav>
 
           <div className="grid lg:grid-cols-2 gap-10 xl:gap-14 items-start">
-            {/* Left — showcase */}
+            {/* Left â€” showcase */}
             <motion.div {...fadeUp} className="min-w-0 space-y-5 order-2 lg:order-1">
               <div className="product-page__browser">
                 <div className="product-page__browser-bar">
@@ -457,7 +461,7 @@ export default function ProductDetailPage() {
               )}
             </motion.div>
 
-            {/* Right — info + buy */}
+            {/* Right â€” info + buy */}
             <motion.div {...fadeUp} transition={{ delay: 0.06 }} className="order-1 lg:order-2 space-y-6">
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
@@ -583,7 +587,7 @@ export default function ProductDetailPage() {
       <section className="product-page__cta mx-4 sm:mx-auto max-w-5xl mb-16 sm:mb-20">
         <div className="product-page__cta-glow" aria-hidden />
         <h2 className="font-display text-2xl font-bold mb-2 relative z-10">Get {product.name} today</h2>
-        <p className="text-sm text-muted-foreground mb-6 relative z-10">Instant checkout · GST invoice · Secure payment</p>
+        <p className="text-sm text-muted-foreground mb-6 relative z-10">Instant checkout Â· GST invoice Â· Secure payment</p>
         <div className="flex flex-wrap justify-center gap-3 relative z-10">
           <button
             type="button"

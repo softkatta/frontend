@@ -27,6 +27,11 @@ const statusVariant = {
 
 type LicenseRow = ReturnType<typeof mapAdminLicense>
 type Action = 'suspend' | 'activate' | 'revoke' | 'delete' | 'reset_domains' | 'force_logout' | 'reset_installations' | 'regenerate' | 'notify_ready'
+type LicenseFilter = 'all' | 'temporary' | 'permanent'
+
+function isLicenseFilter(value: string): value is LicenseFilter {
+  return value === 'all' || value === 'temporary' || value === 'permanent'
+}
 
 type LogRow = {
   id: string
@@ -57,7 +62,7 @@ export default function LicensesManagement() {
   const fetcher = useCallback(() => adminApi.licenses.list(), [])
   const mapper = useCallback((raw: unknown) => unwrapList(raw).map(mapAdminLicense), [])
   const { items, loading, error, reload } = useListData(fetcher, mapper)
-  const [filterType, setFilterType] = useState<'all'|'temporary'|'permanent'>('all')
+  const [filterType, setFilterType] = useState<LicenseFilter>('all')
 
   const [detail, setDetail] = useState<LicenseRow | null>(null)
   const [actionTarget, setActionTarget] = useState<{ row: LicenseRow; action: Action } | null>(null)
@@ -377,7 +382,7 @@ export default function LicensesManagement() {
         <div className="text-sm text-[var(--muted-foreground)]">Filter:</div>
         <select
           value={filterType}
-          onChange={(e) => setFilterType(e.target.value as any)}
+          onChange={(e) => { if (isLicenseFilter(e.target.value)) setFilterType(e.target.value) }}
           className="border rounded px-2 py-1 bg-[var(--card-background)] text-sm"
         >
           <option value="all">All</option>

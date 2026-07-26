@@ -1,0 +1,1 @@
+import e from"./AccountProfilePage-lxPalvIr.js";export{e as default};
