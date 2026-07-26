@@ -42,6 +42,7 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
           max_users: values.max_users,
           max_staff: values.max_users,
           max_students: values.max_students,
+          enabled_modules: values.enabled_modules.length > 0 ? values.enabled_modules : undefined,
         },
       }
       if (existing) {
@@ -76,7 +77,7 @@ export function buildPlanFormFromProduct(
     is_active?: boolean
     is_popular?: boolean
     slug?: string
-    limits?: { max_users?: number; max_staff?: number; max_students?: number }
+    limits?: { max_users?: number; max_staff?: number; max_students?: number; enabled_modules?: unknown[] }
   }>,
 ): PlanFormValues {
   const forProduct = plans.filter((p) => sameProductId(p.product_id, productId))
@@ -101,5 +102,6 @@ export function buildPlanFormFromProduct(
     price_enterprise: enterprise?.price ?? 0,
     max_users: Number(limits.max_users ?? limits.max_staff ?? 10),
     max_students: Number(limits.max_students ?? 500),
+    enabled_modules: Array.isArray(limits.enabled_modules) ? limits.enabled_modules.map(String) : [],
   }
 }

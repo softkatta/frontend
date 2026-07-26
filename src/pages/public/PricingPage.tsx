@@ -11,6 +11,15 @@ import {
   GraduationCap,
   Zap,
 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { cn, formatCurrency } from '@/lib/utils'
 import { usePublicProducts } from '@/hooks/usePublicProducts'
@@ -26,6 +35,9 @@ export default function PricingPage() {
   const { products, rawProducts, loading, error } = usePublicProducts()
   const [billing, setBilling] = useState<Billing>('monthly')
 
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('All')
+
   const activeProducts = useMemo(
     () => products
       .map((product, index) => ({ product, raw: rawProducts[index] }))
@@ -33,8 +45,26 @@ export default function PricingPage() {
     [products, rawProducts],
   )
 
+  const categories = useMemo(
+    () => ['All', ...new Set(activeProducts.map(({ product }) => product.category))],
+    [activeProducts],
+  )
+
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return activeProducts.filter(({ product }) => {
+      const matchSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        product.short_description?.toLowerCase().includes(query) ||
+        product.description?.toLowerCase().includes(query)
+      const matchCategory = category === 'All' || product.category === category
+      return matchSearch && matchCategory
+    })
+  }, [activeProducts, search, category])
+
   const plans = useMemo(() => {
-    return activeProducts.map(({ product, raw }, index) => {
+    return filteredProducts.map(({ product, raw }, index) => {
       const selectedPlan = getDefaultPlan(raw, billing)
       const price = selectedPlan?.price ?? (billing === 'yearly' ? product.price_yearly : product.price_monthly)
       const savings = yearlySavingsPercent(product.price_monthly, product.price_yearly)
@@ -46,9 +76,9 @@ export default function PricingPage() {
         popular: index === 0,
       }
     })
-  }, [activeProducts, billing])
+  }, [filteredProducts, billing])
 
-  const hasYearlyPricing = activeProducts.some(({ raw }) => (getDefaultPlan(raw, 'yearly')?.price ?? 0) > 0)
+  const hasYearlyPricing = filteredProducts.some(({ raw }) => (getDefaultPlan(raw, 'yearly')?.price ?? 0) > 0)
 
   return (
     <div className="pricing-page">
@@ -89,33 +119,51 @@ export default function PricingPage() {
 
       <section className="pb-20 sm:pb-24">
         <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
-          {!loading && activeProducts.length > 0 && (
-            <div className="flex justify-center mb-10">
-              <div className="pricing-page__billing-toggle">
-                {(['monthly', 'yearly'] as const)
-                  .filter((cycle) => cycle === 'monthly' || hasYearlyPricing)
-                  .map((cycle) => (
-                  <button
-                    key={cycle}
-                    type="button"
-                    onClick={() => setBilling(cycle)}
-                    className={cn(
-                      'pricing-page__billing-btn',
-                      billing === cycle && 'pricing-page__billing-btn--active',
-                    )}
-                  >
-                    {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                  </button>
-                ))}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10">
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="pricing-search" className="sr-only">Search products</Label>
+              <Input
+                id="pricing-search"
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full max-w-lg rounded-full bg-[var(--background)]/70 border-[var(--border)]"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="min-w-[180px]">
+                <Label className="text-xs font-semibold text-muted-foreground">Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="h-11 rounded-xl bg-[var(--background)]/60">
+                    <SelectValue placeholder="All categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-[140px]">
+                <Label className="text-xs font-semibold text-muted-foreground">Billing</Label>
+                <Select value={billing} onValueChange={(value) => setBilling(value as Billing)}>
+                  <SelectTrigger className="h-11 rounded-xl bg-[var(--background)]/60">
+                    <SelectValue placeholder="Billing cycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    {hasYearlyPricing && <SelectItem value="yearly">Yearly</SelectItem>}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          )}
+          </div>
 
           {loading ? (
             <div className="flex justify-center py-20">
               <LoadingSpinner size="lg" />
             </div>
-          ) : error || activeProducts.length === 0 ? (
+          ) : error || filteredProducts.length === 0 ? (
             <div className="pricing-page__empty">
               <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
               <p className="font-semibold mb-1">No pricing published yet</p>
@@ -125,15 +173,31 @@ export default function PricingPage() {
               </Link>
             </div>
           ) : (
-            <div className="pricing-page__grid">
-              {plans.map(({ product, selectedPlan, price, savings, popular }, i) => (
-                <motion.article
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  className={cn('pricing-page__card', popular && 'pricing-page__card--popular')}
-                >
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+                  {category !== 'All' && <> in <span className="text-foreground">{category}</span></>}
+                </p>
+                {search || category !== 'All' ? (
+                  <button
+                    type="button"
+                    onClick={() => { setSearch(''); setCategory('All') }}
+                    className="text-sm font-semibold text-[var(--brand-blue)] hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
+              <div className="pricing-page__grid">
+                {plans.map(({ product, selectedPlan, price, savings, popular }, i) => (
+                  <motion.article
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    className={cn('pricing-page__card', popular && 'pricing-page__card--popular')}
+                  >
                   {popular && (
                     <span className="pricing-page__popular-badge">
                       <Sparkles className="h-3 w-3" /> Most popular
@@ -200,6 +264,7 @@ export default function PricingPage() {
                 </motion.article>
               ))}
             </div>
+            </>
           )}
 
           <p className="text-center text-sm text-muted-foreground mt-10">

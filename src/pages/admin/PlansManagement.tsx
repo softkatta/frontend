@@ -118,6 +118,7 @@ export default function PlansManagement() {
             { key: 'price', header: 'Price', render: (p) => formatCurrency(p.price) },
             { key: 'max_users', header: 'Users', render: (p) => String(p.max_users) },
             { key: 'max_students', header: 'Students', render: (p) => String(p.max_students) },
+            { key: 'enabled_modules', header: 'Modules', render: (p) => Array.isArray(p.enabled_modules) ? p.enabled_modules.slice(0, 3).join(', ') || 'None' : 'None' },
             { key: 'is_active', header: 'Status', render: (p) => <Badge variant={p.is_active ? 'success' : 'secondary'}>{p.is_active ? 'Active' : 'Inactive'}</Badge> },
             { key: 'actions', header: 'Actions', className: 'w-[120px] text-right', render: (p) => (
               <TableActions actions={[
@@ -139,6 +140,7 @@ export default function PlansManagement() {
             <DetailRow label="Price" value={formatCurrency(detail.price)} />
             <DetailRow label="Max users" value={String(detail.max_users)} />
             <DetailRow label="Max students" value={String(detail.max_students)} />
+            <DetailRow label="Modules" value={detail.enabled_modules?.length ? detail.enabled_modules.join(', ') : 'None'} />
             <DetailRow label="Status" value={detail.is_active ? 'Active' : 'Inactive'} />
             <DetailRow label="Popular" value={detail.is_popular ? 'Yes' : 'No'} />
             {detail.description ? <DetailRow label="Description" value={detail.description} /> : null}

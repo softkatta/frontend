@@ -26,7 +26,7 @@ import { mediaSrc } from '@/lib/mediaUrl'
 import { isEmbeddableVideo, resolveDemoVideoUrl } from '@/lib/videoUrl'
 import { productHasFreeTrial, productTrialRegisterUrl } from '@/lib/productTrial'
 import { SimpleBillingToggle } from '@/components/common/SimpleBillingToggle'
-import { getDefaultPlan, getProductPlanSummary, planForBilling, yearlySavingsPercent } from '@/lib/purchasePlan'
+import { getDefaultPlan, getProductPlanSummary, listAllPlans, planForBilling, yearlySavingsPercent, type PlanOption } from '@/lib/purchasePlan'
 import { useSiteContent } from '@/hooks/useSiteContent'
 import { usePageSeo } from '@/hooks/usePageSeo'
 import { RatingSummary } from '@/components/reviews/RatingSummary'
@@ -60,6 +60,7 @@ function PurchasePanel({
   renewalSubscription,
   onRenew,
   renewing,
+  planOptions,
 }: {
   product: NonNullable<ReturnType<typeof usePublicProduct>['product']>
   raw: unknown
@@ -70,6 +71,7 @@ function PurchasePanel({
   renewalSubscription?: Subscription
   onRenew: () => void
   renewing: boolean
+  planOptions: PlanOption[]
 }) {
   const showTrial = productHasFreeTrial(product)
   const summary = getProductPlanSummary(raw)
@@ -156,6 +158,31 @@ function PurchasePanel({
           <Sparkles className="h-4 w-4" />
           Try free for {product.trial_days || 14} days
         </Link>
+      )}
+
+      {planOptions.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/40 p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Available plans</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {(['monthly', 'yearly', 'enterprise'] as const).map((cycle) => {
+              const option = planOptions.find((plan) => plan.billing === cycle)
+              return (
+                <div key={cycle} className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+                  <p className="font-semibold text-[var(--foreground)] capitalize">{cycle}</p>
+                  {option ? (
+                    <>
+                      <p className="text-lg font-bold mt-2">{formatCurrency(option.price)}</p>
+                      <p className="text-xs text-muted-foreground">{cycle === 'yearly' ? 'per year' : cycle === 'monthly' ? 'per month' : 'enterprise plan'}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">{option.name}</p>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">Not configured</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
       )}
 
       <ul className="product-buy-panel__trust">
@@ -271,6 +298,7 @@ export default function ProductDetailPage() {
   }, [raw, billing, searchParams])
 
   const monthlyPrice = product?.price_monthly ?? 0
+  const planOptions = raw ? listAllPlans(raw) : []
 
   useEffect(() => {
     if (!product) return
@@ -326,6 +354,7 @@ export default function ProductDetailPage() {
         .catch((error) => toast({ title: 'Renewal failed', description: getApiErrorMessage(error), variant: 'destructive' }))
         .finally(() => setRenewing(false))
     },
+    planOptions,
   }
 
   const tabs = [

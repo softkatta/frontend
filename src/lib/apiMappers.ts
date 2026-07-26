@@ -370,7 +370,9 @@ export function mapAdminPlan(raw: unknown) {
       max_users: asNumber(limits.max_users ?? limits.max_staff, 10),
       max_staff: asNumber(limits.max_staff ?? limits.max_users, 10),
       max_students: asNumber(limits.max_students, 500),
+      enabled_modules: Array.isArray(limits.enabled_modules) ? limits.enabled_modules.map(String) : [],
     },
+    enabled_modules: Array.isArray(limits.enabled_modules) ? limits.enabled_modules.map(String) : [],
   }
 }
 

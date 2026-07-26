@@ -32,7 +32,24 @@ export type PlanFormValues = {
   price_enterprise: number
   max_users: number
   max_students: number
+  enabled_modules: string[]
 }
+
+const MODULE_OPTIONS = [
+  { value: 'students', label: 'Students' },
+  { value: 'attendance', label: 'Attendance' },
+  { value: 'fees', label: 'Fees' },
+  { value: 'batches', label: 'Batches' },
+  { value: 'examinations', label: 'Examinations' },
+  { value: 'library', label: 'Library' },
+  { value: 'reports', label: 'Reports' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'inventory', label: 'Inventory' },
+  { value: 'gst', label: 'GST' },
+  { value: 'purchase', label: 'Purchase' },
+  { value: 'parent_portal', label: 'Parent portal' },
+  { value: 'notifications', label: 'Notifications' },
+]
 
 const EMPTY: PlanFormValues = {
   product_id: '',
@@ -45,6 +62,7 @@ const EMPTY: PlanFormValues = {
   price_enterprise: 0,
   max_users: 10,
   max_students: 500,
+  enabled_modules: [],
 }
 
 type ProductOption = { id: string; name: string }
@@ -214,6 +232,34 @@ export function PlanFormDialog({
                   className="bg-[var(--input-background)]"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Enabled modules</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {MODULE_OPTIONS.map((module) => (
+                  <label key={module.value} className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.enabled_modules.includes(module.value)}
+                      onChange={(e) => {
+                        setForm((f) => {
+                          const enabled = e.target.checked
+                          const modules = new Set(f.enabled_modules)
+                          if (enabled) {
+                            modules.add(module.value)
+                          } else {
+                            modules.delete(module.value)
+                          }
+                          return { ...f, enabled_modules: Array.from(modules) }
+                        })
+                      }}
+                      className="h-4 w-4 rounded border-[var(--border)] bg-[var(--input-background)]"
+                    />
+                    {module.label}
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Select the product modules that should be active under this plan.</p>
             </div>
           </div>
 
