@@ -1,1 +1,0 @@
-import{r as e}from"./motion-XFMutiCo.js";import{xt as t}from"./index-C6Od-J8Q.js";var n=e();function r({className:e,...r}){return(0,n.jsx)(`div`,{className:t(`animate-pulse rounded-md bg-[var(--muted)]/80`,e),...r})}export{r as t};

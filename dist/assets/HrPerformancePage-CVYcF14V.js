@@ -1,1 +1,0 @@
-import{r as e}from"./motion-XFMutiCo.js";import t from"./PerformanceReviewsManagement-BZ6UO-Hl.js";var n=e();function r(){return(0,n.jsx)(t,{})}export{r as default};

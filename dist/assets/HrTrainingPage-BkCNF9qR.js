@@ -1,1 +1,0 @@
-import{r as e}from"./motion-XFMutiCo.js";import t from"./TrainingManagement-BtAc1F1z.js";var n=e();function r(){return(0,n.jsx)(t,{})}export{r as default};
