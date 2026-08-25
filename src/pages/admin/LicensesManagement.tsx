@@ -285,7 +285,7 @@ export default function LicensesManagement() {
     },
     notify_ready: {
       title: 'Notify: Product Ready',
-      description: 'Resend login email, licence key, trial expiry, portal link and product URL by email, WhatsApp and in-app notification.',
+      description: 'Generate a new temporary password and resend login email, password, licence key, trial expiry, portal link and product URL. The customer old password will stop working.',
     },
   }
 
