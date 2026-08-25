@@ -39,6 +39,12 @@ export type ProductFormValues = {
   has_free_trial: boolean
   price_per_extra_user: number
   price_per_extra_student: number
+  android_version: string
+  android_file_path: string
+  android_file_name: string
+  windows_version: string
+  windows_file_path: string
+  windows_file_name: string
 }
 
 const EMPTY_FORM: ProductFormValues = {
@@ -54,6 +60,12 @@ const EMPTY_FORM: ProductFormValues = {
   has_free_trial: true,
   price_per_extra_user: 0,
   price_per_extra_student: 0,
+  android_version: '',
+  android_file_path: '',
+  android_file_name: '',
+  windows_version: '',
+  windows_file_path: '',
+  windows_file_name: '',
 }
 
 function parseScreenshot(productRaw: unknown): string {
@@ -103,6 +115,7 @@ export function ProductFormDialog({
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState('')
   const [uploadingDemoVideo, setUploadingDemoVideo] = useState(false)
+  const [uploadingRelease, setUploadingRelease] = useState<'android' | 'windows' | null>(null)
   const [demoVideoPreviewUrl, setDemoVideoPreviewUrl] = useState('')
   const isEdit = Boolean(initial?.id)
 
@@ -141,6 +154,12 @@ export function ProductFormDialog({
         has_free_trial: Boolean(raw.has_free_trial ?? true),
         price_per_extra_user: Number(asRecord(raw.meta).price_per_extra_user ?? 0),
         price_per_extra_student: Number(asRecord(raw.meta).price_per_extra_student ?? 0),
+        android_version: asString(asRecord(asRecord(asRecord(raw.meta).releases).android).version),
+        android_file_path: asString(asRecord(asRecord(asRecord(raw.meta).releases).android).file_path),
+        android_file_name: asString(asRecord(asRecord(asRecord(raw.meta).releases).android).file_name),
+        windows_version: asString(asRecord(asRecord(asRecord(raw.meta).releases).windows).version),
+        windows_file_path: asString(asRecord(asRecord(asRecord(raw.meta).releases).windows).file_path),
+        windows_file_name: asString(asRecord(asRecord(asRecord(raw.meta).releases).windows).file_name),
       })
       setAutoSlug(false)
     } else {
@@ -173,6 +192,24 @@ export function ProductFormDialog({
     }
   }
 
+  const handleReleaseUpload = async (platform: 'android' | 'windows', file: File | null) => {
+    if (!file) return
+    setUploadingRelease(platform)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('kind', 'installer')
+      formData.append('folder', `releases-${platform}`)
+      const { path } = await adminApi.uploads.create(formData)
+      setForm((prev) => ({
+        ...prev,
+        [`${platform}_file_path`]: path,
+        [`${platform}_file_name`]: file.name,
+      }))
+    } finally {
+      setUploadingRelease(null)
+    }
+  }
   const screenshotPreview = screenshotPreviewUrl || (form.screenshot ? resolveMediaUrl(form.screenshot) : '')
 
   const handleDemoVideoUpload = async (file: File | null) => {
@@ -375,6 +412,30 @@ export function ProductFormDialog({
             ) : null}
           </div>
 
+          <div className="rounded-xl border border-[var(--border)] p-4 space-y-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">App downloads</p>
+              <p className="text-xs text-muted-foreground">Customers with an active licence can download these releases from their dashboard.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Android app (APK)</Label>
+              <Input type="file" accept=".apk,application/vnd.android.package-archive" disabled={uploadingRelease !== null} onChange={(e) => void handleReleaseUpload('android', e.target.files?.[0] ?? null)} />
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Input value={form.android_version} onChange={(e) => updateForm({ android_version: e.target.value })} placeholder="Version 1.0.0" />
+                <Input className="sm:col-span-2" value={form.android_file_path} onChange={(e) => updateForm({ android_file_path: e.target.value })} placeholder="Uploaded path or HTTPS URL" />
+              </div>
+              {form.android_file_name && <p className="text-xs text-muted-foreground">{form.android_file_name}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Windows desktop app</Label>
+              <Input type="file" accept=".exe,.msi,.zip" disabled={uploadingRelease !== null} onChange={(e) => void handleReleaseUpload('windows', e.target.files?.[0] ?? null)} />
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Input value={form.windows_version} onChange={(e) => updateForm({ windows_version: e.target.value })} placeholder="Version 1.0.0" />
+                <Input className="sm:col-span-2" value={form.windows_file_path} onChange={(e) => updateForm({ windows_file_path: e.target.value })} placeholder="Uploaded path or HTTPS URL" />
+              </div>
+              {form.windows_file_name && <p className="text-xs text-muted-foreground">{form.windows_file_name}</p>}
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="p-trial-days">Trial days</Label>
             <Input

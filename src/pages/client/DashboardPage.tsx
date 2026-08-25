@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Package, CreditCard, RefreshCw, AlertTriangle, Bell, TrendingUp } from 'lucide-react'
+import { Eye, Package, CreditCard, RefreshCw, AlertTriangle, Bell, TrendingUp, Download, Monitor, Smartphone } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { PageHeader } from '@/components/common/PageHeader'
 import { StatCard } from '@/components/common/StatCard'
@@ -10,12 +10,13 @@ import { PortalPage, PortalWelcome, chartTooltipStyle, portalNotificationTone } 
 import { TableActions } from '@/components/common/TableActions'
 import { DetailDialog, DetailRow } from '@/components/common/DetailDialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { actionBtn } from '@/lib/tableActions'
 import { clientApi } from '@/services/api'
-import { asBool, asRecord, asString, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
+import { asBool, asRecord, asString, downloadBlob, getApiErrorMessage, unwrapList } from '@/lib/apiHelpers'
 import { mapAdminLicense, mapInvoice, mapNotification, mapSubscription } from '@/lib/apiMappers'
 import { toast } from '@/components/ui/toaster'
 import { SecuritySetupWizard } from '@/components/auth/SecuritySetupWizard'
@@ -42,7 +43,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([])
   const [recentNotifications, setRecentNotifications] = useState<Notification[]>([])
-  const [purchasedProducts, setPurchasedProducts] = useState<Array<{ id: string; name: string; slug: string; is_active: boolean }>>([])
+  const [purchasedProducts, setPurchasedProducts] = useState<Array<{ id: string; name: string; slug: string; is_active: boolean; android: boolean; windows: boolean; androidVersion: string; windowsVersion: string; windowsFileName: string }>>([])
   const [seatLicenses, setSeatLicenses] = useState<SeatLicenseRow[]>([])
   const [stats, setStats] = useState({ products: 0, subscriptions: 0, renewals: 0, expiring: 0, spend: 0 })
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null)
@@ -72,11 +73,19 @@ export default function DashboardPage() {
       const products = unwrapList(data.purchased_products)
         .map((raw) => {
           const item = asRecord(raw)
+          const releases = asRecord(asRecord(item.meta).releases)
+          const android = asRecord(releases.android)
+          const windows = asRecord(releases.windows)
           return {
             id: asString(item.id),
             name: asString(item.name, 'Product'),
             slug: asString(item.slug),
             is_active: asBool(item.is_active),
+            android: asString(android.file_path) !== '',
+            windows: asString(windows.file_path) !== '',
+            androidVersion: asString(android.version),
+            windowsVersion: asString(windows.version),
+            windowsFileName: asString(windows.file_name, 'Gold-Store-Windows.zip'),
           }
         })
         .filter((p) => p.id !== '' && p.slug !== '')
@@ -102,6 +111,15 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => { void load() }, [load])
+  const downloadProduct = async (product: typeof purchasedProducts[number], platform: 'android' | 'windows') => {
+    try {
+      const blob = await clientApi.products.download(product.slug, platform)
+      downloadBlob(blob, platform === 'windows' ? product.windowsFileName : `${product.slug}-android.apk`)
+      toast({ title: 'Download started', description: `${product.name} · ${platform === 'android' ? 'Android' : 'Windows'}`, variant: 'success' })
+    } catch (error) {
+      toast({ title: 'Download failed', description: getApiErrorMessage(error), variant: 'destructive' })
+    }
+  }
 
   if (loading) {
     return (
@@ -235,18 +253,17 @@ export default function DashboardPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {purchasedProducts.map((product) => (
-              <Link
-                key={product.id}
-                to={`/products/${product.slug}`}
-                className="rounded-xl border border-[var(--border)] bg-[var(--input)] px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-[var(--brand-teal)]/40 hover:bg-[var(--card)]"
-              >
-                <span className="flex items-center justify-between gap-3">
-                  <span className="truncate">{product.name}</span>
-                  <Badge variant={product.is_active ? 'success' : 'secondary'}>
-                    {product.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+              <div key={product.id} className="rounded-xl border border-[var(--border)] bg-[var(--input)] px-4 py-3 text-sm text-foreground">
+                <span className="flex items-center justify-between gap-3 font-medium">
+                  <Link to={`/products/${product.slug}`} className="truncate hover:text-[var(--brand-blue)]">{product.name}</Link>
+                  <Badge variant={product.is_active ? 'success' : 'secondary'}>{product.is_active ? 'Active' : 'Inactive'}</Badge>
                 </span>
-              </Link>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {product.android && <Button size="sm" variant="outline" className="gap-1.5" onClick={() => void downloadProduct(product, 'android')}><Smartphone className="h-3.5 w-3.5" /><Download className="h-3.5 w-3.5" /> Android {product.androidVersion}</Button>}
+                  {product.windows && <Button size="sm" variant="outline" className="gap-1.5" onClick={() => void downloadProduct(product, 'windows')}><Monitor className="h-3.5 w-3.5" /><Download className="h-3.5 w-3.5" /> Windows {product.windowsVersion}</Button>}
+                  {!product.android && !product.windows && <span className="text-xs text-[var(--muted-foreground)]">Download coming soon</span>}
+                </div>
+              </div>
             ))}
           </div>
         )}

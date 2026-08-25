@@ -21,6 +21,10 @@ function productPayload(values: ProductFormValues) {
     meta: {
       price_per_extra_user: values.price_per_extra_user,
       price_per_extra_student: values.price_per_extra_student,
+      releases: {
+        android: values.android_file_path ? { version: values.android_version || '1.0.0', file_path: values.android_file_path, file_name: values.android_file_name || 'app.apk' } : null,
+        windows: values.windows_file_path ? { version: values.windows_version || '1.0.0', file_path: values.windows_file_path, file_name: values.windows_file_name || 'setup.exe' } : null,
+      },
     },
   }
 }

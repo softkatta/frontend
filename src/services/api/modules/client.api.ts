@@ -45,6 +45,8 @@ export const clientApi = {
     list: () => api.get<unknown[]>('/client/products'),
     get: (slug: string) => api.get<unknown>(`/client/products/${slug}`),
     startTrial: (slug: string) => api.post<unknown>(`/client/products/${slug}/trial`),
+    download: (slug: string, platform: 'android' | 'windows') =>
+      api.get<Blob>(`/client/products/${slug}/downloads/${platform}`, { responseType: 'blob' }),
   },
 
   subscriptions: {

@@ -117,6 +117,10 @@ function resolvePathPermission(path: string): string | string[] | null {
 export function hasPermission(user: User | null | undefined, permission: string): boolean {
   if (!user) return false
   if (user.role === 'admin') return true
+  // Client portal access is inherent to an authenticated client account. The
+  // API intentionally returns an empty permissions array for clients because
+  // granular company-role permissions apply only to staff accounts.
+  if (user.role === 'client' && permission.startsWith('client.')) return true
   return user.permissions?.includes(permission) ?? false
 }
 
