@@ -162,7 +162,7 @@ export default function LicensesManagement() {
         regenerate: regeneratedKey
           ? `New key: ${regeneratedKey}. Product must Restore with this key.`
           : 'License key regenerated. Customer must re-activate on the product.',
-        notify_ready: notifySummary ?? 'Customer notified: product is ready.',
+        notify_ready: notifySummary ?? 'Access details resent to customer.',
       }
       toast({ title: messages[action], variant: 'success' })
       setActionTarget(null)
@@ -285,7 +285,7 @@ export default function LicensesManagement() {
     },
     notify_ready: {
       title: 'Notify: Product Ready',
-      description: 'Send email + WhatsApp to the customer that their product setup is complete. Confirm the live product URL below (optional if a domain is already registered).',
+      description: 'Resend login email, licence key, trial expiry, portal link and product URL by email, WhatsApp and in-app notification.',
     },
   }
 
@@ -347,7 +347,7 @@ export default function LicensesManagement() {
         <TableActions
           actions={[
             actionBtn('View', Eye, () => openDetail(row)),
-            actionBtn('Product Ready', Megaphone, () => startAction(row, 'notify_ready')),
+            actionBtn(row.trial_ends_at ? 'Resend Trial Access' : 'Resend Access Details', Megaphone, () => startAction(row, 'notify_ready')),
             row.status !== 'active'
               ? actionBtn('Activate', ShieldCheck, () => startAction(row, 'activate'))
               : actionBtn('Suspend', ShieldOff, () => startAction(row, 'suspend')),
