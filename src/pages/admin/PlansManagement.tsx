@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PlanFormDialog, type PlanFormValues } from '@/components/admin/PlanFormDialog'
+import { PlanUsageLimitsDialog } from '@/components/admin/PlanUsageLimitsDialog'
 import { PortalPageShell } from '@/components/common/PortalPageShell'
 import { DataTable } from '@/components/common/DataTable'
 import { TableActions } from '@/components/common/TableActions'
@@ -30,6 +31,7 @@ export default function PlansManagement() {
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
   const [editingValues, setEditingValues] = useState<PlanFormValues | null>(null)
   const [saving, setSaving] = useState(false)
+  const [usagePlan, setUsagePlan] = useState<PlanRow | null>(null)
 
   const openCreate = () => {
     setEditingProductId(null)
@@ -118,12 +120,16 @@ export default function PlansManagement() {
             { key: 'price', header: 'Price', render: (p) => formatCurrency(p.price) },
             { key: 'max_users', header: 'Users', render: (p) => String(p.max_users) },
             { key: 'max_students', header: 'Students', render: (p) => String(p.max_students) },
+            { key: 'max_customers', header: 'Customers', render: (p) => String(p.max_customers) },
+            { key: 'max_gst_invoices', header: 'GST invoices', render: (p) => String(p.max_gst_invoices) },
+            { key: 'max_non_gst_invoices', header: 'Non-GST', render: (p) => String(p.max_non_gst_invoices) },
             { key: 'enabled_modules', header: 'Modules', render: (p) => Array.isArray(p.enabled_modules) ? p.enabled_modules.slice(0, 3).join(', ') || 'None' : 'None' },
             { key: 'is_active', header: 'Status', render: (p) => <Badge variant={p.is_active ? 'success' : 'secondary'}>{p.is_active ? 'Active' : 'Inactive'}</Badge> },
             { key: 'actions', header: 'Actions', className: 'w-[120px] text-right', render: (p) => (
               <TableActions actions={[
                 actionBtn('View plan', Eye, () => setDetail(p)),
                 actionBtn('Edit all plans for product', Pencil, () => openEdit(p)),
+                actionBtn('Manage usage limits', Pencil, () => setUsagePlan(p)),
                 { ...actionBtn('Delete plan', Trash2, () => setDeleteTarget(p)), variant: 'destructive' },
               ]} />
             ) },
@@ -140,6 +146,9 @@ export default function PlansManagement() {
             <DetailRow label="Price" value={formatCurrency(detail.price)} />
             <DetailRow label="Max users" value={String(detail.max_users)} />
             <DetailRow label="Max students" value={String(detail.max_students)} />
+            <DetailRow label="Customer limit" value={String(detail.max_customers)} />
+            <DetailRow label="GST invoice limit" value={`${detail.max_gst_invoices} per ${detail.invoice_limit_period}`} />
+            <DetailRow label="Without-GST invoice limit" value={`${detail.max_non_gst_invoices} per ${detail.invoice_limit_period}`} />
             <DetailRow label="Modules" value={detail.enabled_modules?.length ? detail.enabled_modules.join(', ') : 'None'} />
             <DetailRow label="Status" value={detail.is_active ? 'Active' : 'Inactive'} />
             <DetailRow label="Popular" value={detail.is_popular ? 'Yes' : 'No'} />
@@ -163,6 +172,11 @@ export default function PlansManagement() {
         onSubmit={handleSave}
       />
 
+      <PlanUsageLimitsDialog
+        plan={usagePlan}
+        onOpenChange={(open) => !open && setUsagePlan(null)}
+        onSaved={reload}
+      />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
