@@ -118,8 +118,9 @@ export default function PlansManagement() {
             { key: 'product_name', header: 'Product' },
             { key: 'billing_cycle', header: 'Cycle', render: (p) => <Badge variant="outline" className="capitalize">{p.billing_cycle}</Badge> },
             { key: 'price', header: 'Price', render: (p) => formatCurrency(p.price) },
-            { key: 'max_users', header: 'Users', render: (p) => String(p.max_users) },
-            { key: 'max_students', header: 'Students', render: (p) => String(p.max_students) },
+            { key: 'max_users', header: 'Users', render: (p) => p.product_slug === 'gold-store-management-software' ? '—' : String(p.max_users) },
+            { key: 'max_students', header: 'Students', render: (p) => p.product_slug === 'gold-store-management-software' ? '—' : String(p.max_students) },
+            { key: 'max_devices', header: 'Devices', render: (p) => p.product_slug === 'gold-store-management-software' ? String(p.max_devices) : '—' },
             { key: 'max_customers', header: 'Customers', render: (p) => String(p.max_customers) },
             { key: 'max_gst_invoices', header: 'GST invoices', render: (p) => String(p.max_gst_invoices) },
             { key: 'max_non_gst_invoices', header: 'Non-GST', render: (p) => String(p.max_non_gst_invoices) },
@@ -144,8 +145,14 @@ export default function PlansManagement() {
             <DetailRow label="Product" value={detail.product_name} />
             <DetailRow label="Billing" value={<span className="capitalize">{detail.billing_cycle}</span>} />
             <DetailRow label="Price" value={formatCurrency(detail.price)} />
-            <DetailRow label="Max users" value={String(detail.max_users)} />
-            <DetailRow label="Max students" value={String(detail.max_students)} />
+            {detail.product_slug === 'gold-store-management-software' ? (
+              <DetailRow label="Device limit" value={String(detail.max_devices)} />
+            ) : (
+              <>
+                <DetailRow label="Max users" value={String(detail.max_users)} />
+                <DetailRow label="Max students" value={String(detail.max_students)} />
+              </>
+            )}
             <DetailRow label="Customer limit" value={String(detail.max_customers)} />
             <DetailRow label="GST invoice limit" value={`${detail.max_gst_invoices} per ${detail.invoice_limit_period}`} />
             <DetailRow label="Without-GST invoice limit" value={`${detail.max_non_gst_invoices} per ${detail.invoice_limit_period}`} />

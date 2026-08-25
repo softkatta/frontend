@@ -23,6 +23,7 @@ import { asRecord, asString, unwrapList } from '@/lib/apiHelpers'
 
 export type PlanFormValues = {
   product_id: string
+  product_slug: string
   name: string
   description: string
   is_active: boolean
@@ -32,6 +33,7 @@ export type PlanFormValues = {
   price_enterprise: number
   max_users: number
   max_students: number
+  max_devices: number
   enabled_modules: string[]
 }
 
@@ -53,6 +55,7 @@ const MODULE_OPTIONS = [
 
 const EMPTY: PlanFormValues = {
   product_id: '',
+  product_slug: '',
   name: 'Standard',
   description: '',
   is_active: true,
@@ -62,10 +65,11 @@ const EMPTY: PlanFormValues = {
   price_enterprise: 0,
   max_users: 10,
   max_students: 500,
+  max_devices: 1,
   enabled_modules: [],
 }
 
-type ProductOption = { id: string; name: string }
+type ProductOption = { id: string; name: string; slug: string }
 
 type PlanFormDialogProps = {
   open: boolean
@@ -94,7 +98,7 @@ export function PlanFormDialog({
       setProducts(
         unwrapList(res).map((row) => {
           const product = asRecord(row)
-          return { id: asString(product.id), name: asString(product.name, 'Product') }
+          return { id: asString(product.id), name: asString(product.name, 'Product'), slug: asString(product.slug) }
         }),
       )
     })
@@ -108,6 +112,7 @@ export function PlanFormDialog({
     setForm(initial ?? EMPTY)
   }, [open, initial])
 
+  const isGoldStore = form.product_slug === 'gold-store-management-software'
   const hasPrice = form.price_monthly > 0 || form.price_yearly > 0 || form.price_enterprise > 0
 
   return (
@@ -116,7 +121,7 @@ export function PlanFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit product plans' : 'Add product plans'}</DialogTitle>
           <DialogDescription>
-            Set pricing and user/student limits for one product. Limits apply on the licensed product install.
+            {isGoldStore ? 'Set pricing and device limits for Gold Store.' : 'Set pricing and user/student limits for one product. Limits apply on the licensed product install.'}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -131,7 +136,10 @@ export function PlanFormDialog({
             <Label>Product *</Label>
             <Select
               value={form.product_id || undefined}
-              onValueChange={(product_id) => setForm((f) => ({ ...f, product_id }))}
+              onValueChange={(product_id) => {
+                const product = products.find((item) => item.id === product_id)
+                setForm((f) => ({ ...f, product_id, product_slug: product?.slug ?? '' }))
+              }}
               disabled={lockProduct}
             >
               <SelectTrigger className="bg-[var(--input-background)]">
@@ -207,32 +215,47 @@ export function PlanFormDialog({
             <p className="text-xs text-muted-foreground">
               Applied on the product: customers can add up to these counts. SoftKatta can grant extras per license later.
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            {isGoldStore ? (
               <div className="space-y-2">
-                <Label htmlFor="plan-max-users">Max users (staff)</Label>
+                <Label htmlFor="plan-max-devices">Max devices</Label>
                 <Input
-                  id="plan-max-users"
+                  id="plan-max-devices"
                   type="number"
-                  min={0}
+                  min={1}
                   step={1}
-                  value={form.max_users}
-                  onChange={(e) => setForm((f) => ({ ...f, max_users: Math.max(0, Number(e.target.value) || 0) }))}
+                  value={form.max_devices}
+                  onChange={(e) => setForm((f) => ({ ...f, max_devices: Math.max(1, Number(e.target.value) || 1) }))}
                   className="bg-[var(--input-background)]"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="plan-max-students">Max students</Label>
-                <Input
-                  id="plan-max-students"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={form.max_students}
-                  onChange={(e) => setForm((f) => ({ ...f, max_students: Math.max(0, Number(e.target.value) || 0) }))}
-                  className="bg-[var(--input-background)]"
-                />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="plan-max-users">Max users (staff)</Label>
+                  <Input
+                    id="plan-max-users"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.max_users}
+                    onChange={(e) => setForm((f) => ({ ...f, max_users: Math.max(0, Number(e.target.value) || 0) }))}
+                    className="bg-[var(--input-background)]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plan-max-students">Max students</Label>
+                  <Input
+                    id="plan-max-students"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.max_students}
+                    onChange={(e) => setForm((f) => ({ ...f, max_students: Math.max(0, Number(e.target.value) || 0) }))}
+                    className="bg-[var(--input-background)]"
+                  />
+                </div>
               </div>
-            </div>
+            )}
             <div className="space-y-2">
               <Label>Enabled modules</Label>
               <div className="grid gap-2 sm:grid-cols-2">

@@ -39,9 +39,9 @@ export async function saveProductPlans(values: PlanFormValues, existingPlans: Ex
         is_popular: values.is_popular && cycle.billing_cycle === 'monthly',
         sort_order: cycle.sort_order,
         limits: {
-          max_users: values.max_users,
-          max_staff: values.max_users,
-          max_students: values.max_students,
+          ...(values.product_slug === 'gold-store-management-software'
+            ? { max_devices: values.max_devices }
+            : { max_users: values.max_users, max_staff: values.max_users, max_students: values.max_students }),
           enabled_modules: values.enabled_modules.length > 0 ? values.enabled_modules : undefined,
         },
       }
@@ -70,6 +70,7 @@ export function buildPlanFormFromProduct(
   plans: Array<{
     id: string
     product_id: string
+    product_slug?: string
     billing_cycle: string
     price: number
     name?: string
@@ -77,7 +78,7 @@ export function buildPlanFormFromProduct(
     is_active?: boolean
     is_popular?: boolean
     slug?: string
-    limits?: { max_users?: number; max_staff?: number; max_students?: number; enabled_modules?: unknown[] }
+    limits?: { max_users?: number; max_staff?: number; max_students?: number; max_devices?: number; enabled_modules?: unknown[] }
   }>,
 ): PlanFormValues {
   const forProduct = plans.filter((p) => sameProductId(p.product_id, productId))
@@ -93,6 +94,7 @@ export function buildPlanFormFromProduct(
 
   return {
     product_id: productId,
+    product_slug: sample?.product_slug ?? '',
     name: monthly?.name ?? yearly?.name ?? enterprise?.name ?? 'Standard',
     description: sample?.description ?? '',
     is_active: sample?.is_active !== false,
@@ -102,6 +104,7 @@ export function buildPlanFormFromProduct(
     price_enterprise: enterprise?.price ?? 0,
     max_users: Number(limits.max_users ?? limits.max_staff ?? 10),
     max_students: Number(limits.max_students ?? 500),
+    max_devices: Number(limits.max_devices ?? 1),
     enabled_modules: Array.isArray(limits.enabled_modules) ? limits.enabled_modules.map(String) : [],
   }
 }
